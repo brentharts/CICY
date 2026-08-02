@@ -216,6 +216,77 @@ except ValueError:
     check_true("wrong number of classes rejected", True)
 
 # --------------------------------------------------------------------------
+print("\n[8] Second Chern character across a conifold transition")
+# arXiv:2512.18124 eq. (1.24), with D_1, D_2 the ambient hyperplane classes
+# of [[P^1|1 1],[P^4|1 4]]. Index 0 here is the P^1, index 1 the P^4.
+check("ch2 of the quintic", T.class_str(T.chern_character_2([[4, 5]])),
+      "-10 D0^2")
+t = T.transition_ch2([[4, 5]], 0, [1])
+check("re-embedded deformation (eq. 1.29)", t["deformation_conf"],
+      [[1, 1, 0], [4, 0, 5]])
+check("ch2(T X_D)", T.class_str(t["ch2_deformation"]), "-10 D1^2")
+check("ch2(T X_R)", T.class_str(t["ch2_resolution"]), "-5 D0 D1 - 6 D1^2")
+check("exceptional class [P^1_s]", T.class_str(t["exceptional"]),
+      "-5 D0 D1 + 4 D1^2")
+check("bridging curve [C_D]", T.class_str(t["c_deformation"]), "4 D1^2")
+check("bridging curve [C_R]", T.class_str(t["c_resolution"]), "5 D0 D1")
+check_true("[C_R] = [C_D] - [P^1_s]  (eq. 1.3)", t["bridging_matches"])
+
+# The genuine test: the adjunction formula against pyCICY's separately
+# implemented second Chern class, using ch_2 = -c_2 for a Calabi-Yau.
+check_true("ch2 agrees with -c2, resolution",
+           t["independent_check"]["resolution"]["agrees"])
+check_true("ch2 agrees with -c2, deformation",
+           t["independent_check"]["deformation"]["agrees"])
+
+agree = disagree = 0
+for conf in [[[4, 5]], [[2, 3], [2, 3]], [[1, 2], [1, 2], [1, 2], [1, 2]],
+             [[1, 1, 1], [4, 1, 4]], [[1, 1, 1], [4, 2, 3]],
+             [[3, 4], [1, 2]], [[2, 3], [1, 2], [1, 2]],
+             [[1, 1, 1], [2, 1, 2], [2, 1, 2]]]:
+    if T.chern_character_2(conf) == T.chern_character_2_from_c2(conf):
+        agree += 1
+    else:
+        disagree += 1
+check("configurations where ch2 == -c2", agree, agree + disagree)
+check("disagreements", disagree, 0)
+
+# The identity holds across many splits, but see the note below.
+bad = 0
+for base in [[[4, 5]], [[2, 3], [2, 3]], [[3, 4], [1, 2]]]:
+    for col, part, _ in T.splits(base):
+        if not T.transition_ch2(base, col, part)["bridging_matches"]:
+            bad += 1
+check("splits failing the bridging identity", bad, 0)
+
+# NOTE: bridging_matches is an algebraic identity given the adjunction
+# formula, so the check above cannot fail by construction. It is retained as
+# a guard against a coding error in the class arithmetic or the re-embedding,
+# not as independent evidence. The substantive check is ch2 == -c2 above.
+
+# The exceptional class is a formal difference of curve classes and does NOT
+# vanish for an ineffective split, even though the node count does. The class
+# therefore cannot be used to detect ineffectiveness; the intersection number
+# of nodes_expected can.
+ineffective_seen = 0
+for base in [[[3, 4], [1, 2]], [[1, 2], [3, 4]]]:
+    for col, part, _ in T.splits(base):
+        if T.nodes_expected(base, col, part) == 0:
+            ineffective_seen += 1
+            cls = T.transition_ch2(base, col, part)["exceptional"]
+            check_true("N = 0 but [P^1_s] != 0 for %s %s"
+                       % (base, list(part)), len(cls) > 0)
+check_true("at least one ineffective split was examined", ineffective_seen > 0)
+
+for bad_args, desc in [((9, [1]), "column out of range"),
+                       ((0, [1, 1]), "wrong partition length")]:
+    try:
+        T.transition_ch2([[4, 5]], *bad_args)
+        check_true("%s rejected" % desc, False)
+    except ValueError:
+        check_true("%s rejected" % desc, True)
+
+# --------------------------------------------------------------------------
 print("\n" + "=" * 72)
 if FAILURES:
     print("FAILED ({}): {}".format(len(FAILURES), ", ".join(FAILURES)))
