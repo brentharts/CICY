@@ -1,8 +1,6 @@
 # pyCICY
 
-A python CICY toolkit, which allows the computation of line bundle cohomologies over Complete Intersection Calabi Yau manifolds. It further contains functions for determining various topological quantities, such as Chern classes, triple intersection and Hodge numbers.
-
-Installation is straighforwad with pip
+A python CICY toolkit, which allows the computation of line bundle cohomologies over Complete Intersection Calabi Yau manifolds. It further contains functions for determining various topological quantities, such as Chern classes, triple intersection and Hodge numbers. Installation is straighforwad with pip
 
 ```console
 pip install pyCICY
@@ -107,6 +105,11 @@ mostly in the line bundle cohomology checks.
 ## Literature
 
 The module has been developed in the context of the following papers:
+
+- Lara B. Anderson, Andrei Constantin, James Gray, Yang-Hui He, Seung-Joo Lee (Jun 25, 2026) CIPro Package: Complete Intersections in Products of Projective Spaces and Line Bundles
+  - https://arxiv.org/pdf/2606.27588
+- Lara B. Anderson, James Gray, Sunit A. Patil, Caoimhín Scanlon (2025) Mapping moduli across heterotic conifolds
+  - https://arxiv.org/pdf/2512.18124
 
 ```tex
 @article{Larfors:2019sie,
