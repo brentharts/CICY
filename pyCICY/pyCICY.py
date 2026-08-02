@@ -45,7 +45,10 @@ from random import randint
 import scipy as sc
 import scipy.special
 from scipy.special import comb
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:  # pragma: no cover - matplotlib is only needed for plotting
+    plt = None
 import math
 import time
 from texttable import Texttable
@@ -111,6 +114,15 @@ class CICY:
         self.K = len(conf[0])-1 # = #hyper surfaces
         self.dimA = sum([self.M[i][0] for i in range(self.len)])
         self.nfold = self.dimA-self.K
+        if self.nfold < 2:
+            raise ValueError(
+                'pyCICY supports Calabi-Yau 2-, 3- and 4-folds, but this '
+                'configuration describes a {}-fold (dim(A) = {}, {} hypersurfaces). '
+                'Cohomology and Hodge data are not implemented for it.'.format(
+                    int(self.nfold), int(self.dimA), int(self.K)))
+        if self.nfold > 4:
+            logger.warning('This is a %d-fold. Hodge data is only implemented '
+                           'for 2-, 3- and 4-folds.', int(self.nfold))
         self.N = np.array([[self.M[i][j] for j in range(1, self.K+1)] for i in range(self.len)])
 
         # check if actually CICY
@@ -328,7 +340,7 @@ class CICY:
         >>> M.c2(0,1)
         2.5
         """
-        sumqq = np.sum([self.M[r][i]*self.M[s][i] for i in range(1,self.K+1)], dtype=np.float32)
+        sumqq = int(np.sum(self.N[r].astype(np.int64)*self.N[s].astype(np.int64)))
         if r==s:
             delta = self.M[r][0]+1
         else:
@@ -402,7 +414,7 @@ class CICY:
         >>> M.c3(0,1,1)
         -3.6666666666666665
         """
-        sumqqq = np.sum([self.M[r][i]*self.M[s][i]*self.M[t][i] for i in range(1,self.K+1)], dtype=np.float32)
+        sumqqq = int(np.sum(self.N[r].astype(np.int64)*self.N[s].astype(np.int64)*self.N[t].astype(np.int64)))
         if r==s and r==t:
             delta = self.M[r][0]+1
         else:
@@ -489,7 +501,7 @@ class CICY:
         if self.nfold == 3 or self.nfold == 2:
             logger.error('{} is a Calabai Yau {}-fold.'.format(self.M, self.nfold))
         
-        sumqqqq = np.sum([self.M[r][i]*self.M[s][i]*self.M[t][i]*self.M[u][i] for i in range(1,self.K+1)], dtype=np.float32)
+        sumqqqq = int(np.sum(self.N[r].astype(np.int64)*self.N[s].astype(np.int64)*self.N[t].astype(np.int64)*self.N[u].astype(np.int64)))
         if r==s and r==t and r==u:
             delta = self.M[r][0]+1
         else:
@@ -1025,10 +1037,11 @@ class CICY:
             e =  np.einsum('rstu,rstu', d, c4)
         elif self.nfold == 2:
             e = 24
-        self.euler = e
         #int(e) makes 0.9999 float to 0 which comes from the third Chern,
-        # hence we use round
-        return round(e)
+        # hence we use round. We cache the *rounded* value, otherwise every
+        # call after the first returns the raw accumulated float instead.
+        self.euler = round(e)
+        return self.euler
 
     def _fill_moduli(self, seed):
         """Determines a tuple with monomials and their (redundant) complex moduli
@@ -1438,6 +1451,36 @@ class CICY:
     def hodge_data(self):
         r"""
         Determines the hodge numbers of the CICY. Based on Euler and adjunction sequence.
+
+        This is a thin wrapper around :meth:`_hodge_data_impl`. The implementation
+        temporarily sets ``self.fav = False`` (so that the many internal ``line_co``
+        calls do not take the favourable shortcut) and lowers the logger level.
+        Neither was restored on every return path, so calling ``hodge_data()`` after
+        construction used to permanently corrupt ``self.fav`` and leave the logger
+        muted. The try/finally below guarantees both are put back.
+
+        Returns
+        -------
+        h: array[nfold+1]
+            hodge numbers of the CICY.
+
+        Example
+        -------
+        >>> M = CICY([[2,2,1],[3,1,3]])
+        >>> M.hodge_data()
+        [0, 59, 2.0, 0]
+        """
+        old_fav = self.fav
+        old_level = int(logger.level)
+        try:
+            return self._hodge_data_impl()
+        finally:
+            self.fav = old_fav
+            logger.setLevel(level=old_level)
+
+    def _hodge_data_impl(self):
+        r"""
+        Determines the hodge numbers of the CICY. Based on Euler and adjunction sequence.
         I checked the results for all three folds against the ones found in the CICYlist.
         The computation of the four fold hodge numbers, however, has only been checked for some selected examples.
         Hence, the results should be taken with care and compared to the literature.
@@ -1735,14 +1778,14 @@ class CICY:
         #smatrix = np.zeros((dim_V1, dim_V2), dtype=np.int16)
         smatrix = np.zeros((dim_V2, dim_V1), dtype=np.int32)
         if np.array_equal(V1, np.zeros(self.len)):
-            source = np.zeros((1,np.sum(self.M[:,0])+self.len)).astype(np.int)
+            source = np.zeros((1,np.sum(self.M[:,0])+self.len)).astype(int)
         else:
             source = self._makepoly(V1, dim_V1) #only consider positive exponents
         moduli = np.subtract(V2, V1) # the modulimaps can contain derivatives
         dim_mod = self._brackets_dim(moduli)
         mod_polys = self._makepoly(moduli, dim_mod)
         if np.array_equal(V2, np.zeros(self.len)):
-            v2poly = np.zeros((1,np.sum(self.M[:,0])+self.len)).astype(np.int)
+            v2poly = np.zeros((1,np.sum(self.M[:,0])+self.len)).astype(int)
         else:
             v2poly = self._makepoly(V2, dim_V2)
         # loop over all monomials
@@ -2365,11 +2408,11 @@ class CICY:
                     for k in range(len(missing_maps)):
                         if len(tmp_map) == 0:
                             target = entry1+inter_tensors[:,k]*self.N[:, missing_maps[k]]
-                            target = target.astype(np.int)
+                            target = target.astype(int)
                             tmp_map = self._single_map(entry1, v1dim[i],  target, self._brackets_dim(target), missing_maps[k])
                         else:
                             target_next = target + inter_tensors[:,k] * self.N[:, missing_maps[k]]
-                            target_next = target_next.astype(np.int)
+                            target_next = target_next.astype(int)
                             new_map = self._single_map(target, self._brackets_dim(target), target_next, 
                                                  self._brackets_dim(target_next), missing_maps[k])
                             if new_map.shape[1] == tmp_map.shape[0]:
@@ -2631,6 +2674,9 @@ class CICY:
             stable = False
 
         #Use euler + vanishing theorem to simplify
+        # solution stays empty for nfolds we have no simplification for;
+        # otherwise it is unbound below.
+        solution = []
         if short:
             if self.nfold == 3:
                 if stable:
@@ -2856,6 +2902,10 @@ class CICY:
 
         if not self.fav:
             logger.warning('CICY is not favourable results are going to be misleading.')
+        if plt is None:
+            raise ImportError(
+                'matplotlib is required for plotting. Install it with '
+                '"pip install matplotlib".')
         fig, ax = plt.subplots()
         x_coordinates = []
         y_coordinates = []
@@ -2994,7 +3044,7 @@ class CICY:
             if n_conf > 5000:
                 logger.warning('You are scanning over {} configurations.'.format(n_conf))
         else:
-            tuples = np.eye(self.len, dtype=np.int)
+            tuples = np.eye(self.len, dtype=int)
 
         for coeff in tuples:
 
