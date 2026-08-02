@@ -51,6 +51,8 @@ __all__ = [
     "split", "splits", "contract", "is_contractible",
     "nodes_expected", "transition", "check_configuration",
     "dimensions", "is_calabi_yau",
+    "chern_character_2", "chern_character_2_from_c2", "transition_ch2",
+    "class_str",
 ]
 
 
@@ -413,6 +415,304 @@ def _hodge(conf, log=3):
         }
     finally:
         cy_logger.removeFilter(mute)
+
+
+def _reduce_class(dims, cls):
+    """Drop monomials killed by J_r^{n_r+1} = 0 in a degree-2 class."""
+    out = {}
+    for (r, s), coeff in cls.items():
+        if coeff == 0:
+            continue
+        if r == s and dims[r] < 2:
+            continue          # J_r^2 = 0 on a P^1 factor
+        out[(r, s)] = coeff
+    return out
+
+
+def _square(dims, lin):
+    """Square a linear form sum_r lin[r] J_r, as a degree-2 class."""
+    m = len(lin)
+    out = {}
+    for r in range(m):
+        for s in range(r, m):
+            c = lin[r] * lin[s] * (1 if r == s else 2)
+            if c:
+                out[(r, s)] = out.get((r, s), 0) + c
+    return _reduce_class(dims, out)
+
+
+def _product(dims, u, v):
+    """Product of two linear forms, as a degree-2 class."""
+    m = len(u)
+    out = {}
+    for r in range(m):
+        for s in range(m):
+            c = u[r] * v[s]
+            if not c:
+                continue
+            key = (min(r, s), max(r, s))
+            out[key] = out.get(key, 0) + c
+    return _reduce_class(dims, out)
+
+
+def _add(dims, a, b, sign=1):
+    out = dict(a)
+    for k, v in b.items():
+        out[k] = out.get(k, 0) + sign * v
+    return _reduce_class(dims, {k: v for k, v in out.items() if v != 0})
+
+
+def chern_character_2(conf):
+    r"""Second Chern character of the tangent bundle, as an ambient class.
+
+    From the Euler sequence for the ambient space and the adjunction sequence
+    for the complete intersection,
+
+        ch(TA) = sum_r [ (n_r + 1) e^{J_r} - 1 ],
+        ch(TX) = ch(TA)|_X - sum_a ch(O(q_a)),
+
+    the degree-2 part is
+
+        ch_2(TX) = 1/2 [ sum_r (n_r + 1) J_r^2 - sum_a (q_a . J)^2 ],
+
+    reduced modulo J_r^{n_r+1} = 0.
+
+    Returns
+    -------
+    dict
+        ``{(r, s): coefficient}`` with ``r <= s``, the coefficient of
+        ``J_r J_s``. Coefficients are exact Fractions.
+
+    Notes
+    -----
+    This is a class in the ambient cohomology restricted to X, which is how
+    arXiv:2512.18124 writes it (their eq. 1.24 in terms of D_1, D_2). The
+    representation is not faithful: an ambient class can restrict to zero on
+    X, which is exactly what happens to J_1 for the re-embedded deformation
+    of :func:`transition_ch2`.
+
+    Example
+    -------
+    The quintic and its split, arXiv:2512.18124 eq. (1.24).
+
+    >>> chern_character_2([[4, 5]])
+    {(0, 0): Fraction(-10, 1)}
+    >>> sorted(chern_character_2([[1, 1, 1], [4, 1, 4]]).items())
+    [((0, 1), Fraction(-5, 1)), ((1, 1), Fraction(-6, 1))]
+    """
+    from fractions import Fraction
+
+    M = _as_matrix(conf)
+    m, kk = M.shape[0], M.shape[1] - 1
+    dims = [int(M[i, 0]) for i in range(m)]
+
+    total = {}
+    for r in range(m):
+        if dims[r] >= 2:
+            total[(r, r)] = total.get((r, r), 0) + Fraction(dims[r] + 1)
+    for c in range(kk):
+        q = [int(M[i, 1 + c]) for i in range(m)]
+        for k, v in _square(dims, q).items():
+            total[k] = total.get(k, 0) - Fraction(v)
+
+    return _reduce_class(dims, {k: v / 2 for k, v in total.items() if v != 0})
+
+
+def chern_character_2_from_c2(conf):
+    r"""The same class, obtained from pyCICY's second Chern class instead.
+
+    For a Calabi-Yau, c_1 = 0 and hence
+
+        ch_2 = (c_1^2 - 2 c_2) / 2 = -c_2 .
+
+    pyCICY computes c_2^{rs} by an unrelated route (:meth:`CICY.c2`), so
+    comparing this against :func:`chern_character_2` checks the adjunction
+    formula above against an independent implementation. :func:`transition_ch2`
+    reports the comparison.
+    """
+    from fractions import Fraction
+
+    try:
+        from .pyCICY import CICY
+    except ImportError:
+        from pyCICY import CICY
+
+    import logging
+    cy_logger = logging.getLogger("pyCICY")
+
+    def mute(record):
+        return False
+
+    cy_logger.addFilter(mute)
+    try:
+        M = _as_matrix(conf)
+        dims = [int(M[i, 0]) for i in range(M.shape[0])]
+        X = CICY([[int(v) for v in row] for row in M])
+        out = {}
+        for r in range(len(dims)):
+            for s in range(r, len(dims)):
+                # c_2 = sum_{r,s} c_2^{rs} J_r J_s; off-diagonal terms are
+                # counted twice in that sum.
+                coeff = Fraction(X.c2(r, s)).limit_denominator(10 ** 6)
+                coeff = coeff * (1 if r == s else 2)
+                if coeff:
+                    out[(r, s)] = -coeff
+        return _reduce_class(dims, out)
+    finally:
+        cy_logger.removeFilter(mute)
+
+
+def _reembed_deformation(conf, column):
+    """Put the deformation side into the ambient space of its split.
+
+    A split at ``column`` adds a P^1 factor. The deformation is described in
+    that same larger ambient space by cutting the new P^1 down to a point:
+    one equation of degree 1 on the P^1 and 0 elsewhere, plus the original
+    equations with degree 0 on the P^1. This is the manoeuvre of
+    arXiv:2512.18124 eq. (1.29), which lets both sides of the transition be
+    written in one ambient space so their classes can be compared.
+
+    >>> _reembed_deformation([[4, 5]], 0)
+    [[1, 1, 0], [4, 0, 5]]
+    """
+    M = _as_matrix(conf)
+    m, kk = M.shape[0], M.shape[1] - 1
+    others = [c for c in range(kk) if c != column]
+
+    rows = [[1] + [0] * len(others) + [1, 0]]
+    for i in range(m):
+        rows.append([int(M[i, 0])] + [int(M[i, 1 + c]) for c in others]
+                    + [0, int(M[i, 1 + column])])
+    return rows
+
+
+def transition_ch2(conf, column, partition):
+    r"""Verify the second Chern character relation across a conifold transition.
+
+    Checks arXiv:2512.18124 eq. (1.8),
+
+        ch_2(T X_R) = ch_2(T X_D) + [P^1_s] ,
+
+    with both sides written in the ambient space of the resolution, and
+    relates the exceptional class to the bridging curves of eq. (1.3),
+
+        [C_R] = [C_D] - [P^1_s] .
+
+    Writing the two split equations as ``x_0 f_1 + x_1 f_2`` and
+    ``x_0 g_1 + x_1 g_2``, the bridging curve on the deformation is cut by
+    the multidegrees a and b of the partition, and on the resolution by
+    ``x_0 = 0`` together with the unsplit degree q:
+
+        [C_D] = (a . J)(b . J),      [C_R] = J_0 (q . J) .
+
+    Returns
+    -------
+    dict
+        ch2_deformation, ch2_resolution, exceptional, c_deformation,
+        c_resolution : classes as ``{(r, s): coeff}`` in the resolution's
+        ambient basis, with index 0 the new P^1.
+        bridging_matches : bool
+            Whether ch_2(T X_R) - ch_2(T X_D) equals [C_D] - [C_R].
+        independent_check : dict
+            Comparison of :func:`chern_character_2` against
+            :func:`chern_character_2_from_c2` for both sides.
+
+    Notes
+    -----
+    ``bridging_matches`` is an *algebraic identity* given the adjunction
+    formula, not an independent test: substituting q = a + b into
+    ch_2(T X_R) - ch_2(T X_D) reproduces (a.J)(b.J) - J_0 (q.J) term by term.
+    It is reported because it confirms the bookkeeping and the re-embedding
+    are consistent, but it cannot detect an error in the adjunction formula
+    itself. The genuine check is ``independent_check``, which compares against
+    pyCICY's separately implemented second Chern class.
+
+    Example
+    -------
+    The quintic split, arXiv:2512.18124 eq. (1.24): ch_2(T X_R) =
+    -5 D_1 D_2 - 6 D_2^2, ch_2(T X_D) = -10 D_2^2, [P^1_s] = -5 D_1 D_2 +
+    4 D_2^2.
+
+    >>> t = transition_ch2([[4, 5]], 0, [1])
+    >>> sorted(t["ch2_resolution"].items())
+    [((0, 1), Fraction(-5, 1)), ((1, 1), Fraction(-6, 1))]
+    >>> sorted(t["exceptional"].items())
+    [((0, 1), Fraction(-5, 1)), ((1, 1), Fraction(4, 1))]
+    """
+    M = _as_matrix(conf)
+    m, kk = M.shape[0], M.shape[1] - 1
+    if not (0 <= column < kk):
+        raise ValueError("column %d out of range 0..%d" % (column, kk - 1))
+    part = [int(p) for p in partition]
+    if len(part) != m:
+        raise ValueError("partition needs one entry per projective factor")
+
+    resolution = split(M, column, part)
+    deformation = _reembed_deformation(M, column)
+
+    dims = [int(r[0]) for r in resolution]
+    ch2_r = chern_character_2(resolution)
+    ch2_d = chern_character_2(deformation)
+    exceptional = _add(dims, ch2_r, ch2_d, sign=-1)
+
+    # Linear forms in the resolution's ambient basis; index 0 is the new P^1.
+    a = [0] + part
+    b = [0] + [int(M[i, 1 + column]) - part[i] for i in range(m)]
+    q = [0] + [int(M[i, 1 + column]) for i in range(m)]
+    j0 = [1] + [0] * m
+
+    c_def = _product(dims, a, b)
+    c_res = _product(dims, j0, q)
+    predicted = _add(dims, c_def, c_res, sign=-1)
+
+    independent = {}
+    for name, cfg, computed in (("resolution", resolution, ch2_r),
+                                ("deformation", deformation, ch2_d)):
+        try:
+            other = chern_character_2_from_c2(cfg)
+            independent[name] = {
+                "agrees": other == computed,
+                "from_c2": other,
+            }
+        except Exception as exc:
+            independent[name] = {"agrees": None,
+                                 "error": "%s: %s" % (type(exc).__name__, exc)}
+
+    return {
+        "resolution_conf": resolution,
+        "deformation_conf": deformation,
+        "ch2_resolution": ch2_r,
+        "ch2_deformation": ch2_d,
+        "exceptional": exceptional,
+        "c_deformation": c_def,
+        "c_resolution": c_res,
+        "bridging_matches": exceptional == predicted,
+        "independent_check": independent,
+    }
+
+
+def class_str(cls, names=None):
+    """Render a degree-2 class as a readable string, e.g. ``-5 D0 D1 + 4 D1^2``."""
+    if not cls:
+        return "0"
+    terms = []
+    for (r, s), coeff in sorted(cls.items()):
+        nr = names[r] if names else "D%d" % r
+        ns = names[s] if names else "D%d" % s
+        mono = "%s^2" % nr if r == s else "%s %s" % (nr, ns)
+        c = coeff
+        if c == 1:
+            terms.append("+ %s" % mono)
+        elif c == -1:
+            terms.append("- %s" % mono)
+        else:
+            sign = "-" if c < 0 else "+"
+            mag = -c if c < 0 else c
+            if getattr(mag, "denominator", 1) == 1:
+                mag = int(mag)
+            terms.append("%s %s %s" % (sign, mag, mono))
+    out = " ".join(terms)
+    return out[2:] if out.startswith("+ ") else out.replace("- ", "-", 1)
 
 
 def _ambient_intersection(dims, classes):
