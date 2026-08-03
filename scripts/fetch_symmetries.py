@@ -84,6 +84,49 @@ def download(url, timeout=300):
     return raw.decode("utf-8", errors="replace")
 
 
+def report_comments(text):
+    """Print every Mathematica comment, plus the head of the file.
+
+    The JSON output preserves the data but not the comments, and comments are
+    where a data file usually documents what its fields mean. The boolean
+    leading each symmetry record is not explained by the data itself, so this
+    is the cheapest place to look before reaching for the paper.
+    """
+    print("\n--- first 600 characters ---")
+    print(text[:600])
+
+    comments = []
+    i = 0
+    while True:
+        start = text.find("(*", i)
+        if start < 0:
+            break
+        depth = 1
+        j = start + 2
+        while j < len(text) and depth:
+            if text.startswith("(*", j):
+                depth += 1
+                j += 2
+            elif text.startswith("*)", j):
+                depth -= 1
+                j += 2
+            else:
+                j += 1
+        comments.append((start, text[start:j]))
+        i = j
+
+    print("\n--- %d comment(s) ---" % len(comments))
+    for offset, body in comments[:40]:
+        condensed = " ".join(body.split())
+        if len(condensed) > 300:
+            condensed = condensed[:297] + "..."
+        print("  @%d: %s" % (offset, condensed))
+    if len(comments) > 40:
+        print("  ... %d more" % (len(comments) - 40))
+    if not comments:
+        print("  (none; the conventions are not documented in the file)")
+
+
 def parse_file(text):
     """Parse the whole file, tolerating several statements."""
     print("parsing Mathematica syntax (%d chars)" % len(text))
@@ -192,7 +235,19 @@ def main(argv=None):
     ap.add_argument("--from-file", default=None)
     ap.add_argument("--probe", action="store_true",
                     help="report the structure and stop, writing nothing")
-    ap.add_argument("--keep-raw", action="store_true")
+    ap.add_argument("--no-keep-raw", action="store_true",
+                    help="do not save the downloaded cicylist.m alongside "
+                         "the JSON (it is saved by default, since the raw "
+                         "file is the only record of conventions the JSON "
+                         "does not preserve, such as comments)")
+    ap.add_argument("--comments", action="store_true",
+                    help="print the comments and header of the file and "
+                         "stop. Mathematica comments are the most likely "
+                         "place for the field conventions to be documented, "
+                         "and the parser discards them.")
+    ap.add_argument("--context", type=int, default=None,
+                    help="print the raw text around this byte offset, for "
+                         "inspecting a construct the parser rejected")
     args = ap.parse_args(argv)
 
     if args.from_file:
@@ -206,6 +261,17 @@ def main(argv=None):
             print("Fetch it manually from %s" % args.url)
             print("then re-run with --from-file cicylist.m")
             return 2
+
+    if args.context is not None:
+        lo = max(0, args.context - 400)
+        hi = min(len(text), args.context + 400)
+        print("\n--- raw text around offset %d ---" % args.context)
+        print(text[lo:hi])
+        return 0
+
+    if args.comments:
+        report_comments(text)
+        return 0
 
     exprs = parse_file(text)
     if exprs is None:
@@ -320,11 +386,12 @@ def main(argv=None):
     print("reference: Braun's classification is usually quoted as giving "
           "%d quotients" % REFERENCE_QUOTIENTS)
 
-    if args.keep_raw:
+    if not args.no_keep_raw and not args.from_file:
         raw_out = os.path.join(args.outdir, "cicylist.m")
         with open(raw_out, "w") as fh:
             fh.write(text)
-        print("wrote %s" % raw_out)
+        print("wrote %s (%.1f MB)"
+              % (raw_out, os.path.getsize(raw_out) / 1e6))
     return 0
 
 
