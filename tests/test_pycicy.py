@@ -1,13 +1,20 @@
 """
 Regression tests for pyCICY on modern Python / NumPy.
 
-Run with:  python3 test_pycicy.py
+Run with:  python3 tests/test_pycicy.py
+       or: python3 run_tests.py  (runs every suite)
 (or: pytest test_pycicy.py)
 
 These cover the breakages found when bringing the package up to
 Python 3.12 / NumPy 2.x, plus correctness checks against values from
 the CICY literature.
 """
+
+import os
+import sys
+
+# Prefer the source tree over any installed copy of pyCICY.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import logging
 import sys
