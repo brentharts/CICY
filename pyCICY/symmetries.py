@@ -45,6 +45,7 @@ __all__ = [
     "group_order", "load_symmetries", "symmetry_orders",
     "three_generation_models", "coverage_report", "UnknownGroup",
     "generator_matrices", "matrix_group_order",
+    "parse_symmetry_records", "SymmetryRecord",
 ]
 
 
@@ -220,6 +221,101 @@ def matrix_group_order(generators, max_order=4096):
     return len(seen)
 
 
+# ------------------------------------------------- the Oxford record format
+#
+# Each symmetry in the Mathematica file is a list of five fields:
+#
+#   0  freeness flag, "True"
+#   1  {generators, {order, index}}   -- the GAP SmallGroup identifier
+#   2  {"True", {invariants}} if the group is abelian, else {"False"}
+#   3  further per-projective-space data
+#   4  further per-projective-space data
+#
+# The order is therefore read directly from the GAP identifier rather than
+# reconstructed from the generator matrices, which is both exact and much
+# cheaper. For abelian groups the product of the invariants gives an
+# independent check on that order, and disagreements are surfaced rather
+# than resolved silently.
+
+
+class SymmetryRecord(object):
+    """One freely acting symmetry as recorded in the Oxford data."""
+
+    __slots__ = ("order", "gap_index", "free", "abelian", "invariants",
+                 "consistent")
+
+    def __init__(self, order, gap_index, free, abelian, invariants):
+        self.order = order
+        self.gap_index = gap_index
+        self.free = free
+        self.abelian = abelian
+        self.invariants = invariants
+        if abelian and invariants:
+            product = 1
+            for value in invariants:
+                product *= value
+            self.consistent = (product == order)
+        else:
+            self.consistent = None      # no independent check available
+
+    def __repr__(self):
+        return "SymmetryRecord(order=%s, gap=[%s,%s], abelian=%s)" % (
+            self.order, self.order, self.gap_index, self.abelian)
+
+
+def _truthy(value):
+    return str(value) == "True"
+
+
+def parse_symmetry_records(record):
+    """Structured view of the symmetries recorded for one CICY.
+
+    Returns ``(records, problems)``: a list of :class:`SymmetryRecord` and a
+    list of strings describing anything that did not fit the expected shape.
+    Nothing is guessed at; an entry that does not match is reported.
+    """
+    syms = record.get("symmetries")
+    out = []
+    problems = []
+
+    if syms is None or isinstance(syms, str) or not isinstance(syms, list):
+        if isinstance(syms, str):
+            problems.append("symmetry field is the string %r" % syms)
+        return out, problems
+
+    for entry in syms:
+        if not (isinstance(entry, list) and len(entry) >= 3):
+            problems.append("symmetry entry has %s fields, expected at least 3"
+                            % (len(entry) if isinstance(entry, list) else "?"))
+            continue
+        free = _truthy(entry[0])
+        gid = entry[1][1] if (isinstance(entry[1], list) and len(entry[1]) > 1) \
+            else None
+        if not (isinstance(gid, list) and len(gid) == 2
+                and all(isinstance(x, int) for x in gid)):
+            problems.append("no GAP identifier in symmetry entry")
+            continue
+        order, index = gid
+
+        abelian = False
+        invariants = None
+        field2 = entry[2]
+        if isinstance(field2, list) and field2:
+            abelian = _truthy(field2[0])
+            if abelian and len(field2) > 1 and isinstance(field2[1], list) \
+                    and all(isinstance(x, int) for x in field2[1]):
+                invariants = list(field2[1])
+
+        item = SymmetryRecord(order, index, free, abelian, invariants)
+        if item.consistent is False:
+            problems.append(
+                "GAP order %d disagrees with abelian invariants %r"
+                % (order, invariants))
+        out.append(item)
+
+    return out, problems
+
+
 def load_symmetries(path):
     """Load ``data/symmetries.json`` produced by the fetch script."""
     if not os.path.exists(path):
@@ -296,8 +392,13 @@ def symmetry_orders(record, strict=False):
     if syms is None:
         return [], []
 
-    # Prefer explicit generator matrices, which is what the Oxford file
-    # actually carries; fall back to names for data in other formats.
+    # The Oxford data carries a GAP SmallGroup identifier, which gives the
+    # order exactly; use it when present.
+    structured, _problems = parse_symmetry_records(record)
+    if structured:
+        return sorted({r.order for r in structured if r.free}), []
+
+    # Otherwise fall back to generator matrices, then to names.
     matrices = generator_matrices(syms)
     if matrices:
         order = matrix_group_order(matrices)
