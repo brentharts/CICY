@@ -1,125 +1,183 @@
-import os, sys, argparse, ast
-import numpy as np
-import matplotlib.pyplot as plt
+#!/usr/bin/env python3
+"""
+Phenomenological analysis of a CICY configuration.
+
+What this reports is what the topology determines: the charged spectrum of
+the heterotic standard embedding, the net number of chiral generations, and
+the order a freely acting symmetry would need for three generations.
+
+What it does not report is masses or couplings. The proton-to-electron mass
+ratio is not a function of the configuration matrix. Physical Yukawa
+couplings need the Kahler normalisation of the fields, hence the Ricci-flat
+metric, which is not known in closed form on any compact Calabi-Yau
+threefold; the overall scale needs the supersymmetry breaking mechanism; the
+gauge coupling needs the dilaton vacuum expectation value. All of these need
+the moduli stabilised, which is unsolved. Passing
+--proton-electron-mass-ratio therefore prints the reason rather than a
+number. See pyCICY.phenomenology for the full statement.
+
+Usage
+-----
+    python3 scripts/stdmodel.py --cicy '[[4,5]]'
+    python3 scripts/stdmodel.py --cicy '[[4,5]]' --symmetry-order 1
+    python3 scripts/stdmodel.py --survey data/cicylist.json --out /tmp
+"""
+
+import argparse
+import ast
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from pyCICY import CICY
-from pyCICY.smoothness import is_smooth
 
-# Standard Model known constants
-SM_MU_RATIO = 1836.152673  # m_p / m_e
-SM_ALPHA_INV = 137.035999  # Fine-structure constant inverse
+from pyCICY import phenomenology as P
+from pyCICY import transitions as T
 
-def compute_mass_ratio(conf_matrix):
-    """
-    PLACEHOLDER: First-principles string theory mass ratio calculation.
-    Currently, this returns a mock value based on the manifold's dimension 
-    and configuration shape, as exact mass derivation from topology alone 
-    is an unsolved problem in string phenomenology.
-    """
-    # Convert to numpy array to extract basic properties
-    M = np.array(conf_matrix, dtype=np.int16)
-    dim_A = sum([M[i][0] for i in range(len(M))])
-    
-    # Mock calculation: generating a pseudo-random ratio based on the matrix hash
-    # Replace this with your Type II analytical approximations later.
-    pseudo_val = abs(hash(str(conf_matrix))) % 500
-    predicted_ratio = 1500 + pseudo_val 
-    
-    return predicted_ratio
 
-def analyze_topology(conf_matrix):
-    """
-    Uses pyCICY to run heavy topological calculations.
-    """
-    print("\n--- Running Heavy Topological Analysis ---")
-    
-    # Initialize the CICY object
-    M = CICY(conf_matrix, log=3)
-    
-    if not M.CY:
-        print("Warning: This configuration does not belong to a Calabi-Yau manifold.")
-        
-    print(f"Manifold Fold: {M.nfold}-fold")
-    
-    # pyCICY supports Hodge data for 2-, 3-, and 4-folds
-    if 2 <= M.nfold <= 4:
-        print(f"Euler Characteristic: {M.euler}")
-        print(f"Hodge Numbers: {M.h}")
-        if M.nfold == 3:
-            print(f"Favourable: {M.fav}")
+def analyse(conf, symmetry_order=1):
+    print("configuration: %r" % (conf,))
+    info = T.check_configuration(conf)
+    print("  dim X            %d" % info["dim_X"])
+    print("  Calabi-Yau       %s" % info["calabi_yau"])
+    for w in info["warnings"]:
+        print("  warning          %s" % w)
+    if not info["calabi_yau"] or info["dim_X"] != 3:
+        print("\nGeneration counting applies to Calabi-Yau threefolds only.")
+        return None
+
+    spec = P.standard_embedding_spectrum(conf, symmetry_order=symmetry_order)
+    print("\nheterotic standard embedding, V = TX")
+    print("  gauge group      %s" % spec["gauge_group"])
+    print("  chi              %d" % spec["euler"])
+    print("  h^{1,1}          %d" % spec["h11"])
+    print("  h^{2,1}          %d" % spec["h21"])
+    print("  n(27)            %s" % spec["n_27"])
+    print("  n(27-bar)        %s" % spec["n_27bar"])
+    print("  |Gamma|          %d" % spec["symmetry_order"])
+    print("  net generations  %d" % spec["net_generations"])
+    for n in spec["notes"]:
+        print("  note             %s" % n)
+
+    need = P.required_symmetry_order(spec["euler"], 3)
+    print("\nfor three generations")
+    if need is None:
+        print("  no integer |Gamma| works: |chi|/6 is not an integer")
     else:
-        print("Hodge data is only supported for 2-, 3-, and 4-folds.")
-        
-    return M
+        print("  would need a freely acting Gamma of order |chi|/6 = %d" % need)
+        print("  (existence of such an action is a separate question, settled")
+        print("   for the CICY list by Braun, arXiv:1003.3235, not here)")
+    return spec
 
-def plot_ratio_comparison(predicted_mu):
+
+def survey(path, outdir=None, generations=3):
+    from pyCICY import cicylist as L
+
+    entries = L.load_published_list(path)
+    result = P.generation_survey(entries, generations=generations)
+
+    print("surveying %d published CICYs for %d-generation candidates"
+          % (result["entries"], generations))
+    print("  chi = 0                      %d" % result["zero_euler"])
+    print("  |chi| divisible by 2*%d       %d"
+          % (generations, result["candidates"]))
+    print("  smallest |chi| (non-zero)    %d" % result["min_abs_euler"])
+    print("  |chi| = %d ever occurs?       %s"
+          % (2 * generations, not result["needs_quotient"]))
+    if result["needs_quotient"]:
+        print("  -> a non-trivial free quotient is always required")
+
+    orders = result["required_orders"]
+    print("\n  required |Gamma|   CICYs")
+    for k in sorted(orders)[:12]:
+        print("    %-14d %d" % (k, orders[k]))
+
+    if outdir:
+        _plot_survey(result, outdir)
+    return result
+
+
+def _plot_survey(result, outdir):
+    """Plot what was computed: the distribution of required |Gamma|.
+
+    There is deliberately no plot of a predicted mass ratio. A bar chart
+    comparing a computed value with a measured constant is only meaningful
+    when the computed value exists.
     """
-    Plots the predicted mass ratio against the real Standard Model value.
-    """
-    labels = ['Standard Model', 'String Theory (Type II CY Prediction)']
-    values = [SM_MU_RATIO, predicted_mu]
-    colors = ['blue', 'orange']
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots(figsize=(8, 6))
-    bars = ax.bar(labels, values, color=colors, alpha=0.7)
-    
-    # Add a dashed line for the target Standard Model value
-    ax.axhline(y=SM_MU_RATIO, color='r', linestyle='--', label=f'Target: {SM_MU_RATIO:.2f}')
-    
-    ax.set_ylabel(r'Proton-to-Electron Mass Ratio ($\mu = m_p/m_e$)')
-    ax.set_title('CY Configuration vs. Standard Model')
-    ax.set_ylim(0, max(SM_MU_RATIO, predicted_mu) * 1.2)
-    ax.legend()
+    orders = result["required_orders"]
+    ks = sorted(k for k in orders if k <= 24)
+    vals = [orders[k] for k in ks]
 
-    # Label the bars with exact values
-    for bar in bars:
-        height = bar.get_height()
-        ax.annotate(f'{height:.2f}',
-                    xy=(bar.get_x() + bar.get_width() / 2, height),
-                    xytext=(0, 3),  # 3 points vertical offset
-                    textcoords="offset points",
-                    ha='center', va='bottom')
+    fig, ax = plt.subplots(figsize=(8, 4.4))
+    ax.bar([str(k) for k in ks], vals, alpha=0.85)
+    ax.set_xlabel(r"required $|\Gamma| = |\chi|/6$")
+    ax.set_ylabel("CICYs")
+    ax.set_title("Three-generation candidates among %d CICYs "
+                 "(standard embedding)" % result["entries"])
+    fig.tight_layout()
+    os.makedirs(outdir, exist_ok=True)
+    path = os.path.join(outdir, "generation_candidates.pdf")
+    fig.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print("\nwrote %s" % path)
 
-    plt.tight_layout()
-    plt.show()
 
-def main():
-    parser = argparse.ArgumentParser(description="Analyze CICY configurations for Standard Model phenomenological properties.")
-    parser.add_argument("--cicy", type=str, required=True,
-                        help="CICY configuration matrix as a string, e.g., '[[4, 5]]' for the quintic.")
-    parser.add_argument("--proton-electron-mass-ratio", action="store_true",
-                        help="Fast execution: Skips heavy topological checks and only predicts the mass ratio.")
-    
-    args = parser.parse_args()
-    
-    # Parse the configuration matrix securely
-    try:
-        conf_matrix = ast.literal_eval(args.cicy)
-    except (ValueError, SyntaxError):
-        print("Error: Invalid configuration matrix format. Use format '[[4, 5]]'")
-        return
+def report_mass_ratio():
+    """Print why the mass ratio is not available, instead of inventing one."""
+    why = P.why_not_masses()
+    print("\nrequested: %s" % why["quantity"])
+    print("computable from the configuration matrix: NO\n")
+    print("why not:")
+    for r in why["reasons"]:
+        print("  - %s" % r)
+    print("\nwhat this package can compute instead:")
+    for r in why["what_is_computable"]:
+        print("  - %s" % r)
+    print("\nNo number is printed and no plot is produced, deliberately: a")
+    print("placeholder value shown beside the measured ratio would be")
+    print("indistinguishable from a derived one.")
 
-    print(f"Input Configuration: {conf_matrix}")
 
-    # Fast track: Only compute mass ratio
+def main(argv=None):
+    ap = argparse.ArgumentParser(
+        description=__doc__.strip().split("\n")[0],
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--cicy", type=str,
+                    help="configuration matrix, e.g. '[[4,5]]'")
+    ap.add_argument("--symmetry-order", type=int, default=1,
+                    help="|Gamma| of a freely acting symmetry (default 1)")
+    ap.add_argument("--survey", type=str, default=None,
+                    help="path to data/cicylist.json; survey the whole list")
+    ap.add_argument("--generations", type=int, default=3)
+    ap.add_argument("--out", default=None, help="directory for plots")
+    ap.add_argument("--proton-electron-mass-ratio", action="store_true",
+                    help="explain why this is not computable from topology")
+    args = ap.parse_args(argv)
+
     if args.proton_electron_mass_ratio:
-        print("\n[Fast Mode Enabled]: Skipping heavy topology calculations.")
-        predicted_mu = compute_mass_ratio(conf_matrix)
-        print(f"Predicted mass ratio (mu): {predicted_mu:.4f}")
-        plot_ratio_comparison(predicted_mu)
-        return
+        report_mass_ratio()
+        if not args.cicy:
+            return 0
 
-    # Standard track: Run pyCICY topology checks first
-    M = analyze_topology(conf_matrix)
-    
-    # Calculate mass ratio
-    print("\n--- Computing Phenomenological Ratios ---")
-    predicted_mu = compute_mass_ratio(conf_matrix)
-    print(f"Predicted mass ratio (mu): {predicted_mu:.4f}")
-    
-    # Plot results
-    plot_ratio_comparison(predicted_mu)
+    if args.survey:
+        survey(args.survey, outdir=args.out, generations=args.generations)
+        return 0
+
+    if not args.cicy:
+        ap.error("give --cicy or --survey")
+
+    try:
+        conf = ast.literal_eval(args.cicy)
+    except (ValueError, SyntaxError):
+        print("Error: invalid configuration matrix. Use e.g. '[[4,5]]'")
+        return 2
+
+    analyse(conf, symmetry_order=args.symmetry_order)
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
