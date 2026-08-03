@@ -248,22 +248,78 @@ SYM = os.path.join(ROOT, "data", "symmetries.json")
 CICY = os.path.join(ROOT, "data", "cicylist.json")
 if os.path.exists(SYM) and os.path.exists(CICY):
     from pyCICY import cicylist as L
+    from pyCICY import phenomenology as P
 
     entries = L.load_published_list(CICY)
     syms = S.load_symmetries(SYM)
-    report = S.coverage_report(entries, syms)
-    print("  CICYs with a recorded symmetry: %d"
-          % report["with_nontrivial_symmetry"])
-    print("  order distribution: %s" % report["order_distribution"])
-    check_true("no unrecognised group names",
-               report["unknown_groups"] == {})
-    res = S.three_generation_models(entries, syms)
-    print("  three-generation models, exact order: %d" % res["n_exact"])
-    print("  by divisibility:                      %d"
-          % res["n_by_divisibility"])
-    check_true("some models were found", res["n_exact"] >= 0)
+
+    # The Mathematica file carries 31 records beyond the 7890 of the text
+    # list, numbered 7891-7921 with the symmetry field set to "unknown".
+    check("records in the Mathematica file", len(syms), 7921)
+    unknown = [r for r in syms if r["symmetries"] == "unknown"]
+    check("records marked unknown", len(unknown), 31)
+    check_true("they are the ones beyond 7890",
+               all(r["num"] > 7890 for r in unknown))
+
+    with_data = [r for r in syms
+                 if isinstance(r["symmetries"], list) and r["symmetries"]]
+    # Braun's classification: 195 CICYs admit freely acting symmetries.
+    check("CICYs carrying symmetry data", len(with_data), 195)
+
+    total = 0
+    problems = 0
+    orders = {}
+    for rec in with_data:
+        parsed, probs = S.parse_symmetry_records(rec)
+        total += len(parsed)
+        problems += len(probs)
+        for item in parsed:
+            orders[item.order] = orders.get(item.order, 0) + 1
+    # Lukas and Mishra, CMP 379 (2020) 847, quote 1695 quotients arising
+    # from Braun's classification.
+    check("symmetry records in total", total, 1695)
+    check_true("every record yielded a GAP order", sum(orders.values()) == 1695)
+    # One record in the file has a GAP order that disagrees with its own
+    # abelian invariants (order 8 against invariants [2, 8]). That is an
+    # inconsistency in the source data; it is surfaced, not resolved.
+    check("records failing their own consistency check", problems, 1)
+    check_true("group orders are all at least 2", min(orders) >= 2)
+
+    # The Tian-Yau manifold: CICY 536, chi = -18, with a free Z_3 giving
+    # chi = -6 and hence three generations. This is the first
+    # three-generation Calabi-Yau ever constructed, and it should fall out
+    # of the search rather than being put in by hand.
+    ty = [r for r in entries if r["num"] == 536][0]
+    check("CICY 536 configuration", ty["conf"], [[3, 3, 0, 1], [3, 0, 3, 1]])
+    check("its Euler characteristic", ty["euler"], -18)
+    check("order needed for three generations",
+          P.required_symmetry_order(ty["euler"], 3), 3)
+    ty_syms = [r for r in syms if r["num"] == 536][0]
+    parsed, _ = S.parse_symmetry_records(ty_syms)
+    check_true("a group of order 3 is recorded for it",
+               3 in {x.order for x in parsed})
+
+    # The full search: of the configurations whose Euler characteristic
+    # permits three generations, how many carry a group of exactly the
+    # required order.
+    by_num = {r["num"]: r for r in syms}
+    hits = []
+    for rec in entries:
+        need = P.required_symmetry_order(rec["euler"], 3)
+        if need is None:
+            continue
+        sym = by_num.get(rec["num"])
+        if not sym:
+            continue
+        parsed, _ = S.parse_symmetry_records(sym)
+        if need in {x.order for x in parsed}:
+            hits.append(rec["num"])
+    check_true("the Tian-Yau manifold is among the hits", 536 in hits)
+    check_true("the search is highly selective", 0 < len(hits) < 20)
+    print("  three-generation models found: %s" % sorted(hits))
 else:
-    print("  data/symmetries.json absent; run scripts/fetch_symmetries.py")
+    print("  data absent; run scripts/fetch_cicy_list.py and "
+          "scripts/fetch_symmetries.py")
     print("  (this section is skipped, not failed)")
 
 # --------------------------------------------------------------------------
