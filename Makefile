@@ -1,0 +1,128 @@
+# Makefile for pyCICY
+#
+#   make            same as `make paper`
+#   make figures    regenerate every plot used by the paper
+#   make paper      figures, then pdflatex twice -> paper/supplementary_material.pdf
+#   make test       run every test suite
+#   make survey     print the split-web survey to the terminal
+#   make clean      remove LaTeX build litter
+#   make distclean  also remove generated figures and the PDF
+#   make cache-info / cache-clear   inspect or empty the computation cache
+#
+# The paper is built with pdflatex run twice: the first pass writes the .aux
+# file, the second resolves the table of contents and the cleveref/hyperref
+# cross-references, which would otherwise show up as ?? in the PDF.
+#
+# Figures are regenerated from source rather than checked in. The heavy
+# cohomology is memoised by pyCICY.cache (SQLite, under /tmp by default, see
+# PYCICY_CACHE), so only the first build pays full price.
+
+PYTHON      ?= python3
+PDFLATEX    ?= pdflatex
+PAPERDIR    := paper
+FIGDIR      := $(PAPERDIR)/figures
+TEX         := supplementary_material.tex
+PDF         := $(PAPERDIR)/supplementary_material.pdf
+FIGSCRIPT   := $(PAPERDIR)/make_figures.py
+
+# Depth of the splitting survey used for the figures. Raising this makes the
+# first build slower but explores more of the web; see section 6 of the paper.
+DEPTH       ?= 3
+COMPARE_LIMIT ?= 500
+MAX_CONFIGS ?= 1200
+
+# The figure script writes these; facts.json carries the scalars quoted in
+# the prose so the text and the plots cannot drift apart.
+FIGURES := $(FIGDIR)/hodge_depth.pdf \
+           $(FIGDIR)/hodge_favourable.pdf \
+           $(FIGDIR)/node_counts.pdf \
+           $(FIGDIR)/node_validation.pdf \
+           $(FIGDIR)/web_growth.pdf \
+           $(FIGDIR)/quintic_surface.pdf \
+           $(FIGDIR)/ch2_check.pdf \
+           $(FIGDIR)/gv_invariants.pdf \
+           $(FIGDIR)/additivity.pdf \
+           $(FIGDIR)/facts.json $(FIGDIR)/facts.tex
+
+# Sources whose modification should invalidate the figures.
+PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
+
+.PHONY: all paper figures test survey clean distclean cache-info cache-clear data symmetries compare help
+
+all: paper
+
+# ---------------------------------------------------------------- figures
+
+figures: $(FIGDIR)/.stamp
+
+$(FIGDIR)/.stamp: $(PYSRC)
+	@echo "==> generating figures (depth $(DEPTH))"
+	@mkdir -p $(FIGDIR)
+	$(PYTHON) $(FIGSCRIPT) --outdir $(FIGDIR) --depth $(DEPTH) \
+	    --max-configs $(MAX_CONFIGS)
+	@touch $@
+
+# ------------------------------------------------------------------ paper
+
+paper: $(PDF)
+
+# pdflatex is run twice on purpose; see the note at the top of this file.
+# -interaction=nonstopmode keeps a bad reference from hanging the build, and
+# the exit status is still checked so a real error fails the make.
+$(PDF): $(PAPERDIR)/$(TEX) $(FIGDIR)/.stamp
+	@echo "==> pdflatex pass 1/2"
+	cd $(PAPERDIR) && $(PDFLATEX) -interaction=nonstopmode -halt-on-error $(TEX) >/dev/null
+	@echo "==> pdflatex pass 2/2 (resolving cross-references)"
+	cd $(PAPERDIR) && $(PDFLATEX) -interaction=nonstopmode -halt-on-error $(TEX) >/dev/null
+	@echo "==> wrote $(PDF)"
+	@if grep -q 'Reference.*undefined' $(PAPERDIR)/supplementary_material.log; then \
+	    echo "WARNING: undefined references remain:"; \
+	    grep 'Reference.*undefined' $(PAPERDIR)/supplementary_material.log | sort -u; \
+	fi
+
+# ------------------------------------------------------------------ other
+
+test:
+	$(PYTHON) run_tests.py
+
+# Download the published CICY three-fold list. The data is redistributed by
+# its authors, not by pyCICY, so it is fetched rather than vendored.
+data:
+	$(PYTHON) scripts/fetch_cicy_list.py --outdir data
+
+# Braun's freely acting symmetries, from the Mathematica version of the list.
+symmetries:
+	$(PYTHON) scripts/fetch_symmetries.py --outdir data
+
+compare: data
+	$(PYTHON) -c "from pyCICY import cicylist as L; \
+	e = L.load_published_list('data/cicylist.json'); \
+	r = L.compare_to_published(e, limit=$(COMPARE_LIMIT)); \
+	print('checked', r['checked'], 'agree', r['agree'], \
+	      'disagree', len(r['disagree']), 'errors', len(r['errors']))"
+
+survey:
+	$(PYTHON) examples/split_survey.py --depth $(DEPTH) \
+	    --max-configs $(MAX_CONFIGS)
+
+cache-info:
+	@$(PYTHON) -c "from pyCICY import cache; import json; \
+	print(json.dumps(cache.cache_info(), indent=2))"
+
+cache-clear:
+	@$(PYTHON) -c "from pyCICY import cache; \
+	print('removed', cache.clear_cache(), 'entries')"
+
+clean:
+	rm -f $(PAPERDIR)/*.aux $(PAPERDIR)/*.log $(PAPERDIR)/*.out \
+	      $(PAPERDIR)/*.toc $(PAPERDIR)/*.fls $(PAPERDIR)/*.fdb_latexmk
+	find . -name '__pycache__' -type d -prune -exec rm -rf {} +
+	rm -rf build *.egg-info
+
+distclean: clean
+	rm -f $(PDF) $(FIGURES) $(FIGDIR)/.stamp
+	-rmdir $(FIGDIR) 2>/dev/null || true
+
+help:
+	@echo "targets: all paper figures test survey clean distclean cache-info cache-clear"
+	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) PYTHON=$(PYTHON)"
