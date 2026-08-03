@@ -315,6 +315,37 @@ if os.path.exists(SYM) and os.path.exists(CICY):
         if need in {x.order for x in parsed}:
             hits.append(rec["num"])
     check_true("the Tian-Yau manifold is among the hits", 536 in hits)
+
+    # The leading boolean in each record is not freeness: the literature is
+    # explicit that all 1695 symmetries in this classification act freely
+    # (195 CICYs carrying 1695 symmetries, hence 1695 quotients). So the
+    # flagged subset must not be used to filter, and the count stands at 3.
+    # What the flag does mark is undetermined, but constrained: every
+    # true-flagged record has prime-power order, and every non-prime-power
+    # order is false-flagged. The converse fails.
+    def _prime_power(n):
+        d = 2
+        while d * d <= n:
+            if n % d == 0:
+                while n % d == 0:
+                    n //= d
+                return n == 1
+            d += 1
+        return True
+
+    true_orders, false_orders = [], []
+    for rec in with_data:
+        for entry in rec["symmetries"]:
+            (true_orders if str(entry[0]) == "True" else
+             false_orders).append(entry[1][1][0])
+    check("true-flagged records", len(true_orders), 1199)
+    check("false-flagged records", len(false_orders), 496)
+    check_true("every true-flagged order is a prime power",
+               all(_prime_power(o) for o in true_orders))
+    check_true("every non-prime-power order is false-flagged",
+               not any(not _prime_power(o) for o in true_orders))
+    check_true("but the converse fails, so it is not simply a p-group flag",
+               any(_prime_power(o) for o in false_orders))
     check_true("the search is highly selective", 0 < len(hits) < 20)
     print("  three-generation models found: %s" % sorted(hits))
 else:
