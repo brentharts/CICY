@@ -47,6 +47,7 @@ literature, not computed here.
 """
 
 import itertools as it
+import os
 import time
 
 from . import transitions as T
@@ -54,7 +55,8 @@ from .cache import default_cache, hodge
 
 __all__ = [
     "SEEDS", "split_web", "load_list", "contract_to_seed", "survey",
-    "web_edges", "web_nodes",
+    "web_edges", "web_nodes", "check_list",
+    "load_published_list", "compare_to_published", "published_coverage",
 ]
 
 
@@ -267,6 +269,181 @@ def survey(web):
 
 
 # ------------------------------------------------------------- list loading
+
+def load_published_list(path):
+    """Load the published CICY three-fold list produced by the fetch script.
+
+    ``scripts/fetch_cicy_list.py`` downloads the list from
+
+        https://www-thphys.physics.ox.ac.uk/projects/CalabiYau/cicylist/
+
+    and writes ``data/cicylist.json``. The data is redistributed by its
+    authors and is not bundled with pyCICY, so this raises a helpful error
+    rather than a bare FileNotFoundError when the file is absent.
+
+    Returns a list of records with keys ``num``, ``conf``, ``h11``, ``h21``,
+    ``euler``, ``c2``, where ``conf`` is in pyCICY form.
+    """
+    import json
+
+    if not os.path.exists(path):
+        raise FileNotFoundError(
+            "%s not found. The published CICY list is distributed by its "
+            "authors and is not bundled with pyCICY; run\n"
+            "    python3 scripts/fetch_cicy_list.py\n"
+            "to download and convert it." % path)
+    with open(path) as fh:
+        payload = json.load(fh)
+    if isinstance(payload, dict):
+        return payload["entries"]
+    return payload
+
+
+class _EntryTimeout(BaseException):
+    """Raised when an entry exceeds its wall-clock budget.
+
+    Deliberately derived from BaseException, not Exception: the Hodge
+    computation wraps failures in a broad ``except Exception`` and caches
+    them as permanent errors, so a timeout derived from Exception would be
+    swallowed and recorded as if the entry were unevaluable. It would then
+    never be retried, even with a larger budget.
+    """
+
+
+def _time_limited(seconds, fn):
+    """Run ``fn`` under a wall-clock limit, raising _EntryTimeout if exceeded.
+
+    Uses SIGALRM, so it only works on the main thread of a POSIX process. If
+    that is unavailable the call simply runs unbounded rather than failing.
+    """
+    import signal
+
+    if seconds is None or not hasattr(signal, "SIGALRM"):
+        return fn()
+
+    def handler(signum, frame):
+        raise _EntryTimeout()
+
+    old = signal.signal(signal.SIGALRM, handler)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        return fn()
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old)
+
+
+def compare_to_published(entries, limit=None, cache=None, progress=None,
+                         skip_products=True, time_limit=None):
+    """Recompute Hodge data for published entries and compare.
+
+    This is the validation the generated web of :func:`split_web` cannot
+    provide: an entry-by-entry check of pyCICY's cohomology against the
+    values of Green, Hubsch and Lutken carried in the published list.
+
+    Parameters
+    ----------
+    entries : list
+        Records from :func:`load_published_list`.
+    limit : int or None
+        Check only the first ``limit`` entries. The full list takes a long
+        time on first run; results are cached, so a later full run only pays
+        for what it has not seen.
+    skip_products : bool
+        The list records the direct-product manifolds with
+        h^{1,1} = h^{2,1} = 0 as a placeholder rather than as their actual
+        Hodge numbers. Comparing against those would manufacture spurious
+        disagreements, so they are reported separately by default.
+    time_limit : float or None
+        Wall-clock budget per entry, in seconds. The cost of a single entry
+        varies by orders of magnitude -- the median is a few hundredths of a
+        second, but the tail runs to minutes -- so without a budget one
+        pathological configuration stalls the whole comparison. Entries that
+        exceed it are counted in ``timed_out`` and are deliberately **not**
+        cached, so a later run with a larger budget will attempt them again.
+
+    Returns
+    -------
+    dict with ``checked``, ``agree``, ``disagree`` (a list of records),
+    ``errors``, ``skipped_products``, and ``by_field`` counting which of
+    h^{1,1}, h^{2,1}, chi disagreed.
+    """
+    cache = cache if cache is not None else default_cache()
+    if limit is not None:
+        entries = entries[:limit]
+
+    agree = 0
+    disagree = []
+    errors = []
+    timed_out = []
+    skipped = 0
+    by_field = {"h11": 0, "h21": 0, "euler": 0}
+
+    for i, rec in enumerate(entries):
+        if skip_products and rec["h11"] == 0 and rec["h21"] == 0:
+            skipped += 1
+            continue
+        try:
+            got = _time_limited(time_limit,
+                                lambda: hodge(rec["conf"], cache=cache))
+        except _EntryTimeout:
+            timed_out.append(rec["num"])
+            continue
+        if got.get("error"):
+            errors.append({"num": rec["num"], "error": got["error"]})
+            continue
+        mismatch = {}
+        if got["h11"] != rec["h11"]:
+            mismatch["h11"] = (rec["h11"], got["h11"])
+            by_field["h11"] += 1
+        if got["h21"] != rec["h21"]:
+            mismatch["h21"] = (rec["h21"], got["h21"])
+            by_field["h21"] += 1
+        if got["euler"] != rec["euler"]:
+            mismatch["euler"] = (rec["euler"], got["euler"])
+            by_field["euler"] += 1
+        if mismatch:
+            disagree.append({"num": rec["num"], "conf": rec["conf"],
+                             "mismatch": mismatch})
+        else:
+            agree += 1
+        if progress is not None and (i + 1) % 100 == 0:
+            progress(i + 1, len(entries), agree, len(disagree))
+
+    return {
+        "checked": agree + len(disagree),
+        "agree": agree,
+        "disagree": disagree,
+        "errors": errors,
+        "timed_out": timed_out,
+        "skipped_products": skipped,
+        "by_field": by_field,
+    }
+
+
+def published_coverage(entries, web):
+    """How much of the published list the generated web reproduces.
+
+    Matches on normal form, so a configuration found by splitting counts as
+    covering a published entry only if the two are related by a relabelling
+    of projective factors and defining equations.
+    """
+    published = {}
+    for rec in entries:
+        try:
+            published[T.canonical_key(rec["conf"])] = rec["num"]
+        except ValueError:
+            continue
+    found = set(web["nodes"])
+    hit = found & set(published)
+    return {
+        "published": len(published),
+        "generated": len(found),
+        "in_both": len(hit),
+        "fraction_of_published": len(hit) / len(published) if published else 0.0,
+        "generated_not_published": len(found - set(published)),
+    }
+
 
 def load_list(path, limit=None):
     """Read a CICY configuration list from a text file.

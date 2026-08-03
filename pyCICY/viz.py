@@ -43,6 +43,7 @@ import numpy as np
 __all__ = [
     "patch", "patches", "bounds", "from_cicy", "describe",
     "plot", "plot_grid", "write_stl", "DEFAULT_ANGLE",
+    "plot_hodge", "plot_node_counts",
 ]
 
 DEFAULT_ANGLE = 0.4
@@ -179,6 +180,102 @@ def describe(n):
 
 
 # ------------------------------------------------------------------ plotting
+
+def plot_hodge(records, ax=None, color_by="depth", cmap="viridis",
+               annotate=(), title=None, alpha=0.75):
+    """Hodge plot of a set of Calabi-Yau threefolds.
+
+    The conventional presentation for the CICY list: the Euler characteristic
+    chi = 2(h^{1,1} - h^{2,1}) horizontally against h^{1,1} + h^{2,1}
+    vertically, so mirror pairs sit symmetrically about chi = 0.
+
+    Parameters
+    ----------
+    records : iterable of dict
+        Each needs ``h11`` and ``h21``; ``depth`` and ``favourable`` are used
+        for colouring when present. This is the shape produced by
+        :func:`pyCICY.cicylist.web_nodes`.
+    color_by : {'depth', 'favourable', 'none'}
+        'depth' shades by how many splits were needed to reach the
+        configuration; 'favourable' contrasts favourable descriptions
+        against the rest.
+    annotate : iterable of (h11, h21, label)
+        Points to label, for calling out specific manifolds.
+    """
+    import matplotlib.pyplot as plt
+
+    recs = [r for r in records
+            if r.get("h11") is not None and r.get("h21") is not None]
+    if not recs:
+        raise ValueError("no records with Hodge numbers to plot")
+
+    if ax is None:
+        fig = plt.figure(figsize=(9, 6))
+        ax = fig.add_subplot(111)
+
+    h11 = np.array([float(r["h11"]) for r in recs])
+    h21 = np.array([float(r["h21"]) for r in recs])
+    chi = 2 * (h11 - h21)
+    height = h11 + h21
+
+    if color_by == "depth" and all("depth" in r for r in recs):
+        c = np.array([r["depth"] for r in recs])
+        sc = ax.scatter(chi, height, c=c, cmap=cmap, s=26, alpha=alpha,
+                        edgecolors="none")
+        cb = ax.figure.colorbar(sc, ax=ax)
+        cb.set_label("splits from a seed")
+    elif color_by == "favourable" and all("favourable" in r for r in recs):
+        fav = np.array([bool(r["favourable"]) for r in recs])
+        ax.scatter(chi[fav], height[fav], s=26, alpha=alpha,
+                   label="favourable", edgecolors="none")
+        ax.scatter(chi[~fav], height[~fav], s=26, alpha=alpha,
+                   label="not favourable", edgecolors="none")
+        ax.legend(frameon=False)
+    else:
+        ax.scatter(chi, height, s=26, alpha=alpha, edgecolors="none")
+
+    ax.axvline(0, color="0.6", lw=0.8, zorder=0)
+    ax.set_xlabel(r"$\chi = 2(h^{1,1} - h^{2,1})$")
+    ax.set_ylabel(r"$h^{1,1} + h^{2,1}$")
+    ax.set_title(title if title is not None
+                 else "%d configurations, %d distinct Hodge pairs"
+                 % (len(recs), len({(a, b) for a, b in zip(h11, h21)})))
+
+    for a, b, label in annotate:
+        ax.annotate(label, (2 * (a - b), a + b),
+                    textcoords="offset points", xytext=(6, 6), fontsize=9)
+        ax.scatter([2 * (a - b)], [a + b], s=70, facecolors="none",
+                   edgecolors="crimson", linewidths=1.4, zorder=5)
+    return ax
+
+
+def plot_node_counts(edges, ax=None, bins=30, title=None):
+    """Distribution of node counts N over the split edges of a web.
+
+    N is the number of nodes of the singular variety joining the two sides of
+    the conifold transition. N = 0 marks an ineffective split, which changes
+    no topology at all, so those are separated out rather than buried in the
+    first bin.
+    """
+    import matplotlib.pyplot as plt
+
+    if ax is None:
+        fig = plt.figure(figsize=(9, 5))
+        ax = fig.add_subplot(111)
+
+    counts = [int(e["nodes"]) for e in edges]
+    zero = sum(1 for n in counts if n == 0)
+    positive = [n for n in counts if n > 0]
+
+    if positive:
+        ax.hist(positive, bins=bins, alpha=0.85, edgecolor="none")
+    ax.set_xlabel("nodes $N$ of the singular variety")
+    ax.set_ylabel("split edges")
+    ax.set_title(title if title is not None
+                 else "%d effective splits (plus %d ineffective, $N=0$)"
+                 % (len(positive), zero))
+    return ax
+
 
 def plot(n, a=DEFAULT_ANGLE, res=30, ax=None, cmap="viridis",
          elev=30, azim=45, title=None, equal_aspect=True,

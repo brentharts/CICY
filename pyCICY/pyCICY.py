@@ -45,10 +45,8 @@ from random import randint
 import scipy as sc
 import scipy.special
 from scipy.special import comb
-try:
-    import matplotlib.pyplot as plt
-except ImportError:  # pragma: no cover - matplotlib is only needed for plotting
-    plt = None
+# matplotlib is imported lazily inside the one function that plots, so that
+# importing pyCICY stays fast and does not require a plotting stack.
 import math
 import time
 from texttable import Texttable
@@ -2902,7 +2900,9 @@ class CICY:
 
         if not self.fav:
             logger.warning('CICY is not favourable results are going to be misleading.')
-        if plt is None:
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
             raise ImportError(
                 'matplotlib is required for plotting. Install it with '
                 '"pip install matplotlib".')

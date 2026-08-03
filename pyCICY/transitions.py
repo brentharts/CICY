@@ -65,7 +65,12 @@ def _as_matrix(conf):
     each row is the dimension of the projective factor, the rest are the
     degrees of the K defining equations in that factor.
     """
-    M = np.array(conf, dtype=np.int64)
+    try:
+        M = np.array(conf, dtype=np.int64)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(
+            "configuration must be a rectangular matrix of integers; every "
+            "row needs the same length (%s)" % exc)
     if M.ndim != 2:
         raise ValueError("configuration must be a 2D matrix, got shape %r"
                          % (M.shape,))
@@ -94,35 +99,34 @@ def is_calabi_yau(conf):
 
 # --------------------------------------------------------- normal forms
 
-def _refine(M):
-    """Partition rows and columns into classes by iterated signature refinement.
+def _refine_labels(M, rlab, clab):
+    """Refine row and column labels until stable.
 
-    Returns ``(row_classes, col_classes)``, each a list of lists of indices.
-    Rows in different classes can never be exchanged by a symmetry of the
-    configuration, so the search in :func:`normal_form` only has to consider
-    permutations inside a class. Without this the search would be m! * K!.
+    Each row is described by its dimension, its current label, and the
+    multiset of (degree, column label) pairs it carries; dually for columns.
+    Rows in different classes can never be exchanged by a symmetry, so this
+    cuts the search enormously. It does not, on its own, always reach a total
+    order: highly symmetric configurations (many P^1 factors with degrees 0
+    and 1) refine to large classes and need the individualisation step in
+    :func:`normal_form`.
     """
     m, kk = M.shape[0], M.shape[1] - 1
-    rlab = [0] * m
-    clab = [0] * kk
+    rlab = list(rlab)
+    clab = list(clab)
 
     for _ in range(m + kk + 2):
-        # A row is described by its dimension, its current label, and the
-        # multiset of (degree, column label) pairs it contains; and dually.
         rsig = [(int(M[i, 0]), rlab[i],
                  tuple(sorted((int(M[i, 1 + c]), clab[c]) for c in range(kk))))
                 for i in range(m)]
         csig = [(clab[c],
                  tuple(sorted((int(M[i, 1 + c]), rlab[i]) for i in range(m))))
                 for c in range(kk)]
-
         rnew = _relabel(rsig)
         cnew = _relabel(csig)
         if rnew == rlab and cnew == clab:
             break
         rlab, clab = rnew, cnew
-
-    return _classes(rlab), _classes(clab)
+    return rlab, clab
 
 
 def _relabel(sigs):
@@ -137,37 +141,50 @@ def _classes(labels):
     return [groups[k] for k in sorted(groups)]
 
 
-def canonical_key(conf, max_perms=200000):
+def _individualise(labels, index):
+    """Split ``index`` off from its class, ordering it first."""
+    out = [2 * x for x in labels]
+    out[index] -= 1
+    return out
+
+
+def canonical_key(conf, max_nodes=200000):
     """Return the canonical (row-permutation, column-permutation) invariant.
 
     The key is the lexicographically smallest matrix obtainable by permuting
     rows and columns, flattened to a tuple of ints. Two configurations are
     related by relabelling exactly when their keys agree.
     """
-    return normal_form(conf, max_perms=max_perms)[0]
+    return normal_form(conf, max_nodes=max_nodes)[0]
 
 
-def normal_form(conf, max_perms=200000):
+def normal_form(conf, max_nodes=200000):
     """Canonical representative of a configuration under row/column permutation.
+
+    Uses individualisation-refinement, the standard approach to canonical
+    labelling. Labels are refined to a fixed point; if any class is still
+    non-trivial, one of its members is split off in turn and the search
+    recurses, taking the lexicographically smallest matrix over all branches.
+    Refinement alone is not enough on the published CICY list: configurations
+    built from many P^1 factors with degrees 0 and 1 are genuinely symmetric
+    and refine to large classes, which a brute-force product of factorials
+    cannot handle.
 
     Parameters
     ----------
     conf : nested list
         Configuration matrix.
-    max_perms : int
-        Safety limit on the number of candidate permutations examined. The
-        refinement step usually reduces this to a handful; a configuration
-        with many interchangeable rows and columns can still blow up, and
-        rather than run for an unbounded time this raises ValueError.
+    max_nodes : int
+        Budget on search nodes. Exceeding it raises ValueError rather than
+        running unbounded; callers that only need a cache key can fall back
+        to keying on the matrix as written.
 
     Returns
     -------
     key : tuple
-        Flattened canonical matrix, ``(shape, entries...)``.
-    row_perm : tuple
-        ``row_perm[i]`` is the row of the input placed at position i.
-    col_perm : tuple
-        ``col_perm[j]`` is the equation of the input placed at position j.
+        ``(rows, cols) + flattened canonical matrix``.
+    row_perm, col_perm : tuple
+        The permutations producing it.
 
     Example
     -------
@@ -182,50 +199,55 @@ def normal_form(conf, max_perms=200000):
     M = _as_matrix(conf)
     m, kk = M.shape[0], M.shape[1] - 1
 
-    row_classes, col_classes = _refine(M)
+    best = [None]
+    best_perms = [None]
+    nodes = [0]
 
-    n_row = 1
-    for c in row_classes:
-        n_row *= _factorial(len(c))
-    n_col = 1
-    for c in col_classes:
-        n_col *= _factorial(len(c))
-    if n_row * n_col > max_perms:
-        raise ValueError(
-            "configuration has too much symmetry to canonicalise within "
-            "max_perms=%d (%d row x %d column candidates). Raise max_perms "
-            "if you are willing to wait." % (max_perms, n_row, n_col))
+    def search(rlab, clab):
+        nodes[0] += 1
+        if nodes[0] > max_nodes:
+            raise ValueError(
+                "canonicalisation exceeded max_nodes=%d for a %dx%d "
+                "configuration; raise max_nodes if you are willing to wait"
+                % (max_nodes, m, kk))
 
-    best = None
-    best_perms = None
-    for rperm in _class_permutations(row_classes, m):
-        for cperm in _class_permutations(col_classes, kk):
+        rlab, clab = _refine_labels(M, rlab, clab)
+        rcls = _classes(rlab)
+        ccls = _classes(clab)
+
+        target = None
+        for cls in rcls:
+            if len(cls) > 1:
+                target = ("row", cls)
+                break
+        if target is None:
+            for cls in ccls:
+                if len(cls) > 1:
+                    target = ("col", cls)
+                    break
+
+        if target is None:
+            rperm = sorted(range(m), key=lambda i: rlab[i])
+            cperm = sorted(range(kk), key=lambda c: clab[c])
             cand = M[np.ix_(rperm, [0] + [1 + c for c in cperm])]
             key = tuple(cand.ravel().tolist())
-            if best is None or key < best:
-                best = key
-                best_perms = (tuple(rperm), tuple(cperm))
+            if best[0] is None or key < best[0]:
+                best[0] = key
+                best_perms[0] = (tuple(rperm), tuple(cperm))
+            return
 
-    return ((m, kk + 1) + best,) + best_perms
+        kind, cls = target
+        for index in cls:
+            if kind == "row":
+                search(_individualise(rlab, index), clab)
+            else:
+                search(rlab, _individualise(clab, index))
 
-
-def _factorial(n):
-    out = 1
-    for i in range(2, n + 1):
-        out *= i
-    return out
-
-
-def _class_permutations(classes, total):
-    """Yield full index permutations that only permute within each class."""
-    for choice in it.product(*[it.permutations(c) for c in classes]):
-        perm = [i for grp in choice for i in grp]
-        if len(perm) != total:
-            raise AssertionError("class partition does not cover all indices")
-        yield perm
+    search([0] * m, [0] * kk)
+    return ((m, kk + 1) + best[0],) + best_perms[0]
 
 
-def equivalent(conf1, conf2, max_perms=200000):
+def equivalent(conf1, conf2, max_nodes=200000):
     """True if two configurations agree up to row and column permutation.
 
     >>> equivalent([[2, 1, 1], [1, 1, 0], [1, 0, 1]],
@@ -238,7 +260,7 @@ def equivalent(conf1, conf2, max_perms=200000):
         return False
     if sorted(a[:, 0].tolist()) != sorted(b[:, 0].tolist()):
         return False
-    return (normal_form(a, max_perms)[0] == normal_form(b, max_perms)[0])
+    return (normal_form(a, max_nodes)[0] == normal_form(b, max_nodes)[0])
 
 
 # ------------------------------------------------------- splits/contractions
