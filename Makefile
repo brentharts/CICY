@@ -29,6 +29,7 @@ FIGSCRIPT   := $(PAPERDIR)/make_figures.py
 # first build slower but explores more of the web; see section 6 of the paper.
 DEPTH       ?= 3
 COMPARE_LIMIT ?= 500
+FLUX        ?= 1/3
 MAX_CONFIGS ?= 1200
 
 # The figure script writes these; facts.json carries the scalars quoted in
@@ -47,7 +48,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper figures test survey clean distclean cache-info cache-clear data symmetries compare help
+.PHONY: all paper figures test survey toric-survey knot-chirality clean distclean cache-info cache-clear data symmetries compare help
 
 all: paper
 
@@ -105,6 +106,17 @@ survey:
 	$(PYTHON) examples/split_survey.py --depth $(DEPTH) \
 	    --max-configs $(MAX_CONFIGS)
 
+# The sixteen reflexive polygons, their local Calabi-Yau data and the
+# spectra of the 2d lattice models they quantize to (arXiv:1701.01561).
+toric-survey:
+	$(PYTHON) examples/toric_survey.py --flux $(FLUX)
+
+# Chirality of K15n81556 and the failure of additivity of the unknotting
+# number (arXiv:2506.24088, arXiv:2507.14265). SEARCH=N also runs the
+# crossing-change search, which is slow; N=3 takes a few minutes.
+knot-chirality:
+	$(PYTHON) examples/knot_chirality.py $(if $(SEARCH),--search $(SEARCH),)
+
 cache-info:
 	@$(PYTHON) -c "from pyCICY import cache; import json; \
 	print(json.dumps(cache.cache_info(), indent=2))"
@@ -124,5 +136,5 @@ distclean: clean
 	-rmdir $(FIGDIR) 2>/dev/null || true
 
 help:
-	@echo "targets: all paper figures test survey clean distclean cache-info cache-clear"
+	@echo "targets: all paper figures test survey toric-survey knot-chirality clean distclean cache-info cache-clear"
 	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) PYTHON=$(PYTHON)"
