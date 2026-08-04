@@ -49,7 +49,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper figures test survey toric-survey knot-chirality chirality hyperbolic aj new-figures clean distclean cache-info cache-clear data symmetries compare help
+.PHONY: all paper figures test survey toric-survey knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
 
 all: paper
 
@@ -133,6 +133,11 @@ aj:
 hyperbolic:
 	$(PYTHON) examples/hyperbolic_bloch.py --genus $(GENUS)
 
+# The LaTeX supplement describing every figure. Needs the figures first.
+supplement: figures
+	cd paper && pdflatex -interaction=nonstopmode supplementary_material.tex \
+	  && pdflatex -interaction=nonstopmode supplementary_material.tex
+
 new-figures:
 	@$(PYTHON) -c "import matplotlib; matplotlib.use('Agg'); \
 	  import importlib.util as u; \
@@ -140,7 +145,8 @@ new-figures:
 	  m=u.module_from_spec(s); s.loader.exec_module(m); \
 	  import os; d='paper/figures'; os.makedirs(d, exist_ok=True); \
 	  m.figure_polygons(d); m.figure_butterflies(d); \
-	  m.figure_knots(d); m.figure_chirality(d)"
+	  m.figure_knots(d); m.figure_chirality(d); \
+	  m.figure_hyperbolic(d); m.figure_apolynomial(d)"
 
 cache-info:
 	@$(PYTHON) -c "from pyCICY import cache; import json; \
@@ -161,5 +167,5 @@ distclean: clean
 	-rmdir $(FIGDIR) 2>/dev/null || true
 
 help:
-	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality hyperbolic aj new-figures clean distclean cache-info cache-clear"
+	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear"
 	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) PYTHON=$(PYTHON)"
