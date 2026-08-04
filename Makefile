@@ -30,6 +30,7 @@ FIGSCRIPT   := $(PAPERDIR)/make_figures.py
 DEPTH       ?= 3
 COMPARE_LIMIT ?= 500
 FLUX        ?= 1/3
+GENUS       ?= 2
 MAX_CONFIGS ?= 1200
 
 # The figure script writes these; facts.json carries the scalars quoted in
@@ -48,7 +49,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper figures test survey toric-survey knot-chirality chirality new-figures clean distclean cache-info cache-clear data symmetries compare help
+.PHONY: all paper figures test survey toric-survey knot-chirality chirality hyperbolic new-figures clean distclean cache-info cache-clear data symmetries compare help
 
 all: paper
 
@@ -123,6 +124,10 @@ chirality:
 	$(PYTHON) examples/chirality_zoo.py $(if $(DOMAIN),--domain $(DOMAIN),)
 
 # Just the four new figures, without rebuilding the whole split web.
+# Hyperbolic lattices and automorphic Bloch theory (PNAS 2116869119).
+hyperbolic:
+	$(PYTHON) examples/hyperbolic_bloch.py --genus $(GENUS)
+
 new-figures:
 	@$(PYTHON) -c "import matplotlib; matplotlib.use('Agg'); \
 	  import importlib.util as u; \
@@ -151,5 +156,5 @@ distclean: clean
 	-rmdir $(FIGDIR) 2>/dev/null || true
 
 help:
-	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality new-figures clean distclean cache-info cache-clear"
+	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality hyperbolic new-figures clean distclean cache-info cache-clear"
 	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) PYTHON=$(PYTHON)"

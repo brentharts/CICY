@@ -235,6 +235,59 @@ python3 examples/chirality_zoo.py
 python3 examples/chirality_zoo.py --domain curve
 ```
 
+## Hyperbolic lattices
+
+`pyCICY.hyperbolic` implements the automorphic Bloch theory of Maciejko and
+Rayan, *Automorphic Bloch theorems for hyperbolic lattices*,
+[PNAS 119(9) e2116869119](https://doi.org/10.1073/pnas.2116869119). On a
+hyperbolic `{p,q}` lattice the ordinary Bloch theorem fails, because the
+translation group is Fuchsian and not abelian; periodic boundary conditions
+compactify the lattice onto a genus-`g` surface and eigenstates transform
+under a unitary representation of that group.
+
+```python
+from pyCICY import hyperbolic as hyp
+
+hyp.circumradius(8, 8), hyp.solve_circumradius(8, 8)   # closed form vs derived
+hyp.relator_holds(8)          # the octagon side-pairing relator
+hyp.cell_area(8, 8)           # 4*pi*(g-1), so genus 2 by Gauss-Bonnet
+hyp.boundary_fraction(8, 8, 3)
+hyp.compare_sectors(g=2, dims=(1, 2, 3))
+```
+
+Three things are worth flagging. The three standard length formulas
+(`cosh R = cot(pi/p)cot(pi/q)`, `cosh r = cos(pi/q)/sin(pi/p)`,
+`cosh(l/2) = cos(pi/p)/sin(pi/q)`) are easy to permute, so
+`solve_circumradius` derives `R` numerically from the requirement that the
+cell's interior angle be `2*pi/q`, and the tests compare the two. The
+relator of the regular `4g`-gon with opposite sides identified is
+`g0 g1^-1 g2 g3^-1 ... = 1`, which is **not** the canonical surface word
+`prod_i [a_i, b_i] = 1`; both present the same group but in different
+generators, and the tests assert that the canonical word does *not* hold on
+these generators. And Gauss-Bonnet confirms the genus independently, since
+the cell area equals `4*pi*(g-1) = 2*pi*|chi|`.
+
+The abelian sector collapses to `E(k) = 2t sum_j cos k_j` on the Jacobian
+torus `T^{2g}` -- a `2g`-dimensional hypercubic band. Higher-dimensional
+sectors are built from clock and shift matrices, whose commutator
+`[X^a, Z^b] = omega^{-ab}` is a *scalar*, which is what lets the relator be
+solved in closed form.
+
+`boundary_fraction` explains why any of this is needed: for a hyperbolic
+flake it tends to `(p-2)/(p-1)`, not to zero (6/7 for `{8,8}`, 10/11 for
+`{12,12}`), because each ring is `p-1` times the last. A finite patch is
+never a good stand-in for the bulk.
+
+What is **not** implemented is the enumeration of normal subgroups of a
+Fuchsian group, which is what would give the complete set of irreducible
+representations and hence the full spectrum; that is a job for GAP. The
+sectors here are genuine sectors, but nothing claims they exhaust anything.
+
+```console
+python3 examples/hyperbolic_bloch.py
+python3 examples/hyperbolic_bloch.py --genus 3 --plot /tmp
+```
+
 ## Figures
 
 `pyCICY.viz` draws the objects the other modules compute, alongside the
