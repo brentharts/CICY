@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from pyCICY import cache as C
+from pyCICY import chirality as CH
 from pyCICY import cicylist as L
 from pyCICY import enumerative as EN
 from pyCICY import additivity as AD
@@ -467,11 +468,76 @@ def _measure_timing(web_kwargs):
 
 # ----------------------------------------------------------------- driver
 
+
+# ----------------------------------------------------------- fig:polygons
+def figure_polygons(outdir):
+    """The sixteen reflexive polygons with their polar duals.
+
+    Each panel is the toric diagram of a local Calabi-Yau K_S together with
+    its Batyrev mirror P*, and the titles record the twelve theorem.
+    """
+    fig = viz.plot_polygon_grid()
+    return _save(fig, outdir, "fig_polygons.pdf")
+
+
+# --------------------------------------------------------- fig:butterflies
+def figure_butterflies(outdir, qmax=40):
+    """Hofstadter spectra of the local F_0 and local B_3 mirror curves.
+
+    Quantizing the mirror curve of a local toric Calabi-Yau gives an electron
+    on a 2d lattice in a magnetic field (Sugimoto, arXiv:1701.01561). The
+    square Newton polygon of local F_0 gives the square lattice and the
+    classic butterfly; the hexagonal polygon of local B_3 gives the
+    triangular lattice, whose spectrum is not symmetric in E and so is
+    visibly slanted, since E(Phi) = -E(1-Phi) holds regardless.
+    """
+    fig = viz.plot_butterfly_grid(["F0", "B3"], qmax=qmax, nk=6,
+                                  gaps_at=(1, 3))
+    return _save(fig, outdir, "fig_butterflies.pdf")
+
+
+# --------------------------------------------------------------- fig:knots
+def figure_knots(outdir):
+    """K15n81556 against its mirror, and 7_1 # m7_1 as a braid closure.
+
+    Wang and Zhang, arXiv:2507.14265, observed that the two diagrams of
+    K15n81556 in the Brittenham-Hermiller argument are a chiral knot and its
+    mirror image, which the Jones polynomial detects; the left panel is that
+    comparison. The right panel is the connected sum whose unknotting number
+    breaks additivity, drawn as the juxtaposition of the two braid words.
+    """
+    # stacked rather than side by side: the braid is fourteen crossings wide
+    # and three strands tall, so it wants the full width
+    fig = plt.figure(figsize=(9.5, 7.0))
+    ax1 = fig.add_subplot(211)
+    viz.plot_jones("K15n81556", ax=ax1)
+    ax2 = fig.add_subplot(212)
+    viz.plot_braid([1] * 7 + [-2] * 7, strands=3, ax=ax2,
+                   title=r"$7_1 \,\#\, m7_1$, the knot of arXiv:2506.24088")
+    fig.tight_layout()
+    return _save(fig, outdir, "fig_knots.pdf")
+
+
+# ----------------------------------------------------------- fig:chirality
+def figure_chirality(outdir):
+    """One mirror operation over knots, reflexive polygons and threefolds.
+
+    Horizontally the combination of each object's invariant pair that the
+    mirror negates, vertically the one it preserves. Mirror partners sit
+    symmetrically about zero and objects fixed by their involution sit on the
+    axis. The right-hand panel is the conventional Hodge plot in disguise.
+    """
+    fig = viz.plot_chirality_grid()
+    return _save(fig, outdir, "fig_chirality.pdf")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.strip().split("\n")[0])
     ap.add_argument("--outdir", default=None)
     ap.add_argument("--depth", type=int, default=3)
     ap.add_argument("--max-configs", type=int, default=1200)
+    ap.add_argument("--qmax", type=int, default=40,
+                    help="butterfly resolution: largest flux denominator")
     ap.add_argument("--skip-timing", action="store_true",
                     help="skip the cache timing figure, which by design "
                          "cannot use the cache and so is the slow one")
@@ -501,6 +567,10 @@ def main(argv=None):
     _, gen = figure_generations(outdir)
     figure_growth(web, outdir)
     figure_quintic(outdir)
+    figure_polygons(outdir)
+    figure_butterflies(outdir, qmax=args.qmax)
+    figure_knots(outdir)
+    figure_chirality(outdir)
 
     # The cache timing figure was dropped from the paper; the timing is
     # still measured and reported here, but no longer plotted.
