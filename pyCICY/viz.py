@@ -35,6 +35,7 @@ the package computes:
     plot_jones                        Jones polynomial against its mirror
     plot_braid                        braid closures, e.g. 7_1 # m7_1
     plot_chirality                    the cross-domain asymmetry plot
+    plot_hyperbolic_flake             a {p,q} tiling in the Poincare disk
 
 The last is the unifying one. Every chirality record carries an *asymmetry*,
 the combination of its invariant pair that negates under the mirror
@@ -66,6 +67,7 @@ __all__ = [
     "plot_polygon", "plot_polygon_grid",
     "plot_butterfly", "plot_butterfly_grid",
     "plot_jones", "plot_braid", "plot_chirality", "plot_chirality_grid",
+    "plot_hyperbolic_flake",
 ]
 
 DEFAULT_ANGLE = 0.4
@@ -873,3 +875,61 @@ def plot_chirality_grid(records=None, figsize=None):
         ax.legend().set_visible(False)
     fig.tight_layout()
     return fig
+
+
+def plot_hyperbolic_flake(p, q=None, depth=2, ax=None, title=None,
+                          show_bonds=True):
+    """A finite patch of the {p,q} tessellation in the Poincare disk.
+
+    Cell centres are shaded by their distance from the origin in the
+    breadth-first order, and the unit circle is drawn for reference. The
+    picture makes the point that :func:`pyCICY.hyperbolic.boundary_fraction`
+    quantifies: the cells crowd towards the boundary circle, so most of them
+    are always near the rim.
+    """
+    import matplotlib.pyplot as plt
+    from . import hyperbolic as _hyp
+
+    q = p if q is None else q
+    if ax is None:
+        ax = plt.figure(figsize=(5.4, 5.4)).add_subplot(111)
+
+    cells = _hyp.flake(p, q, depth)
+    pts = list(cells)
+    lv = np.array([cells[z] for z in pts], dtype=float)
+
+    circle = plt.Circle((0, 0), 1.0, fill=False, color="0.6", lw=1.0)
+    ax.add_patch(circle)
+
+    if show_bonds:
+        # bonds between adjacent cell centres, drawn as true geodesics:
+        # in the disk these are circular arcs, not chords
+        gens = _hyp.generators(p, q)
+        index = {_hyp._key(z): z for z in pts}
+        drawn = set()
+        for z in pts:
+            for M in gens:
+                w = index.get(_hyp._key(_hyp.apply(M, z)))
+                if w is None:
+                    continue
+                key = tuple(sorted([_hyp._key(z), _hyp._key(w)]))
+                if key in drawn:
+                    continue
+                drawn.add(key)
+                arc = _hyp.geodesic(z, w, n=24)
+                ax.plot(arc.real, arc.imag, color="0.78", lw=0.5, zorder=1)
+
+    sc = ax.scatter([z.real for z in pts], [z.imag for z in pts],
+                    c=lv, cmap="viridis", s=14, zorder=3, edgecolors="none")
+    cb = ax.figure.colorbar(sc, ax=ax, fraction=0.046)
+    cb.set_label("rings from the centre")
+
+    ax.set_xlim(-1.05, 1.05)
+    ax.set_ylim(-1.05, 1.05)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    frac = _hyp.boundary_fraction(p, q, depth)
+    ax.set_title(title if title is not None
+                 else "{%d,%d} cell centres, %d cells, boundary fraction %.3f"
+                      % (p, q, len(pts), frac), fontsize=10)
+    return ax
