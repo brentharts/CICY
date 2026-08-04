@@ -8,7 +8,10 @@ from . import additivity
 from . import phenomenology
 from . import symmetries
 from . import mathematica
+from . import toric
+from . import quantum_curve
 from . import viz
 
 __all__ = ["CICY", "cache", "transitions", "enumerative", "smoothness",
-           "cicylist", "additivity", "phenomenology", "symmetries", "mathematica", "viz"]
+           "cicylist", "additivity", "phenomenology", "symmetries", "mathematica",
+           "toric", "quantum_curve", "viz"]
