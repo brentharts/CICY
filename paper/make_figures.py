@@ -30,6 +30,7 @@ import numpy as np
 
 from pyCICY import cache as C
 from pyCICY import chirality as CH
+from pyCICY import hyperbolic as HY
 from pyCICY import cicylist as L
 from pyCICY import enumerative as EN
 from pyCICY import additivity as AD
@@ -55,12 +56,24 @@ CROSSCHECK_BASES = L.SEEDS + [
 ]
 
 
+# Every figure is written twice: a PDF for the LaTeX supplement and a PNG
+# for the README. GitHub-flavoured Markdown renders PNG inline but will not
+# render an embedded PDF, so the repository needs both.
+WRITTEN = []
+
+
 def _save(fig, outdir, name):
-    path = os.path.join(outdir, name)
-    fig.savefig(path, dpi=160, bbox_inches="tight")
+    """Write a figure as both PDF and PNG; return the PDF path."""
+    stem = os.path.splitext(name)[0]
+    paths = {}
+    for ext, dpi in (("pdf", 160), ("png", 150)):
+        p = os.path.join(outdir, "%s.%s" % (stem, ext))
+        fig.savefig(p, dpi=dpi, bbox_inches="tight")
+        paths[ext] = p
     plt.close(fig)
-    print("  wrote %s" % path)
-    return path
+    WRITTEN.append({"stem": stem, "pdf": paths["pdf"], "png": paths["png"]})
+    print("  wrote %s.{pdf,png}" % os.path.join(outdir, stem))
+    return paths["pdf"]
 
 
 # --------------------------------------------------------------- fig:hodge
@@ -531,6 +544,68 @@ def figure_chirality(outdir):
     return _save(fig, outdir, "fig_chirality.pdf")
 
 
+# ---------------------------------------------------------- fig:apolynomial
+def figure_apolynomial(outdir, nmax=6):
+    """A-polynomial Newton polygons and the colored Jones of the trefoil.
+
+    The upper panels show the Newton polygons of the A-polynomials of the
+    figure-eight and the trefoil, annotated with the coefficients and with
+    the edge slopes. Those slopes are boundary slopes of incompressible
+    surfaces in the knot complement, and they come out at +-4 and 6 = pq
+    respectively. The same lattice points are what the quantum-curve
+    machinery consumes as a hopping set, which is the link between the knot
+    side of the package and the quantized-curve side; the polygons are not
+    reflexive, so what is shared is the quantization rule and not the
+    geometry.
+
+    The lower panel shows the colored Jones polynomials of the trefoil,
+    computed from the Rosso-Jones formula, one row per colour. The span
+    grows quadratically in N. At N = 2 the row is the ordinary Jones
+    polynomial, and agrees exactly with the Kauffman-bracket computation in
+    pyCICY.knots.
+    """
+    fig = plt.figure(figsize=(10, 7.6))
+    ax1 = fig.add_subplot(221)
+    viz.plot_apolynomial("4_1", ax=ax1)
+    ax2 = fig.add_subplot(222)
+    viz.plot_apolynomial("3_1", ax=ax2)
+    ax3 = fig.add_subplot(212)
+    viz.plot_colored_jones(2, 3, nmax=nmax, ax=ax3)
+    fig.tight_layout()
+    return _save(fig, outdir, "fig_apolynomial.pdf")
+
+
+# ---------------------------------------------------------- fig:hyperbolic
+def figure_hyperbolic(outdir, genus=2, maxdepth=5):
+    """A hyperbolic flake, and the boundary fraction that refuses to vanish.
+
+    The left panel is a patch of the {8,8} tessellation in the Poincare
+    disk, whose cell centres are the Bravais lattice of a genus-two surface.
+    Bonds are drawn as true geodesics. The right panel measures the fraction
+    of cells that are not fully coordinated, against flake depth: it tends
+    to (p-2)/(p-1) = 6/7 rather than to zero, because each ring is p-1 times
+    the last. A finite patch is therefore never a good approximation to the
+    bulk, which is why hyperbolic band theory needs periodic boundary
+    conditions and automorphic functions.
+    """
+    p = 4 * genus
+    fig, axes = plt.subplots(1, 2, figsize=(11, 5.0))
+    viz.plot_hyperbolic_flake(p, depth=2, ax=axes[0])
+    depths = list(range(1, maxdepth + 1))
+    axes[1].plot(depths, [HY.boundary_fraction(p, p, d) for d in depths],
+                 "o-", color="tab:blue", label="measured")
+    axes[1].axhline(HY.boundary_fraction_limit(p), color="tab:red", ls="--",
+                    label=r"$(p-2)/(p-1)$")
+    axes[1].set_xlabel("flake depth")
+    axes[1].set_ylabel("boundary fraction")
+    axes[1].set_ylim(0, 1)
+    axes[1].set_xticks(depths)
+    axes[1].legend(frameon=False)
+    axes[1].set_title("the boundary never becomes negligible", fontsize=10)
+    fig.tight_layout()
+    return _save(fig, outdir, "fig_hyperbolic.pdf")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.strip().split("\n")[0])
     ap.add_argument("--outdir", default=None)
@@ -571,6 +646,8 @@ def main(argv=None):
     figure_butterflies(outdir, qmax=args.qmax)
     figure_knots(outdir)
     figure_chirality(outdir)
+    figure_hyperbolic(outdir)
+    figure_apolynomial(outdir)
 
     # The cache timing figure was dropped from the paper; the timing is
     # still measured and reported here, but no longer plotted.
