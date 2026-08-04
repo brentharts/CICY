@@ -48,7 +48,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper figures test survey toric-survey knot-chirality clean distclean cache-info cache-clear data symmetries compare help
+.PHONY: all paper figures test survey toric-survey knot-chirality chirality clean distclean cache-info cache-clear data symmetries compare help
 
 all: paper
 
@@ -117,6 +117,11 @@ toric-survey:
 knot-chirality:
 	$(PYTHON) examples/knot_chirality.py $(if $(SEARCH),--search $(SEARCH),)
 
+# The cross-domain comparison: one mirror operation over knots, reflexive
+# polygons, quantized curves and Calabi-Yau threefolds. DOMAIN=knot narrows it.
+chirality:
+	$(PYTHON) examples/chirality_zoo.py $(if $(DOMAIN),--domain $(DOMAIN),)
+
 cache-info:
 	@$(PYTHON) -c "from pyCICY import cache; import json; \
 	print(json.dumps(cache.cache_info(), indent=2))"
@@ -136,5 +141,5 @@ distclean: clean
 	-rmdir $(FIGDIR) 2>/dev/null || true
 
 help:
-	@echo "targets: all paper figures test survey toric-survey knot-chirality clean distclean cache-info cache-clear"
+	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality clean distclean cache-info cache-clear"
 	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) PYTHON=$(PYTHON)"

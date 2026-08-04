@@ -12,7 +12,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 SUITES = ["tests/test_viz.py", "tests/test_pycicy.py",
           "tests/test_toric.py", "tests/test_quantum_curve.py",
-          "tests/test_knots.py"]
+          "tests/test_knots.py", "tests/test_chirality.py"]
 
 
 def main():

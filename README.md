@@ -184,6 +184,57 @@ python3 examples/knot_chirality.py
 python3 examples/knot_chirality.py --search 3     # slow, finds nothing, as expected
 ```
 
+## Chirality across domains
+
+`pyCICY.chirality` puts one interface over the mirror operations of the other
+modules. Three of them turn out to have the same shape: an involution that
+swaps a pair of integers and preserves their sum or span.
+
+| domain | involution | swapped pair | preserved |
+| --- | --- | --- | --- |
+| knot | mirror image | extreme degrees of `V(t)` | span of `V` |
+| reflexive polygon | polar duality (Batyrev) | `(#dP, #dP*)` | 12 |
+| Calabi-Yau threefold | mirror symmetry | `(h^{1,1}, h^{2,1})` | `h^{1,1} + h^{2,1}` |
+
+```python
+from pyCICY import chirality
+
+chirality.mirror_pair('B3')                 # (6, 6) -- self-dual
+chirality.mirror_invariant('P2')            # 12
+chirality.chirality('K15n81556')['fixed']   # False
+print(chirality.format_survey())
+```
+
+The fixed points are found rather than tabulated: the amphichiral knots of
+the table, the four self-dual reflexive polygons `B3`, `T6`, `Q6`, `P6`, and
+the Hodge pairs with `h^{1,1} = h^{2,1}`. That the preserved quantity is
+meaningful on the knot side is checked through the
+Kauffman-Murasugi-Thistlethwaite theorem: the span of `V` equals the crossing
+number exactly for the alternating knots.
+
+The quantized mirror curve is included as the case where the analogy
+**fails**. Reflecting its Newton polygon leaves the spectrum exactly
+unchanged, so no spectral invariant can detect that involution and
+`chirality` reports `detected=None` rather than `False`. What the spectrum
+does see is bipartiteness, which is a logically independent property: all
+four combinations of the two occur among the sixteen polygons, with `B3`
+fixed by reflection yet spectrally chiral and `T4` the other way round.
+
+Finally, `chirality.cicy_list_chirality()` asks whether the published list of
+7890 CICY threefolds is closed under mirror symmetry. It is not: of the 265
+distinct Hodge pairs, the only ones whose mirror also appears are the two
+self-mirror pairs, so the list contains **no non-trivial mirror pair at all**.
+`h^{1,1}` never exceeds 19 while `h^{2,1}` reaches 101, equivalently every
+Euler characteristic in the list is non-positive. (22 entries record `0` for
+both Hodge numbers; that is a sentinel for "not given" on the product
+configurations, not a value, and it is excluded rather than counted as
+self-mirror.)
+
+```console
+python3 examples/chirality_zoo.py
+python3 examples/chirality_zoo.py --domain curve
+```
+
 ## Tests
 
 ```console
