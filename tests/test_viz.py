@@ -262,6 +262,17 @@ check_true("a constant preserved value still gets a sensible y range",
            lo < 12 < hi and hi - lo > 1)
 plt.close("all")
 
+ax = cy.plot_hyperbolic_flake(8, depth=2)
+check_true("hyperbolic flake plots the cell centres", len(ax.collections) >= 1)
+check_true("hyperbolic flake draws the boundary circle", len(ax.patches) == 1)
+check_true("hyperbolic flake draws geodesic bonds as arcs",
+           all(len(l.get_xdata()) > 2 for l in ax.lines))
+check_true("hyperbolic flake titles with the boundary fraction",
+           "boundary fraction" in ax.get_title())
+ax = cy.plot_hyperbolic_flake(8, depth=1, show_bonds=False)
+check_true("show_bonds=False omits the arcs", len(ax.lines) == 0)
+plt.close("all")
+
 try:
     cy.plot_chirality([r for r in records if r["domain"] == "curve"])
     check_true("curve-only records are rejected", False)
