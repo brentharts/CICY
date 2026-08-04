@@ -1,3 +1,127 @@
+
+
+
+
+`paper/supplementary_material.tex` reproduces and describes all sixteen
+figures in full; what follows is the short version.
+
+### The sixteen reflexive polygons
+
+![The sixteen reflexive polygons with their polar duals](paper/figures/fig_polygons.png)
+
+Each panel is the toric diagram of a local Calabi-Yau `K_S`, drawn with its
+lattice points (solid) and its polar dual `P*` (dashed). The dual is the
+Batyrev mirror. Every title records the twelve theorem,
+`#dP + #dP* = 12`, which holds in all sixteen cases however the boundary
+points are shared out. The classification is not assumed:
+`toric.verify_named()` rederives the list by brute force, and the five smooth
+cases -- `P2`, `F0`, `F1`, `dP2` and `B3 = dP3` -- are *detected* by the
+criterion that the vertex count equal the boundary count, not tabulated.
+
+### Hofstadter spectra of quantized mirror curves
+
+![Hofstadter butterflies for local F_0 and local B_3](paper/figures/fig_butterflies.png)
+
+Quantizing the mirror curve of a local toric Calabi-Yau turns it into an
+electron hopping on a 2d lattice in a magnetic field
+([arXiv:1701.01561](https://arxiv.org/abs/1701.01561)): lattice points of the
+Newton polygon are hopping vectors, and `hbar/2pi` is the flux per unit cell.
+The square polygon of local `F_0` gives the square lattice and the classic
+butterfly; the hexagonal polygon of local `B_3 = dP_3` gives the triangular
+lattice. Annotations at `Phi = 1/3` are gap Chern numbers from the
+Diophantine equation `r = q*s + p*t` with `|t| <= q/2`.
+
+The triangular butterfly is visibly slanted. `E(Phi) = -E(1-Phi)` holds for
+all sixteen geometries, but `E(Phi) = E(1-Phi)` only in the bipartite cases --
+and bipartiteness is a condition on the polygon *modulo two*, not a reflection
+symmetry of it. Only `F_0` and `T4 = P(1,1,2)` are bipartite, so fourteen of
+sixteen spectra are asymmetric in `E`. `B_3` is centrally symmetric as a
+polygon and still spectrally chiral; `T4` is the other way round.
+
+### Chirality of K15n81556, and the additivity counterexample
+
+![Jones polynomial of K15n81556 against its mirror, and 7_1 # m7_1 as a braid](paper/figures/fig_knots.png)
+
+Upper: the Jones polynomial of the fifteen-crossing census knot `K15n81556`
+against that of its mirror, coefficient by coefficient. The two are
+reflections about `t^0` and do not coincide, so the knot is chiral. This
+reproduces the observation of Wang and Zhang
+([arXiv:2507.14265](https://arxiv.org/abs/2507.14265)) that the two diagrams
+of `K15n81556` in the Brittenham-Hermiller argument
+([arXiv:2506.24088](https://arxiv.org/abs/2506.24088)) are a chiral knot and
+its mirror rather than the same knot. The determinant is 39 for both, so
+detecting the chirality needs an invariant not symmetric under `t -> 1/t`.
+
+Lower: the connected sum `7_1 # m7_1`, whose unknotting number breaks
+additivity, as a braid closure. The connected sum of two braid closures is the
+juxtaposition of their words on one more strand than the two together, so this
+is the closure of `s1^7 s2^-7` on three strands; the two halves have visibly
+opposite handedness.
+
+### One mirror operation, three domains
+
+![Chirality across knots, reflexive polygons and Calabi-Yau threefolds](paper/figures/fig_chirality.png)
+
+Three mirror operations of the same shape: each is an involution that swaps a
+pair of integers and preserves their sum or span. Horizontally the combination
+the mirror negates, vertically the one it preserves, so mirror partners sit
+symmetrically about zero (filled = object, hollow = its mirror) and objects
+fixed by their involution lie on the axis. The right-hand panel is the
+conventional Hodge plot in disguise, since its horizontal coordinate is
+`chi/2`.
+
+Quantized curves are absent deliberately: reflecting their Newton polygon
+leaves the spectrum *exactly* unchanged, so no spectral invariant can detect
+that involution, and the package reports it as undetermined rather than as
+achiral.
+
+### Hyperbolic lattices, and why finite patches fail
+
+![A {8,8} flake in the Poincare disk, and its boundary fraction](paper/figures/fig_hyperbolic.png)
+
+Left: a patch of the `{8,8}` tessellation in the Poincare disk. The marked
+points are cell centres, which for the `{4g,4g}` family form the Bravais
+lattice of a genus-`g` surface; bonds are drawn as true geodesics, circular
+arcs meeting the boundary at right angles, not chords.
+
+Right: the fraction of cells that are not fully coordinated, against flake
+depth. It does not tend to zero. Each ring is `p-1` times the last, so the
+rim fraction tends to `(p-2)/(p-1)` -- 6/7 for `{8,8}`, 10/11 for `{12,12}`
+-- shown dashed. A finite patch is therefore never a good stand-in for the
+bulk, which is the quantitative reason hyperbolic band theory needs periodic
+boundary conditions and automorphic functions
+([PNAS 119 e2116869119](https://doi.org/10.1073/pnas.2116869119)).
+
+### A-polynomials and colored Jones
+
+![A-polynomial Newton polygons and colored Jones of the trefoil](paper/figures/fig_apolynomial.png)
+
+Upper: Newton polygons of the A-polynomials of the figure-eight and the
+trefoil, annotated with the coefficient at each lattice point and with the
+edge slopes in red. Those slopes are boundary slopes of incompressible
+surfaces in the knot complement, and come out at `±4` and `6 = pq`.
+
+Lower: the colored Jones polynomials of the trefoil from the Rosso-Jones
+formula, one row per colour, marker shape giving the sign of the coefficient.
+The span grows quadratically in `N`. The row `N = 2` is the ordinary Jones
+polynomial and agrees coefficient for coefficient with the Kauffman-bracket
+computation elsewhere in the package.
+
+The same lattice points are what the quantized-curve machinery consumes as a
+hopping set -- the concrete link between the two ends of the package. That
+link is about the quantization *rule*, not the geometry: a toric diagram is a
+reflexive polygon and an A-polynomial's Newton polygon is not.
+
+### The original CICY figures
+
+The split-web figures are described in the supplement and rebuilt by
+`make figures`: `hodge_depth`, `hodge_favourable`, `node_counts`,
+`node_validation`, `ch2_check`, `gv_invariants`, `additivity`, `generations`,
+`web_growth` and `quintic_surface`. The most important is `node_validation`,
+which checks the node count from ambient intersection theory against the count
+inferred from the Euler characteristic -- two computations with no shared code
+that must land on the same integer for every split, and do.
+
 # pyCICY
 
 A python CICY toolkit, which allows the computation of line bundle cohomologies over Complete Intersection Calabi Yau manifolds. It further contains functions for determining various topological quantities, such as Chern classes, triple intersection and Hodge numbers. Installation is straighforwad with pip
@@ -88,6 +212,19 @@ pip install pyCICY[viz]
 
 The rest of the package has no plotting dependency, and importing `pyCICY`
 does not pull matplotlib in.
+
+## Tests
+
+```console
+python3 run_tests.py
+```
+
+`tests/test_pycicy.py` checks the topological machinery against values from the
+CICY literature (quintic, bicubic, tetraquadric, sextic fourfold) plus the
+Euler identities. `tests/test_viz.py` checks the vectorised surface evaluation
+against the original symbolic sympy formulation to machine precision, and
+validates the STL output structurally. The full run takes a few minutes,
+mostly in the line bundle cohomology checks.
 
 ## Local geometries and quantized mirror curves
 
@@ -344,116 +481,33 @@ python3 examples/hyperbolic_bloch.py
 python3 examples/hyperbolic_bloch.py --genus 3 --plot /tmp
 ```
 
-## Figures
-
-`pyCICY.viz` draws the objects the other modules compute, alongside the
-original Fermat cross-section. matplotlib is imported lazily inside each
-function, so importing `pyCICY.viz` stays cheap.
-
-```python
-from pyCICY import viz
-
-viz.plot_polygon_grid()                        # all 16 polygons with their duals
-viz.plot_butterfly_grid(['F0', 'B3'], gaps_at=(1, 3))
-viz.plot_jones('K15n81556')                    # against its mirror
-viz.plot_braid([1]*7 + [-2]*7, strands=3)      # 7_1 # m7_1
-viz.plot_chirality_grid()                      # the cross-domain plot
-```
-
-`plot_chirality` is the unifying one. Every chirality record carries an
-*asymmetry*, the combination of its invariant pair that the mirror negates,
-and a *preserved* quantity that it does not. Plotting one against the other
-puts mirror partners symmetrically about zero and fixed points on the axis.
-Restricted to the Calabi-Yau records it is exactly the conventional Hodge
-plot of `plot_hodge`, with `chi/2` horizontally -- so that familiar figure
-turns out to be one panel of a family that also covers knots and reflexive
-polygons. Quantized curves are omitted, since their involution has no
-invariant pair at all.
-
-The connected sum of two braid closures is the juxtaposition of their words
-on one more strand than the two together, so `[1]*7 + [-2]*7` on three
-strands is `7_1 # m7_1`, the knot of arXiv:2506.24088. `paper/make_figures.py`
-emits `fig_polygons`, `fig_butterflies`, `fig_knots` and `fig_chirality`
-along with the existing figures.
-
-## Tests
-
-```console
-python3 run_tests.py
-```
-
-`tests/test_pycicy.py` checks the topological machinery against values from the
-CICY literature (quintic, bicubic, tetraquadric, sextic fourfold) plus the
-Euler identities. `tests/test_viz.py` checks the vectorised surface evaluation
-against the original symbolic sympy formulation to machine precision, and
-validates the STL output structurally. The full run takes a few minutes,
-mostly in the line bundle cohomology checks.
 
 ## Literature
 
 The module has been developed in the context of the following papers:
+
+- Yasuyuki Hatsuda, Yuji Sugimoto, Zhaojie Xu (2017) Calabi-Yau geometry and electrons on 2d lattices
+  - https://arxiv.org/abs/1701.01561 
+- Joseph Maciejko and Steven Rayan (2022) Automorphic Bloch theorems for hyperbolic lattices
+  - https://www.pnas.org/doi/10.1073/pnas.2116869119 
+- Chao Wang, Yimu Zhang (2025) A remark on the counterexample to the unknotting number conjecture
+  - https://doi.org/10.48550/arXiv.2507.14265
 
 - Lara B. Anderson, Andrei Constantin, James Gray, Yang-Hui He, Seung-Joo Lee (Jun 25, 2026) CIPro Package: Complete Intersections in Products of Projective Spaces and Line Bundles
   - https://arxiv.org/pdf/2606.27588
 - Lara B. Anderson, James Gray, Sunit A. Patil, Caoimhín Scanlon (2025) Mapping moduli across heterotic conifolds
   - https://arxiv.org/pdf/2512.18124
 
-```tex
-@article{Larfors:2019sie,
-    author = "Larfors, Magdalena and Schneider, Robin",
-    title = "{Line bundle cohomologies on CICYs with Picard number two}",
-    eprint = "1906.00392",
-    archivePrefix = "arXiv",
-    primaryClass = "hep-th",
-    reportNumber = "UUITP-18/19",
-    doi = "10.1002/prop.201900083",
-    journal = "Fortsch. Phys.",
-    volume = "67",
-    number = "12",
-    pages = "1900083",
-    year = "2019"
-}
-````
+- Larfors, Magdalena and Schneider, Robin (2019) Line bundle cohomologies on CICYs with Picard number two
+  - arXiv; 1906.00392 hep-th; doi:10.1002/prop.201900083; Fortsch. Phys.
 
-Further literature can be found here:
+- Hubsch, Tristan (1994) Calabi-Yau manifolds: A Bestiary for physicists
+  - World Scientific; 9789810219277, 981021927X
+- Lara B. Anderson (2008) Heterotic and M-theory Compactifications for String Phenomenology
+  - arXiv;hep-th;0808.3621 https://inspirehep.net/record/793857/files/arXiv:0808.3621.pdf
 
-```tex
-@book{Hubsch:1992nu,
-	author         = "Hubsch, Tristan",
-	title          = "{Calabi-Yau manifolds: A Bestiary for physicists}",
-	publisher      = "World Scientific",
-	address        = "Singapore",
-	year           = "1994",
-	ISBN           = "9789810219277, 981021927X",
-	SLACcitation   = "%%CITATION = INSPIRE-338506;%%"
-}
 
-@phdthesis{Anderson:2008ex,
-	author         = "Anderson, Lara Briana",
-	title          = "{Heterotic and M-theory Compactifications for String
-	Phenomenology}",
-	school         = "Oxford U.",
-	url            = "https://inspirehep.net/record/793857/files/arXiv:0808.3621.pdf",
-	year           = "2008",
-	eprint         = "0808.3621",
-	archivePrefix  = "arXiv",
-	primaryClass   = "hep-th",
-	SLACcitation   = "%%CITATION = ARXIV:0808.3621;%%"
-}
-```
-
-The SpaSM library can be found here: [github](http://github.com/cbouilla/spasm)
-
-```tex
-@manual{spasm,
-title = {{SpaSM}: a Sparse direct Solver Modulo $p$},
-author = {The SpaSM group},
-edition = {v1.2},
-year = {2017},
-note = {\url{http://github.com/cbouilla/spasm}}
-}
-```
 
 ## Useful software
-
+The SpaSM library can be found here: [github](http://github.com/cbouilla/spasm)
 pyCICY works nicely with [Sage](http://www.sagemath.org/). Other useful packages for dealing with Calabi Yau manifolds in toric varieties are [cohomCalg](https://github.com/BenjaminJurke/cohomCalg/) and [PALP](http://hep.itp.tuwien.ac.at/~kreuzer/CY/CYpalp.html).
