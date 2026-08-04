@@ -48,7 +48,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper figures test survey toric-survey knot-chirality chirality clean distclean cache-info cache-clear data symmetries compare help
+.PHONY: all paper figures test survey toric-survey knot-chirality chirality new-figures clean distclean cache-info cache-clear data symmetries compare help
 
 all: paper
 
@@ -122,6 +122,16 @@ knot-chirality:
 chirality:
 	$(PYTHON) examples/chirality_zoo.py $(if $(DOMAIN),--domain $(DOMAIN),)
 
+# Just the four new figures, without rebuilding the whole split web.
+new-figures:
+	@$(PYTHON) -c "import matplotlib; matplotlib.use('Agg'); \
+	  import importlib.util as u; \
+	  s=u.spec_from_file_location('mf','paper/make_figures.py'); \
+	  m=u.module_from_spec(s); s.loader.exec_module(m); \
+	  import os; d='paper/figures'; os.makedirs(d, exist_ok=True); \
+	  m.figure_polygons(d); m.figure_butterflies(d); \
+	  m.figure_knots(d); m.figure_chirality(d)"
+
 cache-info:
 	@$(PYTHON) -c "from pyCICY import cache; import json; \
 	print(json.dumps(cache.cache_info(), indent=2))"
@@ -141,5 +151,5 @@ distclean: clean
 	-rmdir $(FIGDIR) 2>/dev/null || true
 
 help:
-	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality clean distclean cache-info cache-clear"
+	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality new-figures clean distclean cache-info cache-clear"
 	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) PYTHON=$(PYTHON)"

@@ -235,6 +235,38 @@ python3 examples/chirality_zoo.py
 python3 examples/chirality_zoo.py --domain curve
 ```
 
+## Figures
+
+`pyCICY.viz` draws the objects the other modules compute, alongside the
+original Fermat cross-section. matplotlib is imported lazily inside each
+function, so importing `pyCICY.viz` stays cheap.
+
+```python
+from pyCICY import viz
+
+viz.plot_polygon_grid()                        # all 16 polygons with their duals
+viz.plot_butterfly_grid(['F0', 'B3'], gaps_at=(1, 3))
+viz.plot_jones('K15n81556')                    # against its mirror
+viz.plot_braid([1]*7 + [-2]*7, strands=3)      # 7_1 # m7_1
+viz.plot_chirality_grid()                      # the cross-domain plot
+```
+
+`plot_chirality` is the unifying one. Every chirality record carries an
+*asymmetry*, the combination of its invariant pair that the mirror negates,
+and a *preserved* quantity that it does not. Plotting one against the other
+puts mirror partners symmetrically about zero and fixed points on the axis.
+Restricted to the Calabi-Yau records it is exactly the conventional Hodge
+plot of `plot_hodge`, with `chi/2` horizontally -- so that familiar figure
+turns out to be one panel of a family that also covers knots and reflexive
+polygons. Quantized curves are omitted, since their involution has no
+invariant pair at all.
+
+The connected sum of two braid closures is the juxtaposition of their words
+on one more strand than the two together, so `[1]*7 + [-2]*7` on three
+strands is `7_1 # m7_1`, the knot of arXiv:2506.24088. `paper/make_figures.py`
+emits `fig_polygons`, `fig_butterflies`, `fig_knots` and `fig_chirality`
+along with the existing figures.
+
 ## Tests
 
 ```console
