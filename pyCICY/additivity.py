@@ -9,7 +9,10 @@ sum", arXiv:2506.24088, exhibit knots with
     u(K_1 \# K_2) < u(K_1) + u(K_2),
 
 settling Kirby problem 1.69(B) negatively. Their example is
-u(7_1 \# \bar{7_1}) <= 5 < 6. Unknotting number is a *minimal move count*:
+u(7_1 \# \bar{7_1}) <= 5 < 6. The knot-theoretic side of this is computed
+directly in :mod:`pyCICY.knots`, which also reproduces the observation of
+Wang and Zhang, arXiv:2507.14265, that the intermediate knot K15n81556 in
+their argument is chiral. Unknotting number is a *minimal move count*:
 the fewest crossing changes taking a knot to the unknot. The surprise is
 that composing two objects can make the total complexity smaller than the sum
 of the parts, so the invariant of a composite is not determined by its
