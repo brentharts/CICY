@@ -25,6 +25,25 @@ the 4 real dimensions down to 3 via
 
 where ``a`` is the projection angle.
 
+Plots for the other modules
+---------------------------
+Besides the Fermat cross-section, this module draws the objects the rest of
+the package computes:
+
+    plot_polygon, plot_polygon_grid   reflexive polygons and their polar duals
+    plot_butterfly, ..._grid          Hofstadter spectra of quantized curves
+    plot_jones                        Jones polynomial against its mirror
+    plot_braid                        braid closures, e.g. 7_1 # m7_1
+    plot_chirality                    the cross-domain asymmetry plot
+
+The last is the unifying one. Every chirality record carries an *asymmetry*,
+the combination of its invariant pair that negates under the mirror
+operation, and a *preserved* quantity that does not. Plotting one against the
+other puts mirror partners symmetrically about zero and fixed points on the
+axis. For Calabi-Yau threefolds this is precisely the conventional Hodge plot
+of :func:`plot_hodge`, with chi/2 horizontally, so that figure turns out to
+be one panel of a family that also covers knots and reflexive polygons.
+
 Relation to pyCICY
 ------------------
 The degree-n Fermat hypersurface in P^(n-1) is the CICY with configuration
@@ -44,6 +63,9 @@ __all__ = [
     "patch", "patches", "bounds", "from_cicy", "describe",
     "plot", "plot_grid", "write_stl", "DEFAULT_ANGLE",
     "plot_hodge", "plot_node_counts",
+    "plot_polygon", "plot_polygon_grid",
+    "plot_butterfly", "plot_butterfly_grid",
+    "plot_jones", "plot_braid", "plot_chirality", "plot_chirality_grid",
 ]
 
 DEFAULT_ANGLE = 0.4
@@ -464,3 +486,390 @@ def main(argv=None):
 
 if __name__ == "__main__":
     main()
+
+
+# ------------------------------------------------- polygons, curves, knots
+#
+# Plots for pyCICY.toric, pyCICY.quantum_curve, pyCICY.knots and
+# pyCICY.chirality. matplotlib is imported inside each function, as
+# everywhere else in this module, so that importing pyCICY.viz stays cheap.
+
+def _polygon_verts(polygon):
+    from . import toric as _toric
+    if isinstance(polygon, str):
+        return _toric.polygon(polygon), polygon
+    verts = _toric.convex_hull([tuple(v) for v in polygon])
+    return verts, _toric.classify(verts)["name"]
+
+
+def plot_polygon(polygon, ax=None, with_dual=True, annotate=True, title=None,
+                 legend=True):
+    """A reflexive polygon, its lattice points, and optionally its polar dual.
+
+    The dual is the Batyrev mirror, and drawing the two together makes the
+    twelve theorem visible: the boundary lattice points of P and of P* always
+    number twelve between them, however they are shared out.
+
+    Parameters
+    ----------
+    polygon : str or sequence of (m, n)
+        A name from :data:`pyCICY.toric.NAMED`, or explicit vertices.
+    with_dual : bool
+        Overlay the polar dual.
+    """
+    import matplotlib.pyplot as plt
+    from . import toric as _toric
+
+    verts, name = _polygon_verts(polygon)
+    if ax is None:
+        ax = plt.figure(figsize=(4.2, 4.2)).add_subplot(111)
+
+    def _draw(vs, color, label, lw, ls):
+        pts = list(vs) + [vs[0]]
+        ax.plot([p[0] for p in pts], [p[1] for p in pts],
+                color=color, lw=lw, ls=ls, label=label, zorder=3)
+
+    _draw(verts, "tab:blue", "P", 1.8, "-")
+    inner = _toric.lattice_points(verts)
+    ax.scatter([p[0] for p in inner], [p[1] for p in inner],
+               s=16, color="tab:blue", zorder=4)
+    ax.scatter([v[0] for v in verts], [v[1] for v in verts],
+               s=52, facecolors="none", edgecolors="tab:blue", zorder=5)
+
+    if with_dual:
+        dual = _toric.dual(verts)
+        _draw(dual, "tab:red", "P*", 1.4, "--")
+        dpts = _toric.lattice_points(dual)
+        ax.scatter([p[0] for p in dpts], [p[1] for p in dpts],
+                   s=12, color="tab:red", alpha=0.8, zorder=4)
+        if legend:
+            ax.legend(frameon=False, fontsize=8, loc="best")
+
+    ax.scatter([0], [0], marker="+", s=70, color="k", zorder=6)
+    ax.axhline(0, color="0.85", lw=0.6, zorder=0)
+    ax.axvline(0, color="0.85", lw=0.6, zorder=0)
+    ax.set_aspect("equal")
+    ax.grid(True, color="0.93", lw=0.5)
+
+    if title is None and name:
+        b, bd, tot = _toric.twelve(verts)
+        bits = ["%s" % name]
+        if annotate:
+            bits.append(r"$\partial P{=}%d$, $\partial P^*{=}%d$, sum ${=}%d$"
+                        % (b, bd, tot))
+        title = "\n".join(bits)
+    if title:
+        ax.set_title(title, fontsize=9)
+    return ax
+
+
+def plot_polygon_grid(names=None, ncols=4, with_dual=True, figsize=None):
+    """All sixteen reflexive polygons, or a chosen subset, on one figure."""
+    import matplotlib.pyplot as plt
+    from . import toric as _toric
+
+    names = list(_toric.NAMED) if names is None else list(names)
+    nrows = int(math.ceil(len(names) / float(ncols)))
+    figsize = figsize or (3.0 * ncols, 3.1 * nrows)
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, squeeze=False)
+    for ax, name in zip(axes.ravel(), names):
+        plot_polygon(name, ax=ax, with_dual=with_dual, legend=False)
+    for ax in axes.ravel()[len(names):]:
+        ax.axis("off")
+    handles = [plt.Line2D([], [], color="tab:blue", lw=1.8, label="$P$"),
+               plt.Line2D([], [], color="tab:red", lw=1.4, ls="--",
+                          label="$P^*$")]
+    if with_dual:
+        fig.legend(handles=handles, frameon=False, fontsize=9,
+                   loc="lower center", ncol=2)
+    fig.tight_layout(rect=(0, 0.03, 1, 1))
+    return fig
+
+
+def plot_butterfly(curve, qmax=25, nk=6, ax=None, color="k", size=0.6,
+                   title=None, gaps_at=None):
+    """The Hofstadter spectrum of a quantized mirror curve.
+
+    Energies are plotted against the flux Phi = hbar / 2 pi, sweeping every
+    reduced fraction with denominator up to ``qmax``. Local F_0 gives the
+    classic square-lattice butterfly; local B_3 gives the triangular one,
+    which is visibly slanted because E(Phi) = -E(1-Phi) holds without the
+    spectrum itself being symmetric in E.
+
+    Parameters
+    ----------
+    gaps_at : (p, q), optional
+        Annotate the gap Chern numbers at this flux.
+    """
+    import matplotlib.pyplot as plt
+    from . import quantum_curve as _qc
+
+    if isinstance(curve, str):
+        curve = _qc.from_polygon(curve)
+    if ax is None:
+        ax = plt.figure(figsize=(5.2, 4.6)).add_subplot(111)
+
+    flux, energy = curve.butterfly(qmax=qmax, nk=nk)
+    ax.scatter(flux, energy, s=size, c=color, marker=".", linewidths=0,
+               alpha=0.55)
+    ax.set_xlabel(r"$\Phi = \hbar / 2\pi$")
+    ax.set_ylabel("$E$")
+    ax.set_xlim(0, 1)
+
+    if gaps_at is not None:
+        p, q = gaps_at
+        for g in curve.gap_labels(p, q, nk=max(nk, 12)):
+            mid = 0.5 * (g["lower"] + g["upper"])
+            ax.annotate("%+d" % g["chern"], (p / q, mid), fontsize=7,
+                        color="tab:red", ha="center", va="center",
+                        bbox=dict(boxstyle="round,pad=0.15", fc="white",
+                                  ec="tab:red", lw=0.5, alpha=0.85))
+
+    if title is None:
+        bip = curve.is_bipartite()
+        title = "%s -- %s" % (curve.name or "curve",
+                              "bipartite" if bip else "spectrally chiral")
+    ax.set_title(title, fontsize=10)
+    return ax
+
+
+def plot_butterfly_grid(names=("F0", "B3"), qmax=25, nk=6, figsize=None,
+                        gaps_at=None):
+    """Several butterflies side by side."""
+    import matplotlib.pyplot as plt
+
+    names = list(names)
+    figsize = figsize or (4.6 * len(names), 4.4)
+    fig, axes = plt.subplots(1, len(names), figsize=figsize, squeeze=False)
+    for ax, name in zip(axes[0], names):
+        plot_butterfly(name, qmax=qmax, nk=nk, ax=ax, gaps_at=gaps_at)
+    fig.tight_layout()
+    return fig
+
+
+def plot_jones(knot, ax=None, with_mirror=True, title=None):
+    """Jones polynomial coefficients, against those of the mirror image.
+
+    Chirality shows up as the failure of the two to coincide. This is the
+    picture behind the observation of Wang and Zhang, arXiv:2507.14265, that
+    K15n81556 and the knot in the second Brittenham-Hermiller diagram are
+    mirror images rather than the same knot.
+    """
+    import matplotlib.pyplot as plt
+    from . import knots as _knots
+
+    if isinstance(knot, str):
+        knot = _knots.from_name(knot)
+    if ax is None:
+        ax = plt.figure(figsize=(5.6, 3.4)).add_subplot(111)
+
+    v = knot.jones()
+    series = [(v, "tab:blue", "$V(t)$", -0.18)]
+    if with_mirror:
+        series.append((knot.mirror().jones(), "tab:red",
+                       "$V(1/t)$ (mirror)", 0.18))
+
+    width = 0.34 if with_mirror else 0.6
+    for poly, color, label, off in series:
+        exps = sorted(poly.c)
+        ax.bar([e + off for e in exps], [poly.c[e] for e in exps],
+               width=width, color=color, label=label, alpha=0.85)
+
+    ax.axhline(0, color="0.4", lw=0.8)
+    ax.axvline(0, color="0.85", lw=0.6, zorder=0)
+    ax.set_xlabel("power of $t$")
+    ax.set_ylabel("coefficient")
+    ax.legend(frameon=False, fontsize=8)
+    if title is None:
+        title = "%s -- %s" % (
+            knot.name or "knot",
+            "chiral" if knot.is_chiral() else "Jones does not separate it")
+    ax.set_title(title, fontsize=10)
+    return ax
+
+
+def _smoothstep(t):
+    return t * t * (3.0 - 2.0 * t)
+
+
+def plot_braid(word, strands=None, ax=None, closure=True, title=None,
+               gap=0.22):
+    """Draw a braid word, optionally with its closure arcs.
+
+    Generator ``k`` is the crossing of strands k and k+1 in which the lower
+    strand passes over, matching :func:`pyCICY.knots.from_braid`; ``-k`` is
+    its inverse. The under-strand is drawn broken at the crossing.
+
+    The connected sum of two braid closures is the juxtaposition of their
+    words on one more strand than the two together, so ``[1]*7 + [-2]*7`` on
+    three strands is 7_1 # m7_1, the knot of arXiv:2506.24088.
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.path import Path
+    import matplotlib.patches as mpatches
+
+    word = [int(g) for g in word]
+    if strands is None:
+        strands = (max(abs(g) for g in word) + 1) if word else 1
+    if ax is None:
+        ax = plt.figure(figsize=(0.8 * max(len(word), 1) + 2.2,
+                                 0.8 * strands + 1.2)).add_subplot(111)
+
+    ts = np.linspace(0.0, 1.0, 40)
+    for col, g in enumerate(word):
+        k = abs(g) - 1
+        for pos in range(strands):
+            if pos not in (k, k + 1):
+                ax.plot([col, col + 1], [pos, pos], color="0.25", lw=1.6,
+                        solid_capstyle="round", zorder=2)
+        for start, end in ((k, k + 1), (k + 1, k)):
+            xs = col + ts
+            ys = start + (end - start) * _smoothstep(ts)
+            # the generator's sign says which of the two is on top
+            over = (start == k) if g > 0 else (start == k + 1)
+            if over:
+                ax.plot(xs, ys, color="0.15", lw=1.8, zorder=4,
+                        solid_capstyle="round")
+            else:
+                keep = (np.abs(ts - 0.5) > gap)
+                seg, cur = [], []
+                for x, y, ok in zip(xs, ys, keep):
+                    if ok:
+                        cur.append((x, y))
+                    elif cur:
+                        seg.append(cur)
+                        cur = []
+                if cur:
+                    seg.append(cur)
+                for piece in seg:
+                    ax.plot([q[0] for q in piece], [q[1] for q in piece],
+                            color="0.15", lw=1.8, zorder=3,
+                            solid_capstyle="round")
+
+    length = len(word)
+    if closure and strands:
+        top = strands - 1
+        for i in range(strands):
+            # nested arcs: the lowest strand takes the widest loop
+            d = 0.45 + 0.45 * (strands - 1 - i)
+            h = top + 0.60 + 0.45 * (strands - 1 - i)
+            verts = [(length, i), (length + d, i), (length + d, h),
+                     (-d, h), (-d, i), (0, i)]
+            codes = [Path.MOVETO] + [Path.LINETO] * (len(verts) - 1)
+            ax.add_patch(mpatches.PathPatch(
+                Path(verts, codes), fill=False, color="0.55", lw=1.2,
+                ls="-", zorder=1))
+
+    ax.set_aspect("equal")
+    ax.axis("off")
+    if title is None:
+        title = "braid closure, {} strands, {} crossings".format(
+            strands, len(word))
+    ax.set_title(title, fontsize=9)
+    return ax
+
+
+_DOMAIN_STYLE = {
+    "knot": ("tab:blue", "o", "knots"),
+    "polygon": ("tab:green", "s", "reflexive polygons"),
+    "cicy": ("tab:red", "^", "Calabi-Yau threefolds"),
+}
+
+
+def plot_chirality(records=None, ax=None, annotate=True, title=None,
+                   xscale="linear"):
+    """The cross-domain chirality plot.
+
+    Horizontally the *asymmetry*, the combination of each object's invariant
+    pair that negates under its mirror operation; vertically the quantity the
+    mirror preserves. Mirror partners therefore sit symmetrically about zero
+    and objects fixed by their involution sit on the axis, whatever domain
+    they come from.
+
+    Restricted to the Calabi-Yau records this is the conventional Hodge plot
+    of :func:`plot_hodge`, since the asymmetry there is chi/2 and the
+    preserved quantity is h^{1,1} + h^{2,1}.
+
+    Quantized curves are omitted: their involution has no invariant pair,
+    because it leaves the spectrum exactly where it was.
+    """
+    import matplotlib.pyplot as plt
+    from . import chirality as _chir
+
+    if records is None:
+        records = _chir.survey()
+    usable = [r for r in records if r.get("asymmetry") is not None
+              and isinstance(r.get("preserved"), int)]
+    if not usable:
+        raise ValueError("no records with an asymmetry to plot")
+
+    if ax is None:
+        ax = plt.figure(figsize=(7.6, 5.0)).add_subplot(111)
+
+    for domain, (color, marker, label) in _DOMAIN_STYLE.items():
+        rs = [r for r in usable if r["domain"] == domain]
+        if not rs:
+            continue
+        ax.scatter([r["asymmetry"] for r in rs], [r["preserved"] for r in rs],
+                   c=color, marker=marker, s=44, alpha=0.85,
+                   edgecolors="none", label=label)
+        # the mirror partners, hollow
+        ax.scatter([-r["asymmetry"] for r in rs], [r["preserved"] for r in rs],
+                   facecolors="none", edgecolors=color, marker=marker, s=44,
+                   alpha=0.5, linewidths=0.8)
+
+    if annotate:
+        # several fixed objects can land on the same point -- the four
+        # self-dual polygons all sit at (0, 12) -- so group before labelling
+        groups = {}
+        for r in usable:
+            if r["fixed"] and r.get("name"):
+                groups.setdefault((r["asymmetry"], r["preserved"]),
+                                  []).append(str(r["name"]))
+        for (x, y), names in groups.items():
+            ax.annotate(", ".join(sorted(names)), (x, y),
+                        textcoords="offset points", xytext=(6, 3),
+                        fontsize=7, color="0.3")
+
+    if xscale == "symlog":
+        ax.set_xscale("symlog", linthresh=10)
+    heights = {r["preserved"] for r in usable}
+    if len(heights) == 1:                 # e.g. polygons, always 12
+        v = heights.pop()
+        ax.set_ylim(v - 3, v + 3)
+    ax.axvline(0, color="0.6", lw=0.9, zorder=0)
+    ax.set_xlabel("asymmetry (negated by the mirror)")
+    ax.set_ylabel("preserved by the mirror")
+    ax.legend(frameon=False, fontsize=8)
+    n_fixed = sum(1 for r in usable if r["fixed"])
+    ax.set_title(title if title is not None
+                 else "%d objects, %d fixed by their mirror (on the axis); "
+                      "filled = object, hollow = its mirror"
+                      % (len(usable), n_fixed), fontsize=9)
+    return ax
+
+
+def plot_chirality_grid(records=None, figsize=None):
+    """One chirality panel per domain, each on its own scale.
+
+    The combined :func:`plot_chirality` is dominated by the Calabi-Yau
+    points, whose asymmetry reaches a hundred while knots and polygons live
+    within about ten. Splitting by domain keeps the shared structure -- the
+    mirror is a reflection about zero, fixed points lie on the axis -- while
+    letting each domain be legible.
+    """
+    import matplotlib.pyplot as plt
+    from . import chirality as _chir
+
+    if records is None:
+        records = _chir.survey()
+    domains = [d for d in ("knot", "polygon", "cicy")
+               if any(r["domain"] == d for r in records)]
+    figsize = figsize or (4.4 * len(domains), 4.0)
+    fig, axes = plt.subplots(1, len(domains), figsize=figsize, squeeze=False)
+    for ax, domain in zip(axes[0], domains):
+        rs = [r for r in records if r["domain"] == domain]
+        plot_chirality(rs, ax=ax, title=_DOMAIN_STYLE[domain][2])
+        ax.legend().set_visible(False)
+    fig.tight_layout()
+    return fig

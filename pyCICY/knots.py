@@ -483,12 +483,14 @@ def from_braid(word, strands=None, name=None):
         r, s = nxt, nxt + 1
         nxt += 2
         if g > 0:
-            # left strand passes over: over-in p, over-out s; under q -> r
+            # left strand passes over: over-in p, over-out s; under q -> r.
+            # sign +1 puts over-in in slot d and over-out in slot b.
             pd.append((q, s, r, p))
             signs.append(1)
         else:
-            # left strand passes under: under-in p, under-out s
-            pd.append((p, r, s, q))
+            # left strand passes under: under p -> s; over q -> r.
+            # sign -1 puts over-in in slot b and over-out in slot d.
+            pd.append((p, q, s, r))
             signs.append(-1)
         cur[k], cur[k + 1] = r, s
 

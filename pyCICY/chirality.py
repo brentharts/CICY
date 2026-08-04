@@ -22,6 +22,17 @@ therefore negates the Euler characteristic while fixing their sum. The
 :func:`survey` function tabulates all three side by side, and the test suite
 checks the swap-and-preserve law in each domain rather than asserting it.
 
+Each record also carries an ``asymmetry``: the combination of the pair that
+*negates* under the involution, namely the sum of the extreme Jones degrees,
+the difference of the two boundary counts, and h^{1,1} - h^{2,1}, which is
+half the Euler characteristic. Plotting asymmetry against the preserved
+quantity puts mirror partners symmetrically about zero and fixed points on
+the axis; for the Calabi-Yau domain that plot is exactly the conventional
+Hodge plot, and :func:`pyCICY.viz.plot_chirality` draws it for all domains at
+once. Note that on the knot side a vanishing asymmetry is a weaker statement
+than a palindromic Jones polynomial: it says only that the range of degrees
+is symmetric, so ``asymmetry`` is a coarser detector than ``fixed``.
+
 An object is *chiral* when it is not fixed by its involution. Fixed points
 exist in every domain and this module finds them: the amphichiral knots of
 the table, the four self-dual reflexive polygons, and the CICY entries with
@@ -109,7 +120,7 @@ DOMAINS = {
 
 
 def _record(domain, name, involution, pair, mirror_pair_, preserved,
-            fixed, detected, note=None, **extra):
+            fixed, detected, note=None, asymmetry=None, **extra):
     rec = {
         "domain": domain,
         "name": name,
@@ -117,6 +128,7 @@ def _record(domain, name, involution, pair, mirror_pair_, preserved,
         "pair": pair,
         "mirror_pair": mirror_pair_,
         "preserved": preserved,
+        "asymmetry": asymmetry,
         "fixed": fixed,
         "detected": detected,
         "note": note,
@@ -144,6 +156,7 @@ def knot_chirality(knot):
     return _record(
         "knot", knot.name, DOMAINS["knot"]["involution"],
         (a, b), (am, bm), b - a,
+        asymmetry=a + b,
         fixed=palindromic, detected=not palindromic,
         note=("Jones detects chirality" if not palindromic else
               "Jones does not separate this knot from its mirror; "
@@ -175,6 +188,7 @@ def polygon_chirality(polygon):
     return _record(
         "polygon", name, DOMAINS["polygon"]["involution"],
         (b, bd), (bd, b), total,
+        asymmetry=b - bd,
         fixed=self_dual, detected=not self_dual,
         note=("self-dual" if self_dual else "dual is {}".format(dual_nm)),
         dual_name=dual_nm, dual=dual, degree=_toric.degree(verts),
@@ -205,6 +219,7 @@ def curve_chirality(curve, p=1, q=3, nk=12, tol=1e-8):
     return _record(
         "curve", curve.name, DOMAINS["curve"]["involution"],
         None, None, "the spectrum",
+        asymmetry=None,
         fixed=fixed, detected=None,
         note=("the spectrum is invariant under reflection, so no spectral "
               "invariant can detect this involution; see spectrally_chiral "
@@ -246,6 +261,7 @@ def cicy_chirality(conf=None, hodge=None, name=None):
     return _record(
         "cicy", name, DOMAINS["cicy"]["involution"],
         (h11, h21), (h21, h11), h11 + h21,
+        asymmetry=h11 - h21,
         fixed=self_mirror, detected=not self_mirror,
         note=("self-mirror Hodge numbers" if self_mirror
               else "mirror has Hodge numbers ({}, {})".format(h21, h11)),
