@@ -36,6 +36,8 @@ the package computes:
     plot_braid                        braid closures, e.g. 7_1 # m7_1
     plot_chirality                    the cross-domain asymmetry plot
     plot_hyperbolic_flake             a {p,q} tiling in the Poincare disk
+    plot_apolynomial                  Newton polygon of a knot A-polynomial
+    plot_colored_jones                colored Jones coefficients by colour
 
 The last is the unifying one. Every chirality record carries an *asymmetry*,
 the combination of its invariant pair that negates under the mirror
@@ -57,6 +59,7 @@ topological invariants rather than just an integer.
 import argparse
 import math
 import struct
+from fractions import Fraction as Fraction_
 
 import numpy as np
 
@@ -67,7 +70,7 @@ __all__ = [
     "plot_polygon", "plot_polygon_grid",
     "plot_butterfly", "plot_butterfly_grid",
     "plot_jones", "plot_braid", "plot_chirality", "plot_chirality_grid",
-    "plot_hyperbolic_flake",
+    "plot_hyperbolic_flake", "plot_apolynomial", "plot_colored_jones",
 ]
 
 DEFAULT_ANGLE = 0.4
@@ -932,4 +935,98 @@ def plot_hyperbolic_flake(p, q=None, depth=2, ax=None, title=None,
     ax.set_title(title if title is not None
                  else "{%d,%d} cell centres, %d cells, boundary fraction %.3f"
                       % (p, q, len(pts), frac), fontsize=10)
+    return ax
+
+
+def plot_apolynomial(name, ax=None, title=None, annotate_slopes=True):
+    """Newton polygon of a knot's A-polynomial, with its boundary slopes.
+
+    The edge slopes are boundary slopes of incompressible surfaces in the
+    knot complement (Cooper, Culler, Gillet, Long and Shalen), and the same
+    lattice points are what :class:`pyCICY.quantum_curve.QuantumCurve`
+    consumes as a hopping set -- which is the tie between the knot side of
+    this package and the quantized-curve side.
+    """
+    import matplotlib.pyplot as plt
+    from . import apolynomial as _ap
+
+    A = _ap.apolynomial(name) if isinstance(name, str) else name
+    label = name if isinstance(name, str) else "A"
+    if ax is None:
+        ax = plt.figure(figsize=(4.6, 4.2)).add_subplot(111)
+
+    pts = sorted(A)
+    hull = _ap.newton_polygon(A)
+    closed = list(hull) + [hull[0]] if len(hull) > 2 else list(hull)
+    ax.plot([p[0] for p in closed], [p[1] for p in closed],
+            color="tab:blue", lw=1.6, zorder=2)
+    ax.scatter([p[0] for p in pts], [p[1] for p in pts],
+               s=[26 + 14 * min(abs(A[p]), 3) for p in pts],
+               color="tab:blue", zorder=4)
+    for p in pts:
+        ax.annotate(str(A[p]), p, textcoords="offset points",
+                    xytext=(5, 4), fontsize=7, color="0.35")
+
+    if annotate_slopes and len(hull) > 1:
+        n = len(hull)
+        pairs = ([(hull[i], hull[(i + 1) % n]) for i in range(n)] if n > 2
+                 else [(hull[0], hull[1])])
+        for a, b in pairs:
+            if b[0] == a[0]:
+                continue
+            slope = Fraction_(b[1] - a[1], b[0] - a[0])
+            mid = (0.5 * (a[0] + b[0]), 0.5 * (a[1] + b[1]))
+            ax.annotate("%s" % slope, mid, textcoords="offset points",
+                        xytext=(-16, -2), fontsize=8, color="tab:red")
+
+    ax.set_xlabel("power of $L$")
+    ax.set_ylabel("power of $M$")
+    # exponents are integers, so do not let matplotlib invent 0.25 steps
+    from matplotlib.ticker import MaxNLocator
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.grid(True, color="0.93", lw=0.5)
+    slopes = ", ".join(str(s) for s in _ap.boundary_slopes(A))
+    ax.set_title(title if title is not None
+                 else "%s: boundary slopes %s" % (label, slopes), fontsize=10)
+    return ax
+
+
+def plot_colored_jones(s, t, nmax=6, ax=None, title=None):
+    """Coefficients of the colored Jones polynomials of a torus knot.
+
+    One row per colour N, with the power of q horizontally and the sign and
+    size of the coefficient shown by the marker. The span grows
+    quadratically in N, which is the behaviour the degree conjecture
+    describes and which drives the asymptotics behind the volume conjecture.
+    """
+    import matplotlib.pyplot as plt
+    from . import apolynomial as _ap
+
+    if ax is None:
+        ax = plt.figure(figsize=(7.0, 3.8)).add_subplot(111)
+
+    for N in range(1, nmax + 1):
+        poly = _ap.colored_jones_torus(s, t, N)
+        exps = sorted(poly.c)
+        vals = [poly.c[e] for e in exps]
+        pos = [e for e, v in zip(exps, vals) if v > 0]
+        neg = [e for e, v in zip(exps, vals) if v < 0]
+        sz = lambda es: [18 + 16 * (abs(poly.c[e]) - 1) for e in es]
+        ax.scatter(pos, [N] * len(pos), s=sz(pos), color="tab:blue",
+                   marker="o", zorder=3)
+        ax.scatter(neg, [N] * len(neg), s=sz(neg), color="tab:red",
+                   marker="s", zorder=3)
+        lo, hi = poly.degrees()
+        ax.plot([lo, hi], [N, N], color="0.85", lw=1.0, zorder=1)
+
+    ax.set_xlabel("power of $q$")
+    ax.set_ylabel("colour $N$")
+    ax.set_yticks(range(1, nmax + 1))
+    ax.scatter([], [], color="tab:blue", marker="o", label="positive")
+    ax.scatter([], [], color="tab:red", marker="s", label="negative")
+    ax.legend(frameon=False, fontsize=8, loc="lower left")
+    ax.set_title(title if title is not None
+                 else r"$J_N(T(%d,%d))$, span growing quadratically in $N$"
+                      % (s, t), fontsize=10)
     return ax
