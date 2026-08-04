@@ -134,6 +134,34 @@ check("closure of sigma_1 is the unknot",
       str(K.from_braid([1]).jones()), "1")
 check("empty braid is the unknot", str(K.from_braid([], 2).jones()), "1")
 
+print("\n[4b] negative braid generators")
+# These were never exercised by the torus knots, which are positive braids,
+# and the slot assignment for negative crossings was wrong until caught by
+# the connected-sum-as-juxtaposition check below.
+check("closure of sigma_1^-3 is the mirror trefoil",
+      str(K.from_braid([-1] * 3).jones()),
+      str(K.from_name("3_1").mirror().jones()))
+check_true("closure of sigma_1 sigma_1^-1 is a two-component unlink",
+           K.from_braid([1, -1]).n_components() == 2)
+check_true("(sigma_1 sigma_2^-1)^2 is the figure-eight",
+           K.from_braid([1, -2] * 2, strands=3).jones()
+           == K.from_name("4_1").jones())
+for n, nm in ((3, "3_1"), (5, "5_1"), (7, "7_1")):
+    braid = K.from_braid([1] * n + [-2] * n, strands=3)
+    k = K.from_name(nm)
+    check_true("%s # m%s: juxtaposition equals the connected sum" % (nm, nm),
+               braid.jones() == k.connected_sum(k.mirror()).jones())
+    check("%s # m%s: juxtaposition is a knot" % (nm, nm),
+          braid.n_components(), 1)
+check("7_1 # m7_1 as a braid has 14 crossings",
+      len(K.from_braid([1] * 7 + [-2] * 7, strands=3)), 14)
+for w, s_ in (([-1] * 3, 2), ([1, -2] * 2, 3), ([1] * 5 + [-2] * 5, 3)):
+    kk = K.from_braid(w, strands=s_)
+    check_true("braid %s: inferred signs match the word" % (w,),
+               kk.signs == [1 if g > 0 else -1 for g in w])
+    check_true("braid %s: writhe is the exponent sum" % (w,),
+               kk.writhe() == sum(1 if g > 0 else -1 for g in w))
+
 print("\n[5] braid closures agree with the stored table")
 for (p, q), nm in (((2, 3), "3_1"), ((2, 5), "5_1"), ((2, 7), "7_1"),
                    ((3, 4), "8_19")):

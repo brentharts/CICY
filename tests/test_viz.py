@@ -173,6 +173,101 @@ xb, yb, zb = cy.bounds(5, res=12)
 check_true("bounds are finite", all(np.isfinite([*xb, *yb, *zb])))
 check_true("bounds ordered", xb[0] < xb[1] and yb[0] < yb[1] and zb[0] < zb[1])
 
+
+# --------------------------------------------------------------------------
+print("\n[6] plots for the toric, quantum-curve, knot and chirality modules")
+
+from pyCICY import chirality as _chir
+from pyCICY import knots as _knots
+from pyCICY import toric as _toric
+
+def _boundary_lines(ax):
+    return [l for l in ax.lines if l.get_label() in ("P", "P*")]
+
+ax = cy.plot_polygon("B3")
+check_true("plot_polygon draws P and its dual", len(_boundary_lines(ax)) == 2)
+check_true("plot_polygon marks the lattice points", len(ax.collections) >= 3)
+check_true("plot_polygon titles with the twelve theorem", "12" in ax.get_title())
+ax = cy.plot_polygon("P2", with_dual=False)
+check_true("with_dual=False omits the dual", len(_boundary_lines(ax)) == 1)
+ax = cy.plot_polygon([(1, 0), (0, 1), (-1, -1)])
+check_true("plot_polygon accepts explicit vertices", ax.get_title().startswith("P2"))
+plt.close("all")
+
+fig = cy.plot_polygon_grid()
+check_true("polygon grid has a panel per reflexive polygon",
+           sum(1 for a in fig.axes if a.get_title()) == len(_toric.NAMED))
+plt.close("all")
+fig = cy.plot_polygon_grid(names=["P2", "F0"], ncols=2)
+check_true("polygon grid honours a subset", len(fig.axes) == 2)
+plt.close("all")
+
+ax = cy.plot_butterfly("F0", qmax=8, nk=3)
+check_true("butterfly draws points", len(ax.collections) == 1)
+check_true("butterfly labels F0 bipartite", "bipartite" in ax.get_title())
+check_true("butterfly x axis spans the full flux range",
+           ax.get_xlim() == (0.0, 1.0))
+ax = cy.plot_butterfly("B3", qmax=8, nk=3)
+check_true("butterfly labels B3 spectrally chiral",
+           "chiral" in ax.get_title())
+ax = cy.plot_butterfly("F0", qmax=6, nk=3, gaps_at=(1, 3))
+check_true("gap annotations appear", len(ax.texts) >= 2)
+check_true("gap annotations are signed Chern numbers",
+           all(t.get_text().lstrip("+-").isdigit() for t in ax.texts))
+plt.close("all")
+fig = cy.plot_butterfly_grid(["F0", "B3"], qmax=6, nk=3)
+check_true("butterfly grid has two panels", len(fig.axes) == 2)
+plt.close("all")
+
+ax = cy.plot_jones("K15n81556")
+check_true("plot_jones draws the knot and its mirror", len(ax.containers) == 2)
+check_true("plot_jones reports K15n81556 as chiral", "chiral" in ax.get_title())
+ax = cy.plot_jones("4_1")
+check_true("plot_jones reports 4_1 as not separated",
+           "does not separate" in ax.get_title())
+ax = cy.plot_jones(_knots.from_name("3_1"), with_mirror=False)
+check_true("with_mirror=False draws one series", len(ax.containers) == 1)
+plt.close("all")
+
+ax = cy.plot_braid([1] * 3)
+check_true("plot_braid draws a line per crossing strand", len(ax.lines) >= 6)
+check_true("plot_braid adds closure arcs", len(ax.patches) == 2)
+ax = cy.plot_braid([1] * 7 + [-2] * 7, strands=3)
+check_true("plot_braid handles three strands", len(ax.patches) == 3)
+check_true("plot_braid titles with the crossing count",
+           "14 crossings" in ax.get_title())
+ax = cy.plot_braid([1, -1], closure=False)
+check_true("closure=False omits the arcs", len(ax.patches) == 0)
+plt.close("all")
+
+records = _chir.survey()
+ax = cy.plot_chirality(records)
+check_true("plot_chirality draws every non-curve domain",
+           len(ax.collections) == 6)          # filled + hollow, three domains
+check_true("plot_chirality marks the mirror axis",
+           any(l.get_xdata()[0] == 0 for l in ax.lines))
+check_true("plot_chirality labels the fixed points", len(ax.texts) >= 3)
+plt.close("all")
+fig = cy.plot_chirality_grid(records)
+check_true("chirality grid has one panel per domain", len(fig.axes) == 3)
+plt.close("all")
+
+# The polygon panel is the degenerate case: every preserved value is 12.
+poly_recs = [r for r in records if r["domain"] == "polygon"]
+check_true("every polygon record preserves twelve",
+           {r["preserved"] for r in poly_recs} == {12})
+ax = cy.plot_chirality(poly_recs)
+lo, hi = ax.get_ylim()
+check_true("a constant preserved value still gets a sensible y range",
+           lo < 12 < hi and hi - lo > 1)
+plt.close("all")
+
+try:
+    cy.plot_chirality([r for r in records if r["domain"] == "curve"])
+    check_true("curve-only records are rejected", False)
+except ValueError:
+    check_true("curve-only records are rejected", True)
+
 # --------------------------------------------------------------------------
 print("\n" + "=" * 72)
 if FAILURES:
