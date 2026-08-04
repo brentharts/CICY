@@ -235,6 +235,62 @@ python3 examples/chirality_zoo.py
 python3 examples/chirality_zoo.py --domain curve
 ```
 
+## A-polynomials and the AJ conjecture
+
+`pyCICY.apolynomial` closes the loop between the two ends of the package.
+`pyCICY.knots` computes Jones polynomials; `pyCICY.quantum_curve` quantizes
+mirror curves. The object joining them is a plane curve in `(C*)^2`, and on
+the knot side that curve is the A-polynomial. The AJ conjecture says the
+colored Jones polynomials obey a `q`-difference equation whose operators
+satisfy `L Q = q Q L` -- the same Weyl algebra `quantum_curve` uses, with
+`q = exp(i*hbar)` -- and that setting `q = 1`, `Q = M^2` recovers the
+classical A-polynomial.
+
+```python
+from pyCICY import apolynomial as ap
+
+ap.colored_jones_torus(2, 3, 3)     # third colour of the trefoil
+ap.boundary_slopes(ap.apolynomial('4_1'))     # [-4, 4]
+ap.verify_aj()                                # the trefoil, ~20s
+```
+
+Colored Jones for torus knots comes from the Rosso-Jones formula in the form
+of [Hikami and Lovejoy](https://arxiv.org/abs/1409.6243). At `N = 2` it
+reproduces `knots.jones()` **exactly** for T(2,3), T(2,5), T(2,7) and
+T(3,4) = 8_19 -- a representation-theoretic sum against a sum over `2^n`
+Kauffman states, from code sharing nothing, agreeing coefficient for
+coefficient.
+
+`find_recursion` searches for annihilating `q`-difference operators by linear
+algebra on the colored Jones table, and `classical_limit` sets `q = 1`. For
+the trefoil the smallest L-degree admitting a solution is 3, and the gcd of
+the classical limits is `(L-1)^2 (M^2-1) (L M^6 + 1)`, which contains the
+trefoil's A-polynomial exactly: the geometric factor `1 + L M^{pq}` with
+`pq = 6`, and the abelian factor `L - 1`. Two caveats are stated in the code
+rather than glossed: the leftover factor is expected, since the classical
+limit of *an* annihilating operator contains the A-polynomial without
+equalling it; and the L-degree is minimal only *within the search bounds*,
+which `find_recursion` takes explicitly and never claims otherwise.
+
+The edge slopes of the Newton polygon are boundary slopes of incompressible
+surfaces (Cooper, Culler, Gillet, Long, Shalen), and they come out right:
+`pq` for each torus knot, `+-4` for the figure-eight. Since the Newton
+polygon is also what `QuantumCurve` consumes, `to_quantum_curve` hands a
+knot straight to the lattice machinery. That is a statement about the
+quantization *rule*, not the geometry: a toric diagram is a reflexive
+polygon and an A-polynomial's Newton polygon is not, so the resulting
+operator is **not** the mirror curve of any local Calabi-Yau, and the
+docstring says so.
+
+A-polynomials themselves are quoted with attribution, not derived --
+computing one means eliminating variables from gluing equations, which is a
+different project.
+
+```console
+python3 examples/aj_conjecture.py
+python3 examples/aj_conjecture.py --skip-recursion
+```
+
 ## Hyperbolic lattices
 
 `pyCICY.hyperbolic` implements the automorphic Bloch theory of Maciejko and

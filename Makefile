@@ -49,7 +49,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper figures test survey toric-survey knot-chirality chirality hyperbolic new-figures clean distclean cache-info cache-clear data symmetries compare help
+.PHONY: all paper figures test survey toric-survey knot-chirality chirality hyperbolic aj new-figures clean distclean cache-info cache-clear data symmetries compare help
 
 all: paper
 
@@ -124,6 +124,11 @@ chirality:
 	$(PYTHON) examples/chirality_zoo.py $(if $(DOMAIN),--domain $(DOMAIN),)
 
 # Just the four new figures, without rebuilding the whole split web.
+# A-polynomials, colored Jones and the AJ conjecture. SKIP_RECURSION=1
+# omits the nullspace search, which is the slow part.
+aj:
+	$(PYTHON) examples/aj_conjecture.py $(if $(SKIP_RECURSION),--skip-recursion,)
+
 # Hyperbolic lattices and automorphic Bloch theory (PNAS 2116869119).
 hyperbolic:
 	$(PYTHON) examples/hyperbolic_bloch.py --genus $(GENUS)
@@ -156,5 +161,5 @@ distclean: clean
 	-rmdir $(FIGDIR) 2>/dev/null || true
 
 help:
-	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality hyperbolic new-figures clean distclean cache-info cache-clear"
+	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality hyperbolic aj new-figures clean distclean cache-info cache-clear"
 	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) PYTHON=$(PYTHON)"
