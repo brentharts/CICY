@@ -31,6 +31,9 @@ DEPTH       ?= 3
 COMPARE_LIMIT ?= 500
 FLUX        ?= 1/3
 GENUS       ?= 2
+CHARGE ?= 1
+ORDER ?= 2
+BUDGET ?= 20
 MAX_CONFIGS ?= 1200
 
 # The figure script writes these; facts.json carries the scalars quoted in
@@ -133,6 +136,13 @@ aj:
 hyperbolic:
 	$(PYTHON) examples/hyperbolic_bloch.py --genus $(GENUS)
 
+# Heterotic line bundle standard models. CHARGE is the scan box and BUDGET the
+# wall clock allowance per stage; both default small, because the topological
+# conditions alone admit very large families and the search box grows like
+# (2*CHARGE+1)^(h11*rank).
+bundles:
+	$(PYTHON) examples/line_bundle_models.py --charge $(CHARGE) --order $(ORDER) --budget $(BUDGET)
+
 # The LaTeX supplement describing every figure. Needs the figures first.
 supplement: figures
 	cd paper && pdflatex -interaction=nonstopmode supplementary_material.tex \
@@ -167,5 +177,5 @@ distclean: clean
 	-rmdir $(FIGDIR) 2>/dev/null || true
 
 help:
-	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear"
-	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) PYTHON=$(PYTHON)"
+	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality hyperbolic aj bundles new-figures supplement clean distclean cache-info cache-clear"
+	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) CHARGE=$(CHARGE) ORDER=$(ORDER) BUDGET=$(BUDGET) PYTHON=$(PYTHON)"

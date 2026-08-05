@@ -320,6 +320,91 @@ python3 examples/knot_chirality.py
 python3 examples/knot_chirality.py --search 3     # slow, finds nothing, as expected
 ```
 
+## Heterotic line bundle standard models
+
+`pyCICY.bundles` supplies the piece `pyCICY.phenomenology` explicitly declines
+to: a gauge bundle that is not the standard embedding. The construction is
+that of Anderson, Gray, Lukas and Palti,
+[arXiv:1106.4804](https://arxiv.org/abs/1106.4804) and
+[arXiv:1202.1757](https://arxiv.org/abs/1202.1757), in which
+
+    V = O(L_1) + ... + O(L_5),    sum_a L_a = 0,
+
+so the structure group is `S(U(1)^5)` inside `SU(5)` inside `E_8`. Every
+cohomology group the spectrum needs is then a sum of line bundle
+cohomologies, which `CICY.line_co` already computes exactly.
+
+```python
+from pyCICY import CICY, bundles
+
+X = CICY([[1,2],[1,2],[1,2],[1,2]])
+V = bundles.LineBundleSum(X, [[-2,-2,-1,2],[-2,1,0,0],[1,-2,1,0],
+                              [1,1,-1,0],[2,2,1,-2]])
+V.index()                       # -6.0, from the triple intersection numbers
+V.index_from_cohomology()       # -6.0, from the Leray spectral sequence
+V.su5_spectrum()                # n(10)=24, n(10-bar)=18, n(5-bar)=54, ...
+V.stability_locus()['found']    # True
+```
+
+The index is computed twice by code with nothing in common — one contraction
+of `d_rst` against the charges, one run of the Leray spectral sequence per
+summand — and a third time as the alternating sum of the computed
+cohomology. Serre duality `h^q(V) = h^{3-q}(V*)`, of which `line_co` knows
+nothing, is checked as a fourth constraint. This is the `node_validation`
+discipline applied to bundles.
+
+Monads `0 -> V -> B -> C -> 0` get their topology here too, but **not** their
+cohomology. The `h^q(V)` follow from the long exact sequence only up to the
+ranks of the maps `H^q(B) -> H^q(C)`, which depend on the morphism and not on
+the degrees; `Monad.cohomology_bounds` returns the interval the sequence
+gives and refuses to guess the rest.
+
+### Why the ordering of the filters is the whole design
+
+The conditions on a candidate model do not cost remotely the same, so `scan`
+applies them in increasing order of price and stops before the expensive
+ones:
+
+| stage | cost per bundle |
+| --- | --- |
+| `c_1(V) = 0` | integer addition |
+| index `= -3\|Gamma\|` | one tensor contraction |
+| anomaly `c_2(TX) - c_2(V)` effective | one tensor contraction |
+| poly-stability | 0.03 ms as a sign test, 30 ms as a numerical search |
+| cohomology | 35 `line_co` calls for a rank 5 model |
+
+Poly-stability needs all five slopes `mu(L_a) = d_rst L_a^r t^s t^t` to
+vanish at one point of the Kahler cone. There, *every partial sum* of slopes
+vanishes too, so if any subset of the summands has `sum_{a in S} M_a` with no
+negative entry, that form is strictly positive on the open positive orthant
+and no such point exists. The test is exact, it is at most thirty sign tests,
+and it inherits to pairs — which is where `scan` applies it, to the pair
+table before the sums are ever assembled. Without that, the tetraquadric at
+charge 2 is of order `10^8` assemblies and the search does not finish.
+
+On the tetraquadric with `|Gamma| = 2`, the funnel runs 200000 → 3 → 2:
+
+```console
+python3 examples/line_bundle_models.py --charge 2 --budget 12
+make bundles CHARGE=2 ORDER=2
+```
+
+Two smaller results worth recording. No rank 5 line bundle sum on the
+tetraquadric has `ind(V) = -3` within charge 2: the only non-zero entry of
+`d_rst` there is 2, so `6*ind` is even. Three generations therefore needs a
+freely acting quotient, which is the same conclusion
+`phenomenology.generation_survey` reaches for the standard embedding by a
+completely different route. And the anomaly condition is *not* vacuous, though
+it nearly looks it: `ch_2(V)_r = (1/2) d_rst sum_a L^s L^t` has `d_rst >= 0`
+and `sum_a L_a L_a` positive semi-definite, but a positive semi-definite
+matrix has negative off-diagonal entries, so the contraction is not sign
+definite and the condition genuinely cuts.
+
+Every search takes an explicit charge box, a result `limit` and an optional
+`max_seconds`, and warns when it returns a truncation rather than a complete
+answer. That is deliberate: a truncated list and an exhaustive one are
+different objects and should not be presented alike.
+
 ## Chirality across domains
 
 `pyCICY.chirality` puts one interface over the mirror operations of the other
