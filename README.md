@@ -1,8 +1,137 @@
-## pyCICY Papers
-- Supplementary material: figures for the Extended pyCICY package
-    - https://doi.org/10.5281/zenodo.21798923
+# pyCICY-X: The heterotic pipeline:
+## from a configuration matrix to a spectrum
+### Exact Calabi–Yau topology, a complete heterotic model-building pipeline, and the spectral analogies that connect them.
+---
 
-what follows is the short version.
+A pure-Python toolkit: `numpy`, `scipy`, `sympy`. No SageMath, no Mathematica,
+no GPU, no training runs. Everything is exact integer or rational arithmetic
+where the mathematics allows it, and every number that can be reached by two
+independent routes is computed both ways and checked.
+
+## Papers and figures
+
+- Supplementary material: figures for the Extended pyCICY package —
+  https://doi.org/10.5281/zenodo.21798923
+
+What follows is a tour of the results, roughly in the order the modules were
+built.
+
+---
+
+## What it does
+
+**Calabi–Yau topology (the original core, `pyCICY`, `transitions`, `cicylist`)**
+Configuration matrices, Chern classes, triple and quadruple intersection
+numbers, Hodge data via the Leray spectral sequence and Bott–Borel–Weil, line
+bundle cohomology, favourability, Kollár divisors. Conifold transitions, normal
+forms, the split web over the published list of 7890 threefolds.
+
+**Heterotic model building — the full arc, end to end**
+- `bundles` — sums of line bundles and monads: Chern characters, indices,
+  anomaly cancellation, poly-stability, `SU(5)` spectra, and cost-ordered
+  scans over both constructions.
+- `equivariant` — group actions on line bundles. The character-valued index
+  from the Koszul complex, exact in integers, for cyclic and finite abelian
+  groups acting by permutation and phase on both the ambient factors and the
+  defining polynomials. Two independent freeness tests.
+- `breaking` — Wilson lines, `SU(5)`/`SO(10)`/`E_6` branchings,
+  doublet–triplet splitting, and the chiral spectrum on the quotient derived
+  rather than assumed.
+- `symmetries`, `phenomenology` — freely acting quotients and standard-embedding
+  generation counts.
+
+**Toric and polytope geometry (`toric`, `polytope`)**
+The sixteen reflexive polygons, rederived rather than tabulated. Reflexive
+polytopes in *any* dimension, polar duality, face lattices, and Batyrev Hodge
+numbers for Calabi–Yau hypersurfaces — calibrated on the quintic.
+
+**Spectral analogies (`quantum_curve`, `hofstadter`)**
+Quantized mirror curves of local Calabi–Yaus as Hofstadter models, and the
+closed-form characteristic polynomial of the Hofstadter Hamiltonian
+(Marra–Proietti–Sheng), with modular duality and the Chambers relation.
+
+**Enumerative and arithmetic tools (`enumerative`, `smoothness`)**
+Chern polynomials, Hilbert series, genus-zero Gopakumar–Vafa invariants;
+Jacobian-rank smoothness testing over finite fields.
+
+**Cross-domain structure (`knots`, `apolynomial`, `chirality`, `additivity`,
+`hyperbolic`)**
+Knot invariants, A-polynomials and the AJ conjecture, chirality as a formal
+involution across domains, hyperbolic lattices and automorphic Bloch theory.
+
+**Checked claims from the literature (`flavor`)**
+An implementation of a specific recent proposal, faithful to what it states,
+with the places its arithmetic does not close recorded rather than smoothed
+over.
+
+---
+
+## Where this sits among other open-source tools
+
+The Calabi–Yau software ecosystem splits cleanly, and this package is on one
+side of the split. It is worth being blunt about which.
+
+| Tool | What it does | Relation to this one |
+| --- | --- | --- |
+| [cymetric](https://github.com/pythoncymetric/cymetric) and its maintained fork [ruehlef/cymetric](https://github.com/ruehlef/cymetric) | Neural-network approximations to moduli-dependent Ricci-flat metrics; point generators for CICYs and Kreuzer–Skarke hypersurfaces (TensorFlow, plus PyTorch/JAX in the fork) | **Complementary.** They compute the thing this package explicitly declines to: the metric. Needs SageMath/Mathematica for point generation |
+| [cymyc](https://github.com/Justin-Tan/cymyc) | JAX numerical differential geometry on Calabi–Yaus: curvature, complex-structure moduli, and **physical Yukawa couplings** ([arXiv:2401.15078](https://arxiv.org/abs/2401.15078)) | **Complementary, and ahead where it counts.** `phenomenology.why_not_masses` raises rather than guessing mass ratios; cymyc actually computes them numerically |
+| [cyjax](https://github.com/ml4physics/cyjax), [MLGeometry](https://github.com/yidiq7/MLGeometry) | Donaldson's algorithm and ML metrics in JAX/TensorFlow | Complementary, same reason |
+| [cicy-topology-ml](https://github.com/samreetdhillon/cicy-topology-ml) | A CNN that *predicts* `h^{1,1}` and `h^{2,1}` from configuration matrices (96.7% and 76.5% exact accuracy on the 7890) | **Overlapping, opposite method.** This package *computes* the same Hodge numbers exactly, via Leray and Bott–Borel–Weil. Useful as a cross-check on ML predictions rather than a competitor |
+
+**The honest summary.** If you need a Ricci-flat metric, a physical Yukawa
+coupling, or a fermion mass, use `cymyc` or `cymetric` — this package cannot
+give you any of them and says so in every relevant docstring. Physical
+couplings need the Kähler potential, and the Kähler potential needs the metric.
+
+What this package offers instead is the exact, metric-independent layer:
+everything an index theorem, a spectral sequence, or a lattice count can
+settle, computed symbolically and cross-checked, plus a heterotic pipeline
+that runs from a configuration matrix to a Standard Model spectrum without
+a single numerical approximation in the chain. As far as we know the
+`bundles → equivariant → breaking` arc — scan for stable bundles, derive the
+group action's index character, quotient, break with a Wilson line — is not
+available end-to-end in another open-source package.
+
+## Roadmap
+The natural workflow is to use both: fix the topology and the spectrum here,
+then hand the surviving models to `cymetric` or `cymyc` for the metric and the
+couplings.  We plan to automate this process.
+
+
+---
+
+## Quickstart
+
+```bash
+git clone https://github.com/brentharts/CICY.git && cd CICY
+pip install -r requirements.txt
+python3 run_tests.py            # 14 suites, ~3 minutes
+make help                       # every worked example
+```
+
+The heterotic pipeline, from a configuration matrix to a spectrum:
+
+```python
+from pyCICY import CICY, bundles, equivariant, breaking
+
+X = CICY([[1,2],[1,2],[1,2],[1,2]])            # the tetraquadric
+V = bundles.scan(X, rank=5, charge=2, generations=3,
+                 symmetry_order=2, require_stability=True,
+                 max_seconds=30)[0]             # a poly-stable SU(5) bundle
+A = equivariant.TETRAQUADRIC_Z2()               # a free Z_2 on X
+breaking.chiral_spectrum(A, V, wilson=(0,1))    # 3 generations, anomaly 0
+```
+
+That prints a truncation warning before the answer, and it is meant to: the
+scan hit its 30-second budget having covered two of the outer choices, so the
+list it returned is a slice of the search box rather than all of it. A
+truncated result and an exhaustive one are different objects and the package
+never lets them look alike.
+
+Worked end to end, with every filter and its cost, in
+`examples/line_bundle_models.py`.
+
+---
 
 ### The sixteen reflexive polygons
 
@@ -814,6 +943,29 @@ Wilson line **cannot split the chiral spectrum at all**. What comes out is
 complete SU(5) generations, `-ind(V)/|Gamma|` of them, for any Wilson line
 whatever.
 
+`chiral_spectrum` covers all three ranks `bundles.scan` can produce, since the
+commutant of SU(r) in E_8 depends on r:
+
+| rank | GUT group | chiral matter | vector-like |
+| --- | --- | --- | --- |
+| 3 | `E_6` | 27 from `H^1(V)` | singlets |
+| 4 | `SO(10)` | 16 from `H^1(V)` | the 10, singlets |
+| 5 | `SU(5)` | 10 from `H^1(V)`, 5-bar from `H^1(Lambda^2 V)` | singlets |
+
+Two identities fall out and are checked over 200 random bundles each. For
+rank 4 the `Lambda^2 V` is the **6** of SU(4), which is self-dual, so
+`ind(Lambda^2 V) = 0` **identically** — the 10 of SO(10) is vector-like and no
+index can count it. For rank 3, `Lambda^2 V` is `V*`, so
+`ind(Lambda^2 V) = -ind(V)` identically, and that holds at the level of the
+whole Gamma-character, not just the total.
+
+A Wilson line is accepted only for rank 5. Breaking `SO(10)` or `E_6` to the
+Standard Model needs a Wilson line in *that* group, not in the SU(5)
+hypercharge direction, and that group theory is not implemented — so it is
+refused rather than applied to the wrong thing. All three ranks agree that the
+generation count is `-ind(V)/|Gamma|`, which has nothing to do with which GUT
+group the commutant happens to be.
+
 That is the right physics, and it resolves an apparent tension in this
 package: `doublet_triplet_split` *does* split things, and still takes
 Gamma-charges by hand. Both are correct, because they describe different
@@ -1037,6 +1189,27 @@ sectors here are genuine sectors, but nothing claims they exhaust anything.
 python3 examples/hyperbolic_bloch.py
 python3 examples/hyperbolic_bloch.py --genus 3 --plot /tmp
 ```
+
+## The design rule
+
+One principle runs through the whole package and is the reason to trust it:
+
+> Wherever a number can be reached by two routes that share no code, compute it
+> both ways and require agreement — and where a check *cannot* see a given kind
+> of error, say so and build a different one.
+
+In practice: bundle indices from intersection theory *and* the Leray spectral
+sequence *and* the alternating sum of computed cohomology; Serre duality as a
+constraint on code that knows nothing about it; the equivariant index totalled
+against `line_co_euler`; two independent freeness tests that each catch cases
+the other misses. When the Koszul wedge sign turned out to be invisible to
+every existing check, it got its own oracle — a configuration where the same
+action is expressible two ways — and the tests assert that the oracle *fails*
+when the sign is deliberately broken.
+
+Limits are stated, not hidden. `NotABundle`, `NotFavourable`,
+`MassRatioNotComputable` and the `assumed_stable` flag all exist so that the
+package refuses rather than returning a plausible number.
 
 
 ## Literature
