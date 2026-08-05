@@ -318,13 +318,29 @@ bundles in the box, and every character is equidistributed. The order-2 version
 of the same shape is valid and *not* free, which is the contrast the argument
 rests on and which the tests assert side by side.
 
-The defining polynomials are not permuted: only `p_a -> zeta^{c_a} p_a`, which
-forces every column of the degree matrix to be `sigma`-invariant and is
-checked. A genuine permutation of the polynomials would make the Koszul trace a
-sum over *invariant* subsets with a sign from each induced wedge permutation,
-and that bookkeeping is not implemented — an incorrect sign there is invisible
-in the total at the identity, which is the kind of error this package tries not
-to ship.
+### Permuting the defining polynomials, and an oracle for the sign
+
+`polynomial_perm` allows `g*(p_a) = zeta^{c_a} p_{pi(a)}`. Two things change in
+the Koszul sum: only subsets `S` with `pi^j(S) = S` sit on the diagonal of
+`Lambda^r N*`, and each carries the **sign** of `pi^j` restricted to `S`,
+because reordering `e_{pi(a_1)} ^ ... ^ e_{pi(a_r)}` back into increasing order
+costs exactly that. Compatibility is checked as `d[sigma(i)][pi(a)] = d[i][a]`,
+so neither permutation alone need preserve the degree matrix — only the pair.
+Swapping polynomials of unequal degree is refused; swapping factors *and*
+polynomials together is fine.
+
+That sign is the one thing in this module the usual check cannot see. At the
+identity `pi^0` is trivial and the sign is always `+1`, so **forcing the sign
+to `+1` everywhere still reproduces `line_co_euler` exactly** — the guard that
+validates everything else here is blind to it.
+
+So it gets a separate oracle. On `[[1,1,1]]*5` — a favourable CY3 with
+`chi = -80` — the two defining polynomials have identical multidegree, so
+swapping them is, in the eigenbasis `p_± = p_1 ± p_2`, precisely the phase-only
+action with charges `0` and `1`, which the already-tested path handles. The two
+agree on all 25 bundles; forcing the sign wrong breaks **16 of 25** while
+leaving the identity total at `1.4e-14`. The tests assert both halves, so the
+oracle is on record as being sensitive rather than merely passing.
 
 ```python
 from pyCICY import equivariant as E
