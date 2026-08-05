@@ -196,6 +196,80 @@ def _compiles(src):
         return False
 
 
+MODEL = [[-2, -2, -1, 2], [-2, 1, 0, 0], [1, -2, 1, 0],
+         [1, 1, -1, 0], [2, 2, 1, -2]]
+
+
+def test_kmoduli():
+    print("\n[4b] Kahler moduli from the stability locus")
+    from pyCICY import bundles as BU
+
+    V = BU.LineBundleSum(CICY(TETRA), MODEL)
+
+    # The point of the whole function: at kmoduli = ones the bundle is not
+    # stable, so a metric computed there is a metric at a point in moduli
+    # space where the model does not exist.
+    at_ones = np.abs(np.asarray(V.slopes(np.ones(4)))).max()
+    check_true("the slopes do NOT vanish at kmoduli = ones (%.1f)" % at_ones,
+               at_ones > 1.0)
+
+    r = X_.kmoduli_from_stability(TETRA, MODEL)
+    check_true("but they do at the stability point (%.1e)"
+               % np.abs(r["slopes"]).max(), np.abs(r["slopes"]).max() < 1e-6)
+    check_true("which is in the interior of the cone",
+               bool((r["kmoduli"] > 0).all()))
+
+    # And it is not merely a rescaling of ones -- the direction differs.
+    cos = float(np.dot(np.ones(4), r["kmoduli"])
+                / np.linalg.norm(np.ones(4)) / np.linalg.norm(r["kmoduli"]))
+    check_true("and is not a rescaling of ones (cos = %.3f)" % cos, cos < 0.99)
+
+    # Every normalisation must keep the slopes vanishing, since rescaling a
+    # solution of a homogeneous condition is still a solution. If one of them
+    # did not, the scaling would be wrong.
+    for norm in ("volume", "sum", "max", "raw"):
+        rr = X_.kmoduli_from_stability(TETRA, MODEL, normalisation=norm)
+        check_true("normalisation=%-7s keeps the slopes zero" % norm,
+                   np.abs(rr["slopes"]).max() < 1e-6)
+    check_true("normalisation='volume' really gives volume 1",
+               abs(X_.kmoduli_from_stability(
+                   TETRA, MODEL, normalisation="volume")["volume"] - 1) < 1e-9)
+    check_true("normalisation='sum' sums to the number of moduli",
+               abs(X_.kmoduli_from_stability(
+                   TETRA, MODEL,
+                   normalisation="sum")["kmoduli"].sum() - 4) < 1e-9)
+    check_true("an unknown normalisation is refused",
+               _raises(X_.kmoduli_from_stability, TETRA, MODEL,
+                       normalisation="nonsense"))
+
+    # A bundle with no stability locus has no correct Kahler point, so the
+    # function raises instead of falling back to a default.
+    unstable = [[1, 1, 1, 1], [-1, -1, -1, -1], [0, 0, 0, 0],
+                [0, 0, 0, 0], [0, 0, 0, 0]]
+    check_true("an unstable bundle is refused, not defaulted",
+               _raises(X_.kmoduli_from_stability, TETRA, unstable))
+
+    # The exporters accept it, and refuse it without the bundle.
+    d = X_.to_cymetric(TETRA, kmoduli="stability", summands=MODEL)
+    check_true("to_cymetric(kmoduli='stability') works",
+               np.allclose(d["kmoduli"], r["kmoduli"]))
+    check_true("and needs the summands",
+               _raises(X_.to_cymetric, TETRA, kmoduli="stability"))
+    check_true("an unknown named option is refused",
+               _raises(X_.to_cymetric, TETRA, kmoduli="whatever",
+                       summands=MODEL))
+    check_true("the default is still ones",
+               np.allclose(X_.to_cymetric(TETRA)["kmoduli"], np.ones(4)))
+
+
+def _raises(fn, *a, **kw):
+    try:
+        fn(*a, **kw)
+    except Exception:                                            # noqa: BLE001
+        return True
+    return False
+
+
 def test_integration():
     print("\n[5] integration with cymetric / cymyc")
     A = E.TETRAQUADRIC_Z2()
@@ -244,6 +318,25 @@ def test_integration():
         check_true("but Gamma does NOT preserve it (%.1e)" % moved0,
                    moved0 > 1e-3)
 
+        # A cross-package check of our intersection numbers. cymetric's
+        # get_volume_from_intersections returns int_X J^3 = d_rst t^r t^s t^t
+        # -- six times our kappa, since we carry the 1/3!. Everything else
+        # must agree exactly, and it does: our numbers come from the Leray
+        # spectral sequence on the configuration matrix, theirs from an
+        # independent computation.
+        worst = 0.0
+        rng2 = np.random.default_rng(1)
+        for conf in (TETRA, [[2, 3], [2, 3]], [[4, 5]]):
+            pgv = CICYPointGenerator(**X_.to_cymetric(conf, seed=2),
+                                     verbose=3)
+            for _ in range(5):
+                tt = rng2.random(len(conf)) + 0.3
+                theirs = pgv.get_volume_from_intersections(tt)
+                ours = 6.0 * X_.kahler_volume(conf, tt)
+                worst = max(worst, abs(theirs - ours) / max(1.0, abs(ours)))
+        check_true("our triple intersections match cymetric's (%.1e)" % worst,
+                   worst < 1e-9)
+
     try:
         from cymyc import alg_geo
         import jax.numpy as jnp
@@ -271,6 +364,7 @@ def main():
     test_charges()
     test_polynomials()
     test_formats()
+    test_kmoduli()
     test_integration()
 
     print("\n" + "=" * 72)
