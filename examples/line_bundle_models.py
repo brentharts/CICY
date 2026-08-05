@@ -148,6 +148,60 @@ duality is a constraint line_co has no knowledge of and must satisfy anyway.
 This is the same discipline as node_validation elsewhere in the package.""")
 
 
+def breaking_act(order):
+    banner("Stage 6: down to the Standard Model")
+    from pyCICY import breaking as B
+
+    print("""\
+Everything above is an SU(5) grand unified spectrum on the covering space, and
+"three generations after quotienting by |Gamma| = %d" is so far a division
+rather than a model. What turns SU(5) into SU(3) x SU(2) x U(1) is a Wilson
+line on X/Gamma.""" % order)
+
+    print("\n  SU(5) branching, from the hypercharge generator:")
+    for rep in ("10", "5bar"):
+        for name, dims, Y, mult in B.branching(rep):
+            print("     %-5s -> %-11s Y = %-6s (%d states)"
+                  % (rep, name, Y, mult))
+    ok, _ = B.verify_against_flavor()
+    print("  agrees with flavor.SM_HYPERCHARGES up to conjugation: %s" % ok)
+    print("  Tr(Y) over 10 + 5bar: %s" % B.anomaly_trace_of_generation())
+
+    print("""
+A Wilson line in the hypercharge direction is W = diag(a,a,a,b,b) with
+a^3 b^2 = 1. Its commutant is the Standard Model group when a != b, and all of
+SU(5) when a = b -- in which case W is central and breaks nothing. Counting
+the ones that work for Z_n gives a closed form:
+""")
+    print("     {:>4} {:>12} {:>16}".format("n", "enumerated", "n - gcd(n,5)"))
+    for n in range(1, 11):
+        print("     {:>4} {:>12} {:>16}".format(
+            n, len(B.wilson_lines(n)), B.wilson_line_count(n)))
+    print("""
+It vanishes exactly for n = 1 and n = 5. So a Z_5 quotient divides the
+generation count by five and still cannot break the GUT group, while Z_2 --
+the order these tetraquadric models need -- is the smallest that can. That is
+not automatic and is worth checking before trusting a scan's |Gamma|.""")
+
+    r = B.worked_example()
+    print("\n  A consistent quotient spectrum, |Gamma| = 2, W = (0,1):")
+    for k, v in sorted(r["spectrum"].items(), key=str):
+        print("     %-7s %-11s Y = %-6s  %d multiplets" % (k[0], k[1], k[2], v))
+    print("  generations %d (expected %d), anomaly %s"
+          % (r["generations"], r["expected_generations"], r["anomaly"]))
+    print("""
+The colour triplets are gone while the Higgs doublets survive: doublet-triplet
+splitting, which here is a condition on Gamma-charges rather than a tuning.
+
+One caveat, and it is the whole boundary of this module. The Gamma-charges
+above are *chosen*, not derived. They encode an equivariant structure -- a
+lift of the Gamma action to the total space of the bundle -- and different
+lifts give different spectra on identical topological data. Nothing in this
+package computes them, and project() takes them as an argument rather than
+inventing them. What it does certify is that the consistency conditions close:
+the generation count against the index, and the vanishing of the anomaly.""")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     ap.add_argument("--conf", default="[[1,2],[1,2],[1,2],[1,2]]",
@@ -178,6 +232,7 @@ def main(argv=None):
     spectrum(X, stable, args.order, limit=args.show)
     if stable:
         cross_checks(X, stable[0])
+        breaking_act(args.order)
     else:
         print("\nNo poly-stable model in this box. That is a statement about "
               "the box, not about the manifold; try --charge 2.")
