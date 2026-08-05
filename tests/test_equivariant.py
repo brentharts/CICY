@@ -144,6 +144,78 @@ def test_freeness():
     check_true("the free action passes the whole default box", len(tab) <= 5)
 
 
+def test_permutation_action():
+    print("\n[2b] actions that permute the ambient factors")
+
+    # The regression oracle this class was built against: with sigma the
+    # identity it must reproduce CyclicAction exactly, since every cycle has
+    # length one and the product over cycles becomes a product over factors.
+    A = E.CyclicAction(TETRA_CONF, 2, [[0, 1]] * 4, [0])
+    P = E.PermutationAction(TETRA_CONF, 2, [0, 1, 2, 3], [[0, 1]] * 4, [0])
+    bad = sum(1 for k in itertools.product((-2, -1, 0, 1, 2), repeat=4)
+              if A.euler(list(k)) != P.euler(list(k)))
+    check("sigma = identity reproduces CyclicAction on 625 bundles", bad, 0)
+
+    # Only sigma-invariant bundles carry an equivariant structure at all.
+    Q = E.PermutationAction(TETRA_CONF, 2, [1, 0, 3, 2], [[0, 0]] * 4, [0])
+    check_true("a sigma-invariant bundle is accepted",
+               Q.is_invariant([1, 1, 2, 2]))
+    check_true("a non-invariant one is not", not Q.is_invariant([1, 0, 2, 2]))
+    check_true("and euler refuses it", _raises(Q.euler, [1, 0, 2, 2]))
+    check("invariant charges in [-2,2]: one per cycle, not per factor",
+          len(Q.invariant_charges(-2, 2)), 25)
+
+    # check_order composes n maps, not n times the cycle length -- those are
+    # different group elements, and the earlier version used the wrong one.
+    # It accepted a Z_4 action as a Z_2 one, and the integrality of the
+    # multiplicities did not catch it, which is why euler consults it.
+    wrong = E.PermutationAction(TETRA_CONF, 2, [1, 0, 3, 2],
+                                [[0, 0], [0, 1], [0, 0], [0, 1]], [0])
+    ok, msgs = wrong.check_order()
+    check_true("a Z_4 action declared as Z_2 is rejected", not ok)
+    check_true("with a message naming the factor", "factor 0" in msgs[0])
+    check_true("and euler refuses to compute for it",
+               _raises(wrong.euler, [1, 1, 1, 1]))
+
+    right = E.PermutationAction(TETRA_CONF, 2, [1, 0, 3, 2], [[0, 1]] * 4, [0])
+    check_true("a genuine Z_2 passes the order check", right.check_order()[0])
+
+    # A configuration whose degrees are not sigma-invariant cannot work,
+    # since this class does not permute the defining polynomials.
+    check_true("a non-invariant degree column is refused",
+               _raises(E.PermutationAction, [[1, 2], [1, 1]], 2, [1, 0],
+                       [[0, 0], [0, 0]], [0]))
+    check_true("a dimension-changing permutation is refused",
+               _raises(E.PermutationAction, [[1, 2], [2, 2]], 2, [1, 0],
+                       [[0, 0], [0, 0, 0]], [0]))
+
+    # No cyclic action permuting the factors of the tetraquadric is free.
+    # Fixed points need an eigenvector of the composite map around each cycle,
+    # and a linear map always has one; requiring g^n = id forces that
+    # composite to be scalar, so the fixed locus is positive-dimensional and
+    # X cannot avoid it. Exhaustively over every valid Z_2:
+    valid = free = 0
+    for perm in itertools.permutations(range(4)):
+        if list(perm) == [0, 1, 2, 3]:
+            continue
+        for w in itertools.product(itertools.product(range(2), repeat=2),
+                                   repeat=4):
+            for pc in range(2):
+                try:
+                    Z = E.PermutationAction(TETRA_CONF, 2, list(perm),
+                                            [list(x) for x in w], [pc])
+                except Exception:                                # noqa: BLE001
+                    continue
+                if not Z.check_order()[0]:
+                    continue
+                valid += 1
+                if Z.looks_free(probes=Z.invariant_charges(-1, 1))[0]:
+                    free += 1
+    check_true("valid Z_2 factor-permuting actions examined (%d)" % valid,
+               valid > 1000)
+    check("none of them is free", free, 0)
+
+
 def test_structures():
     print("\n[3] equivariant structures")
     A = E.TETRAQUADRIC_Z2()
@@ -232,6 +304,7 @@ def main():
     t0 = time.time()
     test_index_at_identity()
     test_freeness()
+    test_permutation_action()
     test_structures()
     test_bridge()
 
