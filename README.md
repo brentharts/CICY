@@ -238,6 +238,20 @@ therefore confined to the non-chiral sector all along. The tests check both
 halves: twisting is inert for the free action, and *not* inert for a non-free
 one, so the argument is doing something rather than being ignored.
 
+The weights are exponents of a diagonal action, but that is less restrictive
+than it sounds and the first version of this section said otherwise. Any linear
+map of finite order `n` diagonalises with `n`-th roots of unity as eigenvalues,
+so an action permuting coordinates *inside* a factor is the diagonal case in a
+different basis — the swap `[x0:x1] -> [x1:x0]` is `diag(1,-1)` in the basis
+`x0 ± x1`, i.e. weights `(0,1)`, and a cyclic permutation of `d+1` coordinates
+has weights `(0,...,d)`. Characters do not depend on the basis, so `euler()`
+was already right for all of these; `weights_from_matrix` does the conversion.
+What *does* depend on the basis is anything phrased through monomials, so
+`admissible_polynomial_charges` and `forced_fixed_points` are statements about
+the diagonalising coordinates. Permuting the ambient *factors* is genuinely not
+implemented: it needs element-wise traces over the cycles of the permutation
+rather than a product over factors.
+
 ```python
 from pyCICY import equivariant as E
 A = E.TETRAQUADRIC_Z2()
@@ -602,6 +616,26 @@ onto, so `h^3(B) < h^3(C)` makes the sequence impossible — `B = O(1)^3`,
 `C = O + O(3)` on the quintic is the smallest case, where the trivial summand
 of `C` contributes `h^3(O_X) = 1` by Serre duality and `B` has nothing to map
 onto it. Without the check the formula returns `h^3(V) = -1`.
+
+`bundles.scan_monads` searches them, and exists because the two `NotABundle`
+conditions are cheap enough to be filters. Same cost ordering as `scan`:
+`c_1 = 0` → index → anomaly → positivity → `h^3(B) >= h^3(C)` → whether a
+stable bundle can exist at all. Two arithmetic facts worth knowing before
+choosing a box. On the **quintic** every realisable monad index is a multiple
+of five, so three generations is unreachable at any charge and any rank. On the
+**tetraquadric** `ind = -3` is unreachable for the same parity reason that
+blocks it for line bundle sums, while `-6` is not — so both constructions need
+the same freely acting `Z_2` that `breaking.minimal_order` independently picks
+out as the smallest group able to break SU(5).
+
+One degeneracy is worth knowing about because nothing rejects it for you.
+Positivity admits trivial summands: `O_X` has all charges zero, so every
+summand of `C` exceeds it somewhere. On CICY 7833 at charge 3, *every* rank-4
+monad with `ind = -6` surviving all filters has a trivial summand in `B`, so
+none of them is a model — the structure group is smaller than advertised. The
+tests assert that rather than filtering it away, since here the degeneracy is
+not incidental to the box, it is the whole of it. `keep` is the place for a
+predicate excluding them.
 
 `cohomology_bounds(stable=True)` tightens by imposing `h^0(V) = h^3(V) = 0`,
 which holds for any slope-stable bundle with `c_1(V) = 0` on a Calabi-Yau
