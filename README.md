@@ -530,6 +530,57 @@ ranks of the maps `H^q(B) -> H^q(C)`, which depend on the morphism and not on
 the degrees; `Monad.cohomology_bounds` returns the interval the sequence
 gives and refuses to guess the rest.
 
+### From SU(5) down to the Standard Model
+
+`pyCICY.breaking` finishes the arc. Everything `bundles` produces is an SU(5)
+spectrum on the *covering* space, and "three generations after quotienting by
+|Gamma|" is at that stage a division, not a model. What turns SU(5) into
+SU(3) x SU(2) x U(1) is a Wilson line on X/Gamma.
+
+```python
+from pyCICY import breaking as B
+
+B.branching("10")            # (3,2)_{1/6} + (3bar,1)_{-2/3} + (1,1)_1
+B.wilson_line_count(2)       # 1
+B.minimal_order()            # 2
+B.worked_example()           # 3 generations, anomaly 0, triplets projected out
+```
+
+The branching is computed from the hypercharge generator rather than tabulated,
+and checked against `flavor.SM_HYPERCHARGES` — a table entered independently
+for a different paper — which must agree up to conjugation, and does.
+
+A Wilson line in the hypercharge direction is `W = diag(a,a,a,b,b)` with
+`a^3 b^2 = 1`; its commutant is the Standard Model group when `a != b` and all
+of SU(5) when `a = b`, in which case `W` is central and breaks nothing.
+Counting those that work for `Z_n` gives a closed form, found by enumeration
+and then proved:
+
+    #{ (p,q) : 3p + 2q = 0 mod n, p != q }  =  n - gcd(n, 5)
+
+It **vanishes exactly for n = 1 and n = 5**. So a `Z_5` quotient divides the
+generation count by five and still cannot break the GUT group — every
+compatible Wilson line is central — while `Z_2`, the order the tetraquadric
+models of `bundles.scan` require, is the smallest that can. That is not
+automatic, and is worth checking before trusting a scan's `|Gamma|`.
+
+Doublet-triplet splitting comes out as a condition on charges rather than a
+tuning: with `W = (0,1)` the weak doublet inside the 5bar shifts by `-q = 1`
+while its colour triplet shifts by `-p = 0`, so an asymmetric charge assignment
+keeps the doublets and projects the triplets out entirely. Splitting the
+charges evenly instead leaves both, and hides the mechanism — worth knowing
+when reading a spectrum that looks symmetric.
+
+**The boundary.** The representation of Gamma on cohomology is *not* a function
+of the configuration matrix, the charges, or anything else this package holds:
+it needs an equivariant structure, a lift of the Gamma action to the total
+space, and different lifts give different spectra on identical topological
+data. `project` therefore takes the Gamma-charges as an argument and does not
+invent them. What it certifies is internal consistency — the generation count
+against `-ind(V)/|Gamma|`, the vanishing of the hypercharge anomaly, and the
+fate of the colour triplets. This is the same line `phenomenology` draws around
+the Yukawa couplings, for the same reason.
+
 ### Why the ordering of the filters is the whole design
 
 The conditions on a candidate model do not cost remotely the same, so `scan`
