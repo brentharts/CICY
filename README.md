@@ -74,7 +74,178 @@ leaves the spectrum *exactly* unchanged, so no spectral invariant can detect
 that involution, and the package reports it as undetermined rather than as
 achiral.
 
-### Hyperbolic lattices, and why finite patches fail
+### The Hofstadter characteristic polynomial
+
+`pyCICY.quantum_curve` quantizes the mirror curve of a local Calabi-Yau and
+diagonalises the difference operator. That gives eigenvalues; the butterfly is
+a scatter plot of them. What it never had was the characteristic polynomial as
+an object.
+
+`pyCICY.hofstadter` supplies one, from Marra, Proietti and Sheng,
+*Hofstadter-Toda spectral duality and quantum groups*,
+[arXiv:2312.14242](https://arxiv.org/abs/2312.14242). Their Theorem III.9
+writes `f(E) = det(H - E)` at the mid-band point as a sum over *two-step*
+elementary symmetric polynomials — those skipping adjacent indices —
+evaluated at `sin^2(j pi alpha)`.
+
+```python
+from pyCICY import hofstadter as H
+
+H.char_poly_coefficients(3, 7)      # the degree-7 polynomial, flux 3/7
+H.verify_theorem_III9()             # against numpy.linalg.det: 4e-10
+H.zero_mode_point(8)                # ('centre', (0.0, 0.0))
+```
+
+Every claim implemented was verified against an independent numerical
+computation before being written down, and all of them hold:
+
+| claim | checked against | worst error |
+| --- | --- | --- |
+| Theorem III.9 | `numpy.linalg.det`, 10 coprime `P/Q` | 4e-10 |
+| Remark III.11, `etilde_{Q/2}(sin^2) = 4^-(Q/2-1)` | closed form, all even `Q <= 14` | 1e-16 |
+| Chambers relation | 36 random Brillouin points | 5e-9 |
+| zero-mode parity rule | `Q = 3..12`, all three cases | exact |
+
+Two things are worth pulling out. The `etilde` are computed by the Lemma III.6
+recurrence rather than by enumerating subsets — `O(n^2)` instead of `O(2^n)`,
+and 270 times faster already at eighteen variables. A degree-201 polynomial
+takes 3 ms; the same by enumeration would need `2^200` subsets, and `Q` of a
+few hundred is where the butterfly is actually drawn.
+
+And the module earns its place by overlapping the geometry. `quantum_curve.harper()`
+is the square lattice, built from the Newton polygon of the local `F_0` mirror
+curve following Hatsuda, Sugimoto and Xu — who are reference 11 of this paper.
+`hofstadter` builds the same operator from Definition I.5 of a different paper.
+Band extents agree to 2e-3, and the test suite requires it.
+
+The spectral duality `alpha -> 1/alpha` is implemented only as far as it is
+testable. The paper is explicit that the induced map `E -> Etilde` is unknown
+in closed form — that is the open problem the formula is meant to serve — so
+`spectral_duality_check` returns both sides and does not pretend to solve it.
+
+```console
+python3 examples/hofstadter_duality.py
+make hofstadter FLUX=5/11
+```
+
+## Reflexive polytopes in any dimension, and the 24-cell
+
+`pyCICY.toric` is two-dimensional throughout and none of it generalises: its
+`dual` assumes an ordered vertex cycle and its `lattice_points` scan-converts a
+polygon. `pyCICY.polytope` lifts the machinery to arbitrary dimension, which
+matters because a reflexive **four**-polytope gives a Calabi-Yau threefold by
+the Batyrev construction — the compact side of the package reached from the
+toric side.
+
+Correctness is by overlap rather than assertion: in two dimensions the new code
+must reproduce the old one, and it does, on all sixteen reflexive polygons.
+
+```python
+from pyCICY import polytope as P
+
+P.batyrev_hodge(P.polar(P.simplex(4)))   # the quintic: (1, 101), chi = -200
+P.is_reflexive(P.d4_roots())             # reflexive — but in which lattice?
+P.f_vector(P.twenty_four_cell())         # [24, 96, 96, 24]
+```
+
+Two convention traps, both caught by cross-checking and both now explicit.
+`toric.dual` uses `P* = {y : <x,y> <= 1}` while Batyrev's is `<x,y> >= -1`; the
+first version of `polar` agreed with `toric.dual` on only 3 of 16 polygons, the
+ones whose dual is centrally symmetric. It is a uniform `y -> -y`, so `polar`
+takes a `convention` argument. Worse, `batyrev_hodge` takes Δ, the *Newton*
+polytope, not Δ*: passing `simplex(4)`, the fan polytope of `P^4`, silently
+returns `(101, 1)`, the mirror quintic. The calibration is now in the tests —
+`l(Delta) = C(9,4) = 126`, one lattice point per quintic monomial.
+
+### Reflexivity is a property of a polytope *and a lattice*
+
+The 24-cell is the case that makes this unavoidable. Written as the `D_4` roots
+`±e_i ± e_j`, its polar has vertices `{±e_i}` together with the sixteen
+`(1/2)(±1,±1,±1,±1)` — half-integral, so the 24-cell is **not reflexive with
+respect to `Z^4`**. It is reflexive with respect to the lattice its own
+vertices generate, `D_4 = {x in Z^4 : sum x_i even}`, of index 2, and there both
+it and its dual are honest lattice polytopes with 24 vertices. So
+`is_reflexive` reports *which lattice it used*: "is the 24-cell reflexive" has
+no answer until the lattice is named.
+
+Both Δ and Δ* have exactly 25 lattice points — their 24 vertices and the origin
+— so no proper face has an interior lattice point and both Batyrev correction
+sums vanish identically:
+
+    h^{1,1} = h^{2,1} = 20 ,   chi = 0 .
+
+Self-duality forces `h11 = h21` with no arithmetic at all, so two independent
+arguments land in the same place. Braun's Hodge numbers `(1,1)`
+([arXiv:1102.4880](https://arxiv.org/abs/1102.4880)) are those of a *free
+quotient* of this cover; enumerating free quotients is the boundary
+`pyCICY.symmetries` draws on the CICY side, and it is not crossed here.
+
+## The 24-cell flavour construction
+
+`pyCICY.flavor` implements the Standard Model content of Ali, *Quantum
+Spacetime Imprints: The 24-Cell, Standard Model Symmetry and its Flavor
+Mixing*, [arXiv:2511.10685](https://arxiv.org/abs/2511.10685) — **as stated**,
+with the paper's own numbers, and then checks it. Where a stated result does
+not follow from its stated inputs, the function computes what the inputs give
+and says so, rather than quietly substituting a parameter that makes the number
+come out right. That is the policy `pyCICY.apolynomial` already follows when it
+reports the leftover factor in the AJ classical limit instead of suppressing it.
+
+**What is exact.** All fifteen Standard Model hypercharges are reproduced in
+exact rational arithmetic, on fifteen distinct vertices of the sixteen in `V_2`
+(the unused one is `(-1,1,-1,1)`), and `Tr(Y) = 0` generation by generation.
+The tetrahedral projection gives a Gram matrix with every off-diagonal exactly
+`-1/3`, so `J` has eigenvalues `{1/3, 4/3, 4/3}` and `U_TBM` diagonalises it:
+tribimaximal mixing, `th12 = 35.26`, `th23 = 45`, `th13 = 0`.
+
+**What does not follow, in three parts.**
+
+*The hypercharges are fitted.* The functional has four components of `h_Y` plus
+an offset, so five parameters against five targets. `fit_rank` finds the 5×5
+system full rank for all three generations, so a unique solution exists for
+*any* targets whatever.
+
+*Generation 3 is a real exception, with a reason.* It sets `eps = 0`, leaving
+four unknowns for five equations, and is nevertheless consistent. The five
+vertices carry one linear dependency, null vector `c = (-1, 1, -1, -2, 1)`, and
+consistency is exactly `c . Y = 0`. Imposing only the Yukawa relations
+`Y_L = Y_eR + Y_H`, `Y_uR = Y_q + Y_H`, `Y_dR = Y_q - Y_H` collapses that to
+`-4 Y_H - 2 Y_eR`, which vanishes because `Y_eR = -1` and `Y_H = 1/2`. So it is
+a fact about the Standard Model hypercharges, not about the 24-cell — and
+`epsilon_zero_census` finds 14592 of 437760 (subset, assignment) pairs share
+the property, about one in thirty.
+
+*The Minimal Distortion Principle has nothing to minimise.* Four points span an
+affine subspace of dimension at most three, so orthogonal projection onto their
+hull is an **isometry**: `mdp_distortion()` returns 2e-15. Since `eta` is
+introduced as exactly that residual and then drives both `theta_13` and the
+Cabibbo angle, the parameter doing the phenomenological work has no source in
+the construction as described.
+
+The two estimates then behave oppositely. `theta13_from_strain(0.017, 0.022)`
+gives **8.52°** against the paper's 8.5 — the arithmetic closes. But the
+Cabibbo formula `tan th_C ~ sqrt(2/3) * eta * 2` with the same `eta` gives
+0.033–0.049, i.e. 1.9–2.8°, not the stated 0.22–0.26. Reaching the measured
+0.2250 needs `eta = 0.138`, **6.3 times** the 0.022 the reactor angle requires,
+and `eta` is described as universal across the quark and lepton sectors.
+`cabibbo_angle` returns both the computed value and `eta_for_quoted` so the gap
+stays visible. There is no v2 of the paper.
+
+Two smaller corrections are recorded in `polytope`: the paper's two vertex sets
+are the polar **dual pair**, not two descriptions of one polytope, and the count
+of regular tetrahedra with `||v_i - v_j||^2 = 4` is **48**, not 576 — and 48 is
+every equilateral four-subset at *any* edge length, so the figure is not
+recoverable by relaxing the criterion. The 48 is structural: the condition is
+pairwise orthogonality, the twelve diagonals fall into three orthogonal frames
+of four, and each frame carries `2^4` sign choices.
+
+```console
+python3 examples/twentyfour_cell.py
+python3 examples/twentyfour_cell.py --act flavour --no-census
+make polytope
+```
+
+## Hyperbolic lattices, and why finite patches fail
 
 ![A {8,8} flake in the Poincare disk, and its boundary fraction](paper/figures/fig_hyperbolic.png)
 

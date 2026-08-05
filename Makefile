@@ -31,6 +31,7 @@ DEPTH       ?= 3
 COMPARE_LIMIT ?= 500
 FLUX        ?= 1/3
 GENUS       ?= 2
+HFLUX ?= 3/7
 CHARGE ?= 1
 ORDER ?= 2
 BUDGET ?= 20
@@ -143,6 +144,14 @@ hyperbolic:
 bundles:
 	$(PYTHON) examples/line_bundle_models.py --charge $(CHARGE) --order $(ORDER) --budget $(BUDGET)
 
+# The Hofstadter characteristic polynomial (arXiv:2312.14242).
+hofstadter:
+	$(PYTHON) examples/hofstadter_duality.py --flux $(HFLUX)
+
+# The 24-cell: reflexive polytope, Batyrev Hodge numbers, flavour claims.
+polytope:
+	$(PYTHON) examples/twentyfour_cell.py $(if $(NO_CENSUS),--no-census,)
+
 # The LaTeX supplement describing every figure. Needs the figures first.
 supplement: figures
 	cd paper && pdflatex -interaction=nonstopmode supplementary_material.tex \
@@ -177,5 +186,5 @@ distclean: clean
 	-rmdir $(FIGDIR) 2>/dev/null || true
 
 help:
-	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality hyperbolic aj bundles new-figures supplement clean distclean cache-info cache-clear"
-	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) CHARGE=$(CHARGE) ORDER=$(ORDER) BUDGET=$(BUDGET) PYTHON=$(PYTHON)"
+	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality hyperbolic aj bundles hofstadter polytope new-figures supplement clean distclean cache-info cache-clear"
+	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) CHARGE=$(CHARGE) ORDER=$(ORDER) BUDGET=$(BUDGET) FLUX=$(FLUX) HFLUX=$(HFLUX) PYTHON=$(PYTHON)"
