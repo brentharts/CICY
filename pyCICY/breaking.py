@@ -82,7 +82,7 @@ __all__ = [
     "wilson_lines", "wilson_line_count", "unbroken_group", "breaks_to_sm",
     "minimal_order", "project", "doublet_triplet_split", "worked_example",
     "anomaly_trace_of_generation",
-    "generations_downstairs",
+    "generations_downstairs", "chiral_spectrum",
 ]
 
 
@@ -468,3 +468,112 @@ def doublet_triplet_split(charges, gamma_order, wilson):
                and k[2] in (F(1, 3), F(-1, 3)))
     return {"doublets": doub, "triplets": trip,
             "split": bool(doub > 0 and trip == 0)}
+
+
+def chiral_spectrum(action, summands, wilson=None, X=None):
+    r"""
+    The chiral spectrum on X/Gamma, **derived** rather than supplied.
+
+    :func:`project` takes the Gamma-charges as an argument because the
+    representation of Gamma on each cohomology group is not a function of the
+    topology. That remains true. But the *chiral* part -- the net content, an
+    index -- is determined, and :mod:`pyCICY.equivariant` computes it. This
+    function joins the two, so that the pipeline
+    :func:`pyCICY.bundles.scan` -> equivariant index -> Standard Model
+    spectrum runs end to end with nothing chosen by hand.
+
+    Parameters
+    ----------
+    action : a :class:`pyCICY.equivariant.CyclicAction`, ``PermutationAction``
+        or ``AbelianAction`` on the same manifold.
+    summands : list of charge vectors
+        The rank-5 line bundle sum, as :class:`pyCICY.bundles.LineBundleSum`
+        takes it.
+    wilson : (p, q), optional
+        The Wilson line, as in :func:`project`.
+    X : CICY, optional
+        Only needed to build the wedge and endomorphism bundles; inferred from
+        ``action.conf`` when omitted.
+
+    Returns
+    -------
+    dict
+        ``spectrum`` mapping each Standard Model piece to its net chiral
+        multiplicity downstairs, ``generations``, ``anomaly``, and
+        ``equidistributed`` recording whether the index characters were
+        constant.
+
+    The result for a free action, and why
+    ------------------------------------
+    The 10 of SU(5) sits in H^1(V) and the 5-bar in H^1(Lambda^2 V), so the
+    net number of each is read off ind(V) and ind(Lambda^2 V). A Wilson line
+    shifts the Gamma-charge of each Standard Model piece within its multiplet
+    by a different amount -- that is how it splits them -- and the surviving
+    multiplicity is the one at the shifted charge.
+
+    For a *free* Gamma every one of those characters is a multiple of the
+    regular representation, i.e. constant, so **every shift lands on the same
+    multiplicity** and the Wilson line cannot split the chiral spectrum at
+    all. What comes out is complete SU(5) generations, -ind(V)/|Gamma| of
+    them, whatever Wilson line is chosen.
+
+    That is the correct physics and it is worth being explicit that it is
+    derived here rather than assumed: doublet-triplet splitting is necessarily
+    a statement about *vector-like* pairs, the non-chiral content that an
+    index cannot see. :func:`doublet_triplet_split` operates on exactly that
+    content, which is why it still takes Gamma-charges as input and why
+    :func:`worked_example` supplies them by hand. The two functions are not in
+    tension; they describe different halves of the spectrum, and only one half
+    is determined by topology.
+    """
+    from . import bundles as _bundles
+    from . import equivariant as _eq
+
+    n = int(getattr(action, "n", getattr(action, "order", 1)))
+    if X is None:
+        from .pyCICY import CICY
+        X = CICY(action.conf.tolist())
+    V = _bundles.LineBundleSum(X, summands)
+
+    def character(bundle_summands):
+        ch = _eq.bundle_index_character(action, bundle_summands)
+        if isinstance(ch, dict):                 # AbelianAction
+            keys = sorted(ch)
+            return [ch[k] for k in keys]
+        return list(ch)
+
+    cV = character(V.summands)
+    cW = character(V.wedge2().summands)
+    cE = character(V.endomorphisms().summands)
+
+    equid = {"V": len(set(cV)) == 1,
+             "wedge2": len(set(cW)) == 1,
+             "endomorphisms": len(set(cE)) == 1}
+
+    shift = _wilson_shift(wilson, len(cV)) if wilson else {}
+    spectrum = {}
+    widths = {}
+    for rep, chars in (("10", cV), ("5bar", cW)):
+        for name, dims, Y, mult in branching(rep):
+            s = shift.get(Y, 0) % len(chars)
+            key = (rep, name, Y)
+            spectrum[key] = -chars[(-s) % len(chars)]
+            widths[key] = mult
+
+    gens = spectrum.get(("10", "(1, 1)", F(1)), 0)
+    # Weighted by the number of states in each piece, as in project(): a
+    # surviving (3,2) is six states, not one. Pairing the multiplicities to
+    # the spectrum by key rather than by iteration order, since the two are
+    # built in different loops and a zip between them would be silently
+    # order-dependent.
+    anomaly = sum(F(k[2]) * v * widths[k] for k, v in spectrum.items())
+    return {"spectrum": spectrum,
+            "widths": widths,
+            "generations": gens,
+            "anomaly": anomaly,
+            "equidistributed": equid,
+            "index_V": sum(cV),
+            "character_V": cV,
+            "character_wedge2": cW,
+            "character_endomorphisms": cE,
+            "gamma_order": n}
