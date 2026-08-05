@@ -15,11 +15,13 @@ from . import chirality
 from . import hyperbolic
 from . import toric
 from . import quantum_curve
+from . import hofstadter
 from . import viz
 
 __all__ = ["CICY", "cache", "transitions", "enumerative", "smoothness",
            "cicylist", "additivity", "phenomenology", "bundles", "symmetries",
            "mathematica",
            "knots", "apolynomial", "chirality", "toric", "quantum_curve",
+           "hofstadter",
            "hyperbolic",
            "viz"]
