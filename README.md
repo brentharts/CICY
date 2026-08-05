@@ -281,6 +281,43 @@ valid `Z_2` factor-permuting actions. This is why Braun's free actions on that
 manifold are non-cyclic — they need a second generator, which is the next
 extension rather than a limitation of the trace formula.
 
+`AbelianAction` generalises this to `Gamma = Z_{n_1} x ... x Z_{n_r}`: each
+element is a word in the generators, its `(sigma, w)` obtained by composing,
+its trace a product over the cycles of *its own* permutation, and the
+multiplicities a Fourier inversion over the character group. One generator
+reproduces `PermutationAction` exactly on 625 bundles. It checks three
+independent things — that each generator has the claimed order projectively,
+that the generators commute projectively, and that the degree columns are
+invariant — because none implies the others and a failure of any one makes the
+index meaningless rather than merely inaccurate.
+
+### The free action, and why it has order four
+
+A `Z_2 x Z_2` with one generator permuting and one phasing turns out **never**
+to be free on the tetraquadric — 16384 valid actions, none of them. The reason
+is immediate once seen: freeness requires *every* non-identity element to act
+freely, and the permuting generator alone already has a positive-dimensional
+fixed locus by the scalar-composite argument. No group containing it can help.
+
+The escape is to make the permuting element's **square** a non-scalar phase,
+which forces it to have order four. With `sigma = (01)(23)` and weights
+summing to `(0,2) mod 4` around each transposition, `g^2 = diag(1,-1)` has
+distinct eigenvalues, so its fixed points are isolated and X can miss them.
+64 of the 256 such actions are free:
+
+```python
+F = E.PermutationAction([[1,2]]*4, 4, [1,0,3,2],
+                        [[0,0],[0,2],[0,0],[0,2]], [0])
+F.check_order()      # (True, [])
+F.looks_free()       # True
+F.euler([-2,-2,-1,-1])   # [-9,-9,-9,-9] — equidistributed over Z_4
+```
+
+Totals still match `line_co_euler` to 9e-16 across all 25 `sigma`-invariant
+bundles in the box, and every character is equidistributed. The order-2 version
+of the same shape is valid and *not* free, which is the contrast the argument
+rests on and which the tests assert side by side.
+
 The defining polynomials are not permuted: only `p_a -> zeta^{c_a} p_a`, which
 forces every column of the degree matrix to be `sigma`-invariant and is
 checked. A genuine permutation of the polynomials would make the Koszul trace a
