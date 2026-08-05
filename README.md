@@ -1,9 +1,8 @@
+## pyCICY Papers
+- Supplementary material: figures for the Extended pyCICY package
+    - https://doi.org/10.5281/zenodo.21798923
 
-
-
-
-`paper/supplementary_material.tex` reproduces and describes all sixteen
-figures in full; what follows is the short version.
+what follows is the short version.
 
 ### The sixteen reflexive polygons
 
