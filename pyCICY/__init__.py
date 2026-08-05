@@ -7,6 +7,7 @@ from . import cicylist
 from . import additivity
 from . import phenomenology
 from . import bundles
+from . import breaking
 from . import symmetries
 from . import mathematica
 from . import knots
@@ -21,7 +22,8 @@ from . import hofstadter
 from . import viz
 
 __all__ = ["CICY", "cache", "transitions", "enumerative", "smoothness",
-           "cicylist", "additivity", "phenomenology", "bundles", "symmetries",
+           "cicylist", "additivity", "phenomenology", "bundles", "breaking",
+           "symmetries",
            "mathematica",
            "knots", "apolynomial", "chirality", "toric", "polytope", "flavor",
            "quantum_curve",
