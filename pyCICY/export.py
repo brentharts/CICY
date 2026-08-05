@@ -76,6 +76,7 @@ import numpy as np
 __all__ = [
     "ambient_vector", "coordinate_blocks", "monomials", "monomial_charges",
     "invariant_monomials", "defining_polynomials", "is_smooth_over_Fp",
+    "kmoduli_from_stability", "kahler_volume",
     "to_cymetric", "to_cymyc", "poly_spec_source",
 ]
 
@@ -303,11 +304,132 @@ def _rank_mod_p(M, p):
     return r
 
 
+
+# ---------------------------------------------------------------------------
+# Kahler moduli
+# ---------------------------------------------------------------------------
+
+def kahler_volume(X, t):
+    r"""``kappa(t) = d_rst t^r t^s t^t / 6``, the volume of X at the Kahler point ``t``.
+
+    Note the factor. cymetric's ``get_volume_from_intersections`` returns
+    ``int_X J^3 = d_rst t^r t^s t^t`` without the ``1/3!``, so the two differ
+    by exactly six. They agree to the last bit otherwise, on every manifold
+    tested, which is a genuine cross-check: our intersection numbers come from
+    the Leray spectral sequence on the configuration matrix and theirs from
+    an independent computation on the same ambient data.
+    """
+    from .pyCICY import CICY
+    XX = X if isinstance(X, CICY) else CICY(_conf(X).tolist())
+    d = np.asarray(XX.triple_intersection(), dtype=float)
+    t = np.asarray(t, dtype=float)
+    return float(np.einsum("rst,r,s,t->", d, t, t, t) / 6.0)
+
+
+def kmoduli_from_stability(X, summands, normalisation="volume", target=1.0,
+                           tries=40, tol=1e-7):
+    r"""
+    The Kahler moduli at which the given bundle is poly-stable.
+
+    A sum of line bundles is poly-stable exactly where every slope
+    ``mu(L_a) = d_rst L_a^r t^s t^t`` vanishes, and
+    :func:`pyCICY.bundles.stability_locus` finds that point. It is the
+    physically correct Kahler point for the model: at any other point in the
+    cone the bundle is not stable, the Hermitian-Yang-Mills equation has no
+    solution, and the four-dimensional theory is not supersymmetric. Handing a
+    metric package ``kmoduli = ones`` instead asks it for a metric at a point
+    in moduli space where the model does not exist -- silently, since nothing
+    downstream knows what the bundle was.
+
+    **The slope condition fixes a ray, not a point.** Every slope is homogeneous
+    of degree two in ``t``, so if ``t`` is a solution then so is every positive
+    multiple. The *direction* is determined by the bundle; the overall scale is
+    the volume modulus and is a genuine free parameter that stability says
+    nothing about. So this function returns a direction and a scale you chose,
+    and ``normalisation`` names the choice:
+
+    ``'volume'``   scale so that ``kappa(t) = target`` (default 1)
+    ``'sum'``      scale so that ``sum_r t_r`` equals the number of moduli,
+                   which puts it on the same footing as ``ones``
+    ``'max'``      scale so that the largest modulus is ``target``
+    ``'raw'``      whatever the optimiser returned, normalised to unit norm
+
+    Returns a dict with ``kmoduli``, the ``volume`` there, the ``slopes`` (all
+    of which should vanish), and the ``residual`` from the search.
+
+    Raises when the bundle is not poly-stable anywhere in the cone, rather than
+    falling back to a default -- a bundle with no stability locus has no
+    correct Kahler point, and returning one would be inventing it.
+    """
+    from . import bundles as _bundles
+
+    loc = _bundles.stability_locus(X, summands, tries=tries)
+    if not loc["found"]:
+        raise ValueError(
+            "this bundle is not poly-stable anywhere in the Kahler cone (%s), "
+            "so there is no Kahler point at which the model exists and no "
+            "correct kmoduli to return"
+            % loc.get("reason", "no common zero of the slopes was found"))
+    t = np.asarray(loc["t"], dtype=float)
+    if np.any(t <= 0):
+        raise ValueError(
+            "the stability point sits on the boundary of the Kahler cone, "
+            "where the manifold degenerates: t = %s" % t.tolist())
+
+    if normalisation == "volume":
+        v = kahler_volume(X, t)
+        if v <= 0:
+            raise ValueError(
+                "the volume at the stability point is %g, which is not "
+                "positive; the point is not in the Kahler cone as this basis "
+                "assumes" % v)
+        t = t * (float(target) / v) ** (1.0 / 3.0)
+    elif normalisation == "sum":
+        t = t * (len(t) / t.sum())
+    elif normalisation == "max":
+        t = t * (float(target) / t.max())
+    elif normalisation == "raw":
+        t = t / np.linalg.norm(t)
+    else:
+        raise ValueError("normalisation must be 'volume', 'sum', 'max' or "
+                         "'raw', got %r" % (normalisation,))
+
+    V = _bundles.LineBundleSum(X, summands)
+    slopes = np.asarray(V.slopes(t), dtype=float)
+    if np.max(np.abs(slopes)) > tol * max(1.0, float(np.abs(slopes).max() + 1)):
+        # rescaling is exact, so this should never fire; it is here because a
+        # silent failure would put the metric at the wrong point.
+        raise ArithmeticError(
+            "the slopes do not vanish after rescaling: %s" % slopes.tolist())
+
+    return {"kmoduli": t, "volume": kahler_volume(X, t),
+            "slopes": slopes, "residual": loc["residual"],
+            "normalisation": normalisation}
+
+
 # ---------------------------------------------------------------------------
 # the two output formats
 # ---------------------------------------------------------------------------
 
-def to_cymetric(X, action=None, kmoduli=None, seed=0, **kw):
+def _resolve_kmoduli(X, kmoduli, summands, normalisation, n):
+    """Turn the ``kmoduli`` argument into an array, or explain why it cannot."""
+    if isinstance(kmoduli, str):
+        if kmoduli != "stability":
+            raise ValueError("the only named kmoduli option is 'stability'")
+        if summands is None:
+            raise ValueError(
+                "kmoduli='stability' needs the bundle: pass summands=[...]. "
+                "The Kahler point is a property of the bundle, not of the "
+                "manifold alone")
+        return kmoduli_from_stability(X, summands,
+                                      normalisation=normalisation)["kmoduli"]
+    if kmoduli is None:
+        return np.ones(n)
+    return np.asarray(kmoduli)
+
+
+def to_cymetric(X, action=None, kmoduli=None, seed=0, summands=None,
+                normalisation="volume", **kw):
     """Arguments for ``cymetric.pointgen.pointgen_cicy.CICYPointGenerator``.
 
     Returns a dict with ``monomials``, ``coefficients``, ``kmoduli`` and
@@ -318,13 +440,13 @@ def to_cymetric(X, action=None, kmoduli=None, seed=0, **kw):
     """
     mons, coeffs = defining_polynomials(X, action=action, seed=seed, **kw)
     amb = ambient_vector(X)
-    if kmoduli is None:
-        kmoduli = np.ones(len(amb))
+    km = _resolve_kmoduli(X, kmoduli, summands, normalisation, len(amb))
     return {"monomials": mons, "coefficients": coeffs,
-            "kmoduli": np.asarray(kmoduli), "ambient": amb}
+            "kmoduli": km, "ambient": amb}
 
 
-def to_cymyc(X, action=None, kmoduli=None, seed=0, **kw):
+def to_cymyc(X, action=None, kmoduli=None, seed=0, summands=None,
+             normalisation="volume", **kw):
     """A ``poly_spec``-style tuple for cymyc, plus the coefficients.
 
     Returns ``((monomials, cy_dim, kmoduli, ambient), coefficients)``, matching
@@ -334,9 +456,8 @@ def to_cymyc(X, action=None, kmoduli=None, seed=0, **kw):
     conf = _conf(X)
     amb = ambient_vector(X)
     cy_dim = int(sum(conf[:, 0]) - (conf.shape[1] - 1))
-    if kmoduli is None:
-        kmoduli = np.ones(len(amb), dtype=np.complex64)
-    return (mons, cy_dim, np.asarray(kmoduli, dtype=np.complex64), amb), coeffs
+    km = _resolve_kmoduli(X, kmoduli, summands, normalisation, len(amb))
+    return (mons, cy_dim, np.asarray(km, dtype=np.complex64), amb), coeffs
 
 
 def poly_spec_source(X, action=None, name="pycicy_spec", seed=0, **kw):
