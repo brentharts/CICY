@@ -530,6 +530,25 @@ ranks of the maps `H^q(B) -> H^q(C)`, which depend on the morphism and not on
 the degrees; `Monad.cohomology_bounds` returns the interval the sequence
 gives and refuses to guess the rest.
 
+Two things the degrees *do* settle, and both raise `NotABundle` rather than
+returning nonsense. Exactness at the right-hand end needs `H^3(B) -> H^3(C)`
+onto, so `h^3(B) < h^3(C)` makes the sequence impossible — `B = O(1)^3`,
+`C = O + O(3)` on the quintic is the smallest case, where the trivial summand
+of `C` contributes `h^3(O_X) = 1` by Serre duality and `B` has nothing to map
+onto it. Without the check the formula returns `h^3(V) = -1`.
+
+`cohomology_bounds(stable=True)` tightens by imposing `h^0(V) = h^3(V) = 0`,
+which holds for any slope-stable bundle with `c_1(V) = 0` on a Calabi-Yau
+threefold. That pins two of the three free ranks, leaving `r_1` alone, and
+then `h^2 = h^1 + ind(V)` exactly — the two intervals have the same width and
+are rigidly offset by the index. But the forced `r_2` need not be attainable:
+for about one monad in ninety the sequence pins `h^3(V)` above zero and no
+stable bundle arises however the coefficients are chosen. Both cases are swept
+over 1200 random monads on three manifolds in `tests/test_bundles.py`, checking
+that no cohomology dimension goes negative, that the index always lies in the
+alternating range, and that the tightened bounds always lie *inside* the ones
+they tighten — which is how the second bug was found.
+
 ### From SU(5) down to the Standard Model
 
 `pyCICY.breaking` finishes the arc. Everything `bundles` produces is an SU(5)
