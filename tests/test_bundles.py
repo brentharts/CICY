@@ -314,10 +314,97 @@ def test_monad():
     check_true("determined flags match zero-width intervals",
                bd["determined"] == [a == b for a, b in bd["bounds"]])
 
-    # A monad whose h^3(B) < h^3(C) is not a bundle, and must be refused
-    # rather than given bounds that assume surjectivity.
     check_true("cohomology_bounds returns hB and hC",
                len(bd["hB"]) == 4 and len(bd["hC"]) == 4)
+
+    # -- the two impossibility checks, on the cases that found them ---------
+
+    # h^3(B) < h^3(C) makes the sequence inexact: the trivial summand of C
+    # contributes h^3(O_X) = 1 by Serre duality and B has nothing to map onto
+    # it. Without the check the formula returns h^3(V) = -1.
+    bad = B.Monad(QUINTIC, [[1], [1], [1]], [[0], [3]])
+    check_raises("h^3(B) < h^3(C) is refused", B.NotABundle,
+                 bad.cohomology_bounds)
+
+    # Imposing h^3(V) = 0 forces one specific rank for H^2(B) -> H^2(C),
+    # which need not be attainable. When it is not, no stable bundle arises.
+    pinned = B.Monad(M7833, [[0, 1], [2, 0], [0, 2], [0, 0]],
+                     [[1, 1], [2, 1], [-1, 1]])
+    ok = pinned.cohomology_bounds()
+    check("that monad pins h^3(V) at 1", ok["bounds"][3], (1, 1))
+    check_raises("so stable=True is refused", B.NotABundle,
+                 pinned.cohomology_bounds, stable=True)
+
+    # -- a sweep, since one monad on one manifold proves very little --------
+
+    rng = np.random.default_rng(1)
+    tested = neg = idx_out = contain = alt = nb = st = 0
+    for X in (QUINTIC, M7833, TETRA):
+        h11 = X.len
+        for _ in range(400):
+            nbnd = int(rng.integers(3, 6))
+            ncnd = nbnd - int(rng.integers(1, 3))
+            Bc = rng.integers(0, 3, size=(nbnd, h11))
+            Cc = (rng.integers(0, 3, size=(ncnd - 1, h11)) if ncnd > 1
+                  else np.zeros((0, h11), dtype=int))
+            Cc = np.vstack([Cc, Bc.sum(0) - Cc.sum(0)])
+            try:
+                M = B.Monad(X, Bc, Cc)
+            except Exception:                                    # noqa: BLE001
+                continue
+            try:
+                r = M.cohomology_bounds()
+            except B.NotABundle:
+                nb += 1
+                continue
+            except Exception:                                    # noqa: BLE001
+                continue
+            tested += 1
+            lo = [a for a, _ in r["bounds"]]
+            hi = [b for _, b in r["bounds"]]
+            if min(lo) < 0:
+                neg += 1
+            if not (lo[0] - hi[1] + lo[2] - hi[3] <= r["index"]
+                    <= hi[0] - lo[1] + hi[2] - lo[3]):
+                idx_out += 1
+            try:
+                rs = M.cohomology_bounds(stable=True)
+                st += 1
+            except B.NotABundle:
+                continue
+            l2 = [a for a, _ in rs["bounds"]]
+            h2 = [b for _, b in rs["bounds"]]
+            if min(l2) < 0:
+                neg += 1
+            # A tightening must lie inside what it tightens.
+            if any(l2[q] < lo[q] or h2[q] > hi[q] for q in range(4)):
+                contain += 1
+            if not (l2[0] - h2[1] + l2[2] - h2[3] <= r["index"]
+                    <= h2[0] - l2[1] + h2[2] - l2[3]):
+                alt += 1
+
+    check_true("swept %d monads (%d refused, %d stable-admissible)"
+               % (tested, nb, st), tested > 800)
+    check("no negative cohomology dimension", neg, 0)
+    check("index always inside the alternating range", idx_out, 0)
+    check("stable bounds always inside the general ones", contain, 0)
+    check("stable bounds always consistent with the index", alt, 0)
+
+    # The tightening must actually tighten, or it is doing nothing.
+    narrower = 0
+    for Bc, Cc in (([[1, 0], [0, 1], [1, 1], [0, 0]], [[1, 1], [1, 1]]),
+                   ([[1, 1], [1, 1], [2, 2]], [[2, 2], [2, 2]])):
+        try:
+            M = B.Monad(M7833, Bc, Cc)
+            g = M.cohomology_bounds()
+            t = M.cohomology_bounds(stable=True)
+        except B.NotABundle:
+            continue
+        if sum(b - a for a, b in t["bounds"]) < sum(b - a for a, b in g["bounds"]):
+            narrower += 1
+    check_true("stable=True narrows the intervals", narrower > 0)
+    check_true("and says so in the return value",
+               pinned.cohomology_bounds()["assumed_stable"] is False)
 
 
 def test_scan():
