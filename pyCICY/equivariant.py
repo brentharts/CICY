@@ -137,7 +137,7 @@ import math
 import numpy as np
 
 __all__ = [
-    "CyclicAction", "PermutationAction", "AbelianAction", "weights_from_matrix", "regular_representation", "is_regular_multiple",
+    "CyclicAction", "PermutationAction", "AbelianAction", "MatrixGroupAction", "weights_from_matrix", "regular_representation", "is_regular_multiple",
     "bundle_index_character", "enumerate_structures", "gamma_charges",
     "TETRAQUADRIC_Z2",
 ]
@@ -1353,3 +1353,362 @@ class AbelianAction(object):
             else:
                 failures.append((list(k), ch, False, None))
         return (not failures), (failures if failures else sample)
+
+
+# ---------------------------------------------------------------------------
+# arbitrary finite groups, given as an explicit matrix lift
+# ---------------------------------------------------------------------------
+
+class MatrixGroupAction(object):
+    r"""
+    A finite group action, abelian or not, given by generators as matrix data.
+
+    Why this needs a *lift*
+    -----------------------
+    An element acts on the ambient product of projective spaces by a pair
+    ``(sigma, {A_i})`` -- a permutation of the factors and linear maps
+    ``V_i -> V_{sigma(i)}`` -- and two such pairs give the *same* map on the
+    ambient precisely when they differ by a scalar ``lambda_i`` on each factor.
+    So the geometric group is a quotient by those scalars.
+
+    The defining polynomials do not respect that quotient. Rescaling factor i
+    by ``lambda_i`` multiplies ``p_a`` by ``prod_i lambda_i^{d[i][a]}``, so the
+    charge ``chi_a`` is not a function of the geometric element at all: it
+    depends on the representative. Element equality is therefore projective on
+    the ambient and *not* projective on the polynomials, and there is no way to
+    have both.
+
+    The resolution taken here is to work with an explicit lift: the group is
+    whatever the given generators close up to under composition, with **exact**
+    equality on the full data ``(sigma, weights, pi, charges)`` rather than
+    equality up to scalars. That is a well-defined finite group Gamma-tilde,
+    every character is unambiguous, and the trace formula applies verbatim.
+
+    The cost is stated rather than hidden: ``order`` is the order of the lift.
+    If the lift contains a non-identity element acting trivially on the ambient
+    -- a *scalar* -- then it is a proper central extension of the geometric
+    group, and the geometric order is ``order // len(scalar_subgroup())``.
+    :meth:`scalar_subgroup` finds them and :meth:`report` says so. Such an
+    element acts trivially on X but not on ``O(k)``, so requiring invariance
+    under it is exactly the condition that the bundle descend to the quotient;
+    the invariant index below is then the right thing, but ``|Gamma|`` in any
+    formula of the form ``-ind(V)/|Gamma|`` is the geometric order, not this
+    one.
+
+    What is computed, and what needs a character table
+    -------------------------------------------------
+    Decomposing the index into irreducible representations of a non-abelian
+    group needs its character table, and computing character tables is a
+    separate project (Burnside--Dixon) that this package does not undertake.
+
+    But the two quantities the physics actually needs do not require one:
+
+    * the multiplicity of the **trivial** representation, which is the index of
+      the descended bundle on the quotient, is
+      ``(1/|Gamma|) sum_h tr(h)`` -- an average of traces, no characters
+      involved. :meth:`invariant_index`.
+    * the **freeness** diagnostic. If Gamma acts freely then every ``h != e``
+      has no fixed points, so its holomorphic Lefschetz number vanishes; and
+      the index being a multiple of the regular representation is exactly that
+      statement. :meth:`looks_free` tests it directly on the Lefschetz numbers
+      and never forms a character.
+
+    So non-abelian groups are supported for those, and refused for the
+    irreducible decomposition, rather than being given a decomposition computed
+    against a character table that is not there.
+
+    Parameters
+    ----------
+    conf : configuration matrix
+    generators : list of tuples
+        Each ``(factor_perm, weights, polynomial_perm, polynomial_charges)``,
+        with weights and charges as exponents of ``zeta_N``.
+    modulus : int
+        ``N``, the order of the root of unity in which all weights are
+        expressed. Must be a multiple of the order of every generator.
+    """
+
+    def __init__(self, conf, generators, modulus, max_order=4096):
+        self.conf = np.asarray(conf, dtype=int)
+        self.dims = self.conf[:, 0]
+        self.degrees = self.conf[:, 1:].T
+        self.K = self.degrees.shape[0]
+        self.N = int(modulus)
+        m = len(self.dims)
+        if self.N < 1:
+            raise ValueError("modulus must be a positive integer")
+
+        self.generators = []
+        for g, gen in enumerate(generators):
+            perm, w, pperm, pc = gen
+            perm = [int(x) for x in perm]
+            if sorted(perm) != list(range(m)):
+                raise ValueError("generator %d: factor_perm is not a "
+                                 "permutation" % g)
+            for i in range(m):
+                if self.dims[perm[i]] != self.dims[i]:
+                    raise ValueError(
+                        "generator %d does not preserve factor dimensions" % g)
+            w = tuple(tuple(int(x) % self.N for x in row) for row in w)
+            for i, row in enumerate(w):
+                if len(row) != self.dims[i] + 1:
+                    raise ValueError(
+                        "generator %d, factor %d needs %d weights"
+                        % (g, i, self.dims[i] + 1))
+            pperm = [int(x) for x in pperm]
+            if sorted(pperm) != list(range(self.K)):
+                raise ValueError("generator %d: polynomial_perm is not a "
+                                 "permutation" % g)
+            pc = tuple(int(x) % self.N for x in pc)
+            if len(pc) != self.K:
+                raise ValueError("generator %d: one charge per polynomial" % g)
+            for a in range(self.K):
+                for i in range(m):
+                    if int(self.degrees[pperm[a]][perm[i]]) != \
+                            int(self.degrees[a][i]):
+                        raise ValueError(
+                            "generator %d is incompatible with the "
+                            "configuration: d[sigma(i)][pi(a)] != d[i][a] at "
+                            "i=%d, a=%d" % (g, i, a))
+            self.generators.append((tuple(perm), w, tuple(pperm), pc))
+
+        self._elements = self._close(max_order)
+        self.order = len(self._elements)
+
+    # -- the group --------------------------------------------------------
+
+    def _identity(self):
+        m = len(self.dims)
+        return (tuple(range(m)),
+                tuple(tuple([0] * (self.dims[i] + 1)) for i in range(m)),
+                tuple(range(self.K)),
+                tuple([0] * self.K))
+
+    def _multiply(self, x, y):
+        """Apply ``x`` then ``y``. Weights add along the path, read at the
+        image of the first map -- the same composition rule as elsewhere in
+        this module, on both the factors and the polynomials."""
+        px, wx, qx, cx = x
+        py, wy, qy, cy = y
+        m = len(px)
+        perm = tuple(py[px[i]] for i in range(m))
+        w = tuple(tuple((wx[i][t] + wy[px[i]][t]) % self.N
+                        for t in range(len(wx[i]))) for i in range(m))
+        pperm = tuple(qy[qx[a]] for a in range(self.K))
+        pc = tuple((cx[a] + cy[qx[a]]) % self.N for a in range(self.K))
+        return (perm, w, pperm, pc)
+
+    def _close(self, max_order):
+        seen = {self._identity()}
+        frontier = [self._identity()]
+        while frontier:
+            nxt = []
+            for x in frontier:
+                for g in self.generators:
+                    y = self._multiply(x, g)
+                    if y not in seen:
+                        seen.add(y)
+                        nxt.append(y)
+                        if len(seen) > max_order:
+                            raise ValueError(
+                                "the generators close up to more than %d "
+                                "elements; either they do not generate a "
+                                "finite group in this lift, or max_order is "
+                                "too small" % max_order)
+            frontier = nxt
+        return sorted(seen)
+
+    def elements(self):
+        """Every element of the lift, as canonical data tuples."""
+        return list(self._elements)
+
+    def is_abelian(self):
+        """Whether the lift is abelian, checked on the generators."""
+        for a, b in itertools.combinations(self.generators, 2):
+            if self._multiply(a, b) != self._multiply(b, a):
+                return False
+        return True
+
+    def scalar_subgroup(self):
+        r"""
+        Elements acting trivially on the ambient: identity permutation, and
+        weights constant within each factor.
+
+        These act trivially on X but not on ``O(k)``, so they are exactly what
+        separates the lift from the geometric group. A non-trivial answer means
+        ``order`` overstates the geometric order by that factor.
+        """
+        m = len(self.dims)
+        out = []
+        for e in self._elements:
+            perm, w, _, _ = e
+            if perm != tuple(range(m)):
+                continue
+            if all(len(set(row)) == 1 for row in w):
+                out.append(e)
+        return out
+
+    def geometric_order(self):
+        """``order`` divided by the number of scalars: the order of the group
+        actually acting on X."""
+        return self.order // max(1, len(self.scalar_subgroup()))
+
+    # -- traces -----------------------------------------------------------
+
+    def is_invariant(self, kvec):
+        k = list(kvec)
+        return all(k[e[0][i]] == k[i] for e in self._elements
+                   for i in range(len(k)))
+
+    def _trace_ambient(self, element, kvec):
+        perm, w, _, _ = element
+        z = cmath.exp(2j * cmath.pi / self.N)
+        total = 1.0 + 0j
+        for c in _cycles(list(perm)):
+            i = c[0]
+            L = len(c)
+            u = [0] * (self.dims[i] + 1)
+            x = i
+            for _ in range(L):
+                for t in range(self.dims[i] + 1):
+                    u[t] += w[x][t]
+                x = perm[x]
+            k = int(kvec[i])
+            d = int(self.dims[i])
+            s = 0.0 + 0j
+            if k >= 0:
+                for mono in itertools.combinations_with_replacement(
+                        range(d + 1), k):
+                    s += z ** (sum(u[t] for t in mono) % self.N)
+            elif k <= -d - 1:
+                tu = sum(u) % self.N
+                for mono in itertools.combinations_with_replacement(
+                        range(d + 1), -k - d - 1):
+                    s += z ** ((-sum(u[t] for t in mono) - tu) % self.N)
+                s *= (-1) ** d
+            total *= s
+        return total
+
+    def lefschetz(self, element, kvec):
+        r"""
+        The holomorphic Lefschetz number of one element on ``O_X(k)``:
+
+            L(h) = sum_q (-1)^q tr( h | H^q(X, O_X(k)) ) .
+
+        Computed from the Koszul resolution, with the invariant-subset filter
+        and wedge sign of the polynomial permutation, exactly as in the cyclic
+        and abelian cases. ``L(e)`` is the ordinary index.
+        """
+        z = cmath.exp(2j * cmath.pi / self.N)
+        _, _, pi, pc = element
+        t = 0j
+        for r in range(self.K + 1):
+            for S in itertools.combinations(range(self.K), r):
+                if set(pi[a] for a in S) != set(S):
+                    continue
+                kk = [int(kvec[i]) - int(sum(self.degrees[a][i] for a in S))
+                      for i in range(len(self.dims))]
+                ph = sum(pc[a] for a in S) % self.N
+                sign = _restricted_sign(list(pi), S)
+                t += ((-1) ** r) * sign * (z ** ((-ph) % self.N)) \
+                    * self._trace_ambient(element, kk)
+        return t
+
+    def invariant_index(self, kvec, tol=1e-6):
+        r"""
+        The index of the descended bundle on the quotient:
+
+            (1/|Gamma|) sum_h L(h) ,
+
+        which is the multiplicity of the trivial representation in the
+        equivariant index. No character table is involved -- it is an average
+        of traces -- so this works for non-abelian Gamma exactly as for cyclic.
+
+        Raises if the result is not an integer, which means the data do not
+        describe a consistent action.
+        """
+        if not self.is_invariant(kvec):
+            raise ValueError(
+                "k = %s is not invariant under every element, so O(k) is not "
+                "sent to itself" % list(kvec))
+        v = sum(self.lefschetz(h, kvec) for h in self._elements) / self.order
+        if abs(v.imag) > tol or abs(v.real - round(v.real)) > tol:
+            raise ArithmeticError(
+                "the invariant index came out as %r, not an integer; the "
+                "generators probably do not describe a consistent action"
+                % (v,))
+        return int(round(v.real))
+
+    def looks_free(self, probes=None, tol=1e-6):
+        r"""
+        The Lefschetz freeness diagnostic, without characters.
+
+        A free action has no fixed points for any ``h != e``, so every
+        ``L(h)`` vanishes. Testing that directly avoids needing to know the
+        irreducible representations, which is what makes the non-abelian case
+        tractable here at all.
+
+        Necessary, not sufficient, and dependent on the probe set -- the same
+        caveats as :meth:`CyclicAction.looks_free`.
+        """
+        if probes is None:
+            probes = self._invariant_box(-2, 2)
+        failures = []
+        for k in probes:
+            for h in self._elements:
+                if h == self._identity():
+                    continue
+                if abs(self.lefschetz(h, k)) > tol:
+                    failures.append((list(k), h[0], abs(self.lefschetz(h, k))))
+                    break
+        return (not failures), failures
+
+    def _invariant_box(self, lo, hi):
+        m = len(self.dims)
+        parent = list(range(m))
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        for e in self._elements:
+            for i in range(m):
+                a, b = find(i), find(e[0][i])
+                if a != b:
+                    parent[a] = b
+        blocks = {}
+        for i in range(m):
+            blocks.setdefault(find(i), []).append(i)
+        blocks = list(blocks.values())
+        out = []
+        for vals in itertools.product(range(lo, hi + 1), repeat=len(blocks)):
+            k = [0] * m
+            for blk, v in zip(blocks, vals):
+                for i in blk:
+                    k[i] = v
+            out.append(k)
+        return out
+
+    def report(self):
+        """A summary, including the caveats that matter for using the result."""
+        scal = self.scalar_subgroup()
+        lines = ["lift order %d, %s" % (self.order,
+                                        "abelian" if self.is_abelian()
+                                        else "non-abelian")]
+        if len(scal) > 1:
+            lines.append(
+                "the lift contains %d scalar elements, so it is a proper "
+                "central extension: the group acting on X has order %d, and "
+                "that is the |Gamma| to divide by in -ind(V)/|Gamma|"
+                % (len(scal), self.geometric_order()))
+        else:
+            lines.append("no non-identity scalars, so the lift is the "
+                         "geometric group")
+        if not self.is_abelian():
+            lines.append(
+                "non-abelian: the invariant index and the freeness test are "
+                "available, the decomposition into non-trivial irreducibles "
+                "is not (it needs a character table)")
+        return "\n".join(lines)
