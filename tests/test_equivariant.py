@@ -216,6 +216,58 @@ def test_permutation_action():
     check("none of them is free", free, 0)
 
 
+def test_abelian_and_free_permuting():
+    print("\n[2c] abelian groups, and a free factor-permuting action")
+
+    # Regression: one generator must reproduce PermutationAction exactly.
+    P = E.PermutationAction(TETRA_CONF, 2, [0, 1, 2, 3], [[0, 1]] * 4, [0])
+    A = E.AbelianAction(TETRA_CONF, [2], [[0, 1, 2, 3]], [[[0, 1]] * 4], [[0]])
+    check_true("AbelianAction validates", A.check()[0])
+    bad = sum(1 for k in itertools.product((-2, -1, 0, 1, 2), repeat=4)
+              if [A.euler(list(k))[(c,)] for c in range(2)] != P.euler(list(k)))
+    check("one generator reproduces PermutationAction on 625 bundles", bad, 0)
+
+    # The consistency checks are separate conditions and each must bite.
+    bad_order = E.AbelianAction(TETRA_CONF, [2], [[1, 0, 3, 2]],
+                                [[[0, 0], [0, 1], [0, 0], [0, 1]]], [[0]])
+    check_true("a mis-declared order is caught", not bad_order.check()[0])
+    check_true("and euler refuses it", _raises(bad_order.euler, [1, 1, 1, 1]))
+
+    # invariant_charges works on orbits of the whole group, not one generator.
+    two = E.AbelianAction(TETRA_CONF, [2, 2], [[1, 0, 2, 3], [0, 1, 3, 2]],
+                          [[[0, 0]] * 4, [[0, 0]] * 4], [[0], [0]])
+    check("two transpositions leave two orbits, so 25 invariant charges",
+          len(two.invariant_charges(-2, 2)), 25)
+
+    # -- the free factor-permuting action ---------------------------------
+
+    # Last session established that no cyclic action permuting the factors of
+    # the tetraquadric can be free, because g^n = id forces the composite
+    # around each cycle to be scalar and a scalar composite has a
+    # positive-dimensional fixed locus. The escape is an action whose SQUARE
+    # is a non-scalar phase -- which makes it order 4, not 2.
+    F = E.PermutationAction(TETRA_CONF, 4, [1, 0, 3, 2],
+                            [[0, 0], [0, 2], [0, 0], [0, 2]], [0])
+    check_true("it is a genuine Z_4", F.check_order()[0])
+    free, _ = F.looks_free()
+    check_true("and it is free, unlike every Z_2 of this shape", free)
+
+    # Its index totals must still agree with line_co_euler.
+    ks = F.invariant_charges(-2, 2)
+    worst = max(abs(sum(F.euler(k)) - float(TETRA.line_co_euler(k)))
+                for k in ks)
+    check_true("totals match line_co_euler on %d invariant bundles (%.1e)"
+               % (len(ks), worst), worst < 1e-6)
+    check_true("every character is equidistributed over Z_4",
+               all(E.is_regular_multiple(F.euler(k))[0] for k in ks))
+
+    # The same shape at order 2 -- scalar square -- is not free, which is the
+    # contrast the whole argument rests on.
+    G = E.PermutationAction(TETRA_CONF, 2, [1, 0, 3, 2], [[0, 1]] * 4, [0])
+    check_true("the order-2 version is valid", G.check_order()[0])
+    check_true("but not free", not G.looks_free()[0])
+
+
 def test_structures():
     print("\n[3] equivariant structures")
     A = E.TETRAQUADRIC_Z2()
@@ -305,6 +357,7 @@ def main():
     test_index_at_identity()
     test_freeness()
     test_permutation_action()
+    test_abelian_and_free_permuting()
     test_structures()
     test_bridge()
 
