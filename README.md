@@ -180,6 +180,72 @@ arguments land in the same place. Braun's Hodge numbers `(1,1)`
 quotient* of this cover; enumerating free quotients is the boundary
 `pyCICY.symmetries` draws on the CICY side, and it is not crossed here.
 
+## Equivariant structures: the ambiguity that turned out not to matter
+
+`pyCICY.breaking` computes what survives on X/Gamma *given* the representation
+of Gamma on the upstairs cohomology, and says plainly that it cannot derive it:
+that needs an equivariant structure, a lift of the Gamma action to the total
+space of each line bundle. `pyCICY.equivariant` supplies the part that is
+exactly computable, and the answer is more definite than expected.
+
+**Why anything is computable.** The individual `H^q(X, L)` as Gamma-modules
+need the Leray spectral sequence run equivariantly, and its differentials are
+not fixed by the degrees — the same obstruction behind `Monad.cohomology_bounds`.
+But characters are *additive on exact sequences*, so the character-valued index
+can be read off any equivariant resolution with no spectral sequence anywhere.
+The Koszul resolution of `O_X` in the ambient product does it:
+
+    ind_Gamma(O_X(k)) = sum_{S} (-1)^{|S|} (prod_{a in S} c_a^{-1})
+                        chi_Gamma(A, O_A(k - sum_S d_a))
+
+a finite sum of Kunneth products of monomial characters, in exact integer
+arithmetic. Its total must equal `CICY.line_co_euler` — separate code, separate
+formula, and floating point where this is exact. Checked on 625 bundles.
+(`line_co_euler` returns `5.6e-17` where the Koszul route returns integer `0`.)
+
+**Freeness, two independent ways.** For `g != e` acting freely there are no
+fixed points, so the holomorphic Lefschetz number vanishes — equivalently the
+index character is a multiple of the *regular* representation, the charges
+equidistributed. Separately, a diagonal action fixes the ambient coordinate
+points, and if the corresponding pure monomial carries the wrong charge it
+cannot appear in a defining polynomial, so that polynomial vanishes there and
+the fixed point lies on X. The two routes must agree wherever both can see, and
+do — but neither is complete, and the tests record cases proving it. The
+geometric one misses an action trivial on a whole factor (no coordinate point is
+forced, yet the fixed locus is two-dimensional); the Lefschetz one is necessary
+only, and depends on the probe set — an action trivial on two factors passed a
+hand-picked list of five probes and fails 180 of a 625-probe box. The genuinely
+free action passes all 625.
+
+This caught something I would have got wrong by hand: on the tetraquadric the
+`Z_2` action `[x0:x1] -> [x0:-x1]` is free, but the same weights for `Z_3`,
+`Z_4` or `Z_5` are **not** — 11, 8 and 15 of the 16 coordinate fixed points are
+forced onto X, because the monomial `x_11^2 x_21^2 x_31^2 x_41^2` has charge
+`8 mod n`, which is `0` only for `n = 2` (and 4... where other points fail).
+
+**The result.** For the `bundles.scan` model on the tetraquadric with that free
+`Z_2`, the equivariant index character is `[-3, -3]` — three generations in
+*each* Gamma-sector. That derives the equidistribution `breaking.worked_example`
+had to assume.
+
+And the equivariant structure **does not matter**. For a free action every
+summand's character is a multiple of the regular representation, i.e. a constant
+vector, and a twist permutes a constant vector to itself. So the entire chiral
+spectrum downstairs is independent of which of the `n^r` structures is chosen.
+The choice shows up only in `h^1` and `h^2` separately — the vector-like pairs,
+which an index cannot see in any case. The ambiguity `breaking` flagged was
+therefore confined to the non-chiral sector all along. The tests check both
+halves: twisting is inert for the free action, and *not* inert for a non-free
+one, so the argument is doing something rather than being ignored.
+
+```python
+from pyCICY import equivariant as E
+A = E.TETRAQUADRIC_Z2()
+A.looks_free()                            # True, over a 625-probe box
+A.forced_fixed_points()                   # [] — none forced onto X
+E.bundle_index_character(A, model)        # [-3, -3]
+```
+
 ## The 24-cell flavour construction
 
 `pyCICY.flavor` implements the Standard Model content of Ali, *Quantum
