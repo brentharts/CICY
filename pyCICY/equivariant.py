@@ -132,11 +132,12 @@ Scope
 
 import cmath
 import itertools
+import math
 
 import numpy as np
 
 __all__ = [
-    "CyclicAction", "PermutationAction", "weights_from_matrix", "regular_representation", "is_regular_multiple",
+    "CyclicAction", "PermutationAction", "AbelianAction", "weights_from_matrix", "regular_representation", "is_regular_multiple",
     "bundle_index_character", "enumerate_structures", "gamma_charges",
     "TETRAQUADRIC_Z2",
 ]
@@ -864,4 +865,352 @@ class PermutationAction(object):
                     sample.append((list(k), ch, True, mult))
             else:
                 failures.append((list(k), ch, False, mult))
+        return (not failures), (failures if failures else sample)
+
+
+# ---------------------------------------------------------------------------
+# finite abelian groups
+# ---------------------------------------------------------------------------
+
+def _compose(perm1, w1, perm2, w2, N):
+    """Apply (perm1, w1) then (perm2, w2).
+
+    A group element is a pair: a permutation sigma of the ambient factors and
+    diagonal maps A_i : V_i -> V_{sigma(i)}. Composing sends factor i to
+    perm2[perm1[i]], and the weights add along the path -- the second map is
+    read at ``perm1[i]``, not at ``i``, which is the whole content of the
+    composition and the easiest thing to get backwards.
+    """
+    perm = [perm2[perm1[i]] for i in range(len(perm1))]
+    w = [[(w1[i][t] + w2[perm1[i]][t]) % N for t in range(len(w1[i]))]
+         for i in range(len(perm1))]
+    return perm, w
+
+
+class AbelianAction(object):
+    r"""
+    A finite abelian Gamma acting on a CICY, generators permuting or phasing.
+
+    :class:`PermutationAction` established that no *cyclic* action permuting
+    the factors of the tetraquadric can be free: fixed points need an
+    eigenvector of the composite map around each cycle, one always exists, and
+    ``g^n = id`` forces that composite to be scalar, so the fixed locus is
+    positive-dimensional. Escaping that needs a second generator -- one
+    permuting, one phasing -- so that the composite around a cycle can have
+    distinct eigenvalues without the order collapsing. That is why Braun's
+    free actions on such manifolds are products rather than cyclic, and it is
+    what this class is for.
+
+    Parameters
+    ----------
+    conf : configuration matrix
+    orders : list of int
+        The orders n_1, ..., n_r of the generators, so
+        Gamma = Z_{n_1} x ... x Z_{n_r}.
+    perms : list of permutations
+        ``perms[k]`` is the factor permutation of the k-th generator.
+    weights : list of list of lists
+        ``weights[k][i]`` are the exponents of the diagonal map
+        ``V_i -> V_{perms[k][i]}`` under the k-th generator, as powers of
+        ``zeta_N`` with ``N`` the exponent of the group, ``lcm(orders)``.
+        Using one modulus throughout is what lets generators of different
+        orders be composed without conversion at every step.
+    polynomial_charges : list of lists
+        ``polynomial_charges[k][a]`` is the charge of the a-th defining
+        polynomial under the k-th generator, again as a power of ``zeta_N``.
+
+    Method
+    ------
+    The machinery is that of :class:`PermutationAction` with the cyclic group
+    replaced by Gamma. Each group element is a word in the generators, whose
+    ``(sigma, w)`` is obtained by composing; its trace on the Euler
+    characteristic of ``O_A(k)`` is a product over the cycles of its own
+    permutation; and the multiplicities come from Fourier inversion over the
+    character group,
+
+        m_c = (1/|Gamma|) sum_h tr(h) conj(chi_c(h)) ,
+
+    with ``chi_c(g_1^{j_1} ... g_r^{j_r}) = prod_k zeta_{n_k}^{j_k c_k}``.
+    For a single generator this is :class:`PermutationAction` exactly, and the
+    tests check that on 625 bundles.
+
+    Consistency
+    -----------
+    Three things must hold and all are checked, because none of them is
+    implied by the others and a failure of any one makes the index meaningless
+    rather than merely inaccurate:
+
+    * each generator has the order claimed, in the projective sense that
+      ``g_k^{n_k}`` is a scalar on each factor rather than the identity matrix;
+    * the generators commute, again projectively;
+    * every column of the degree matrix is invariant under every ``perms[k]``,
+      since the defining polynomials are phased and not permuted.
+    """
+
+    def __init__(self, conf, orders, perms, weights, polynomial_charges):
+        self.conf = np.asarray(conf, dtype=int)
+        self.dims = self.conf[:, 0]
+        self.degrees = self.conf[:, 1:].T
+        self.K = self.degrees.shape[0]
+        m = len(self.dims)
+
+        self.orders = [int(o) for o in orders]
+        if any(o < 1 for o in self.orders):
+            raise ValueError("every order must be a positive integer")
+        self.r = len(self.orders)
+        N = 1
+        for o in self.orders:
+            N = N * o // math.gcd(N, o)
+        self.N = N
+        self.order = 1
+        for o in self.orders:
+            self.order *= o
+
+        if len(perms) != self.r or len(weights) != self.r:
+            raise ValueError("need one permutation and one weight set per "
+                             "generator")
+        self.perms = []
+        for k, p in enumerate(perms):
+            p = [int(x) for x in p]
+            if sorted(p) != list(range(m)):
+                raise ValueError(
+                    "generator %d: perms[%d] is not a permutation of the %d "
+                    "ambient factors" % (k, k, m))
+            for i in range(m):
+                if self.dims[p[i]] != self.dims[i]:
+                    raise ValueError(
+                        "generator %d sends P^%d to P^%d; a permutation must "
+                        "preserve dimensions"
+                        % (k, self.dims[i], self.dims[p[i]]))
+            self.perms.append(p)
+
+        self.weights = []
+        for k, wk in enumerate(weights):
+            if len(wk) != m:
+                raise ValueError("generator %d: one weight list per factor"
+                                 % k)
+            row = []
+            for i, w in enumerate(wk):
+                if len(w) != self.dims[i] + 1:
+                    raise ValueError(
+                        "generator %d, factor %d is P^%d and needs %d weights"
+                        % (k, i, self.dims[i], self.dims[i] + 1))
+                row.append([int(x) % N for x in w])
+            self.weights.append(row)
+
+        if len(polynomial_charges) != self.r:
+            raise ValueError("need one charge list per generator")
+        self.polynomial_charges = [[int(c) % N for c in ck]
+                                   for ck in polynomial_charges]
+        for k, ck in enumerate(self.polynomial_charges):
+            if len(ck) != self.K:
+                raise ValueError("generator %d: one charge per polynomial" % k)
+
+        for k, p in enumerate(self.perms):
+            for a in range(self.K):
+                deg = self.degrees[a]
+                if any(int(deg[p[i]]) != int(deg[i]) for i in range(m)):
+                    raise ValueError(
+                        "generator %d permutes factors in a way that does not "
+                        "fix the multidegree %s of polynomial %d. This class "
+                        "phases the defining polynomials but does not permute "
+                        "them." % (k, list(deg), a))
+        self._checked = False
+
+    def __repr__(self):
+        return "<AbelianAction %s order %d perms=%s>" % (
+            " x ".join("Z_%d" % o for o in self.orders),
+            self.order, self.perms)
+
+    # -- group elements ---------------------------------------------------
+
+    def elements(self):
+        """Every element, as an exponent tuple ``(j_1, ..., j_r)``."""
+        return list(itertools.product(*[range(o) for o in self.orders]))
+
+    def element_data(self, j):
+        """The ``(sigma, weights)`` of ``g_1^{j_1} ... g_r^{j_r}``."""
+        m = len(self.dims)
+        perm = list(range(m))
+        w = [[0] * (self.dims[i] + 1) for i in range(m)]
+        for k, jk in enumerate(j):
+            for _ in range(int(jk)):
+                perm, w = _compose(perm, w, self.perms[k], self.weights[k],
+                                   self.N)
+        return perm, w
+
+    def check(self):
+        """Orders, commutativity, and degree invariance. Returns ``(ok, msgs)``."""
+        msgs = []
+        m = len(self.dims)
+
+        # orders, projectively
+        for k in range(self.r):
+            e = [0] * self.r
+            e[k] = self.orders[k]
+            perm, w = self.element_data(e)
+            if perm != list(range(m)):
+                msgs.append("generator %d: sigma^%d is not the identity"
+                            % (k, self.orders[k]))
+                continue
+            for i in range(m):
+                if len(set(w[i])) != 1:
+                    msgs.append(
+                        "generator %d: g^%d acts on factor %d by weights %s, "
+                        "which is not a scalar"
+                        % (k, self.orders[k], i, w[i]))
+
+        # commutativity, projectively
+        for k, l in itertools.combinations(range(self.r), 2):
+            a = self.element_data([1 if t == k else 0 for t in range(self.r)])
+            b = self.element_data([1 if t == l else 0 for t in range(self.r)])
+            p1, w1 = _compose(a[0], a[1], b[0], b[1], self.N)
+            p2, w2 = _compose(b[0], b[1], a[0], a[1], self.N)
+            if p1 != p2:
+                msgs.append("generators %d and %d have non-commuting "
+                            "permutations" % (k, l))
+                continue
+            for i in range(m):
+                diff = [(w1[i][t] - w2[i][t]) % self.N
+                        for t in range(len(w1[i]))]
+                if len(set(diff)) != 1:
+                    msgs.append(
+                        "generators %d and %d fail to commute on factor %d: "
+                        "the commutator has weights %s, not a scalar"
+                        % (k, l, i, diff))
+        return (not msgs), msgs
+
+    # -- index ------------------------------------------------------------
+
+    def is_invariant(self, kvec):
+        """Whether ``O(k)`` is fixed by every generator."""
+        k = list(kvec)
+        return all(k[p[i]] == k[i] for p in self.perms for i in range(len(k)))
+
+    def invariant_charges(self, lo=-2, hi=2):
+        """Charge vectors fixed by the whole group.
+
+        The orbits of the group generated by all the ``perms`` are what must
+        be constant, so the free parameters are the orbits, not the factors.
+        """
+        m = len(self.dims)
+        parent = list(range(m))
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        for p in self.perms:
+            for i in range(m):
+                a, b = find(i), find(p[i])
+                if a != b:
+                    parent[a] = b
+        orbits = {}
+        for i in range(m):
+            orbits.setdefault(find(i), []).append(i)
+        blocks = list(orbits.values())
+        out = []
+        for vals in itertools.product(range(lo, hi + 1), repeat=len(blocks)):
+            k = [0] * m
+            for blk, v in zip(blocks, vals):
+                for i in blk:
+                    k[i] = v
+            out.append(k)
+        return out
+
+    def _trace_element(self, perm, w, kvec):
+        z = cmath.exp(2j * cmath.pi / self.N)
+        total = 1.0 + 0j
+        for c in _cycles(perm):
+            i = c[0]
+            L = len(c)
+            u = [0] * (self.dims[i] + 1)
+            x = i
+            for _ in range(L):
+                for t in range(self.dims[i] + 1):
+                    u[t] += w[x][t]
+                x = perm[x]
+            k = int(kvec[i])
+            d = int(self.dims[i])
+            s = 0.0 + 0j
+            if k >= 0:
+                for mono in itertools.combinations_with_replacement(
+                        range(d + 1), k):
+                    s += z ** (sum(u[t] for t in mono) % self.N)
+            elif k <= -d - 1:
+                tu = sum(u) % self.N
+                for mono in itertools.combinations_with_replacement(
+                        range(d + 1), -k - d - 1):
+                    s += z ** ((-sum(u[t] for t in mono) - tu) % self.N)
+                s *= (-1) ** d
+            total *= s
+        return total
+
+    def euler(self, kvec, tol=1e-6):
+        """The character-valued index of ``O_X(k)``, over the character group.
+
+        Returns a dict keyed by character tuples ``(c_1, ..., c_r)``.
+        """
+        if not self._checked:
+            ok, msgs = self.check()
+            self._checked = True
+            if not ok:
+                raise ValueError(
+                    "this is not an action of the declared group: %s" % msgs[0])
+        if not self.is_invariant(kvec):
+            raise ValueError(
+                "k = %s is not invariant under every generator, so O(k) is "
+                "not sent to itself. Use invariant_charges()." % list(kvec))
+
+        z = cmath.exp(2j * cmath.pi / self.N)
+        traces = {}
+        for j in self.elements():
+            perm, w = self.element_data(j)
+            t = 0j
+            for r in range(self.K + 1):
+                for S in itertools.combinations(range(self.K), r):
+                    kk = [int(kvec[i]) - int(sum(self.degrees[a][i]
+                                                 for a in S))
+                          for i in range(len(self.dims))]
+                    ph = 0
+                    for k in range(self.r):
+                        ph += j[k] * sum(self.polynomial_charges[k][a]
+                                         for a in S)
+                    t += ((-1) ** r) * (z ** ((-ph) % self.N)) \
+                        * self._trace_element(perm, w, kk)
+            traces[j] = t
+
+        out = {}
+        for c in self.elements():
+            v = 0j
+            for j in self.elements():
+                phase = 1.0 + 0j
+                for k in range(self.r):
+                    phase *= cmath.exp(-2j * cmath.pi * j[k] * c[k]
+                                       / self.orders[k])
+                v += traces[j] * phase
+            v /= self.order
+            if abs(v.imag) > tol or abs(v.real - round(v.real)) > tol:
+                raise ArithmeticError(
+                    "multiplicity %r for character %s is not an integer"
+                    % (v, c))
+            out[c] = int(round(v.real))
+        return out
+
+    def looks_free(self, probes=None):
+        """Equidistribution over the character group, the Lefschetz condition."""
+        if probes is None:
+            probes = self.invariant_charges(-2, 2)
+        failures, sample = [], []
+        for k in probes:
+            ch = self.euler(k)
+            vals = list(ch.values())
+            reg = all(v == vals[0] for v in vals)
+            if reg:
+                if len(sample) < 5:
+                    sample.append((list(k), ch, True, vals[0]))
+            else:
+                failures.append((list(k), ch, False, None))
         return (not failures), (failures if failures else sample)
