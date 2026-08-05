@@ -33,7 +33,9 @@ forms, the split web over the published list of 7890 threefolds.
 - `equivariant` — group actions on line bundles. The character-valued index
   from the Koszul complex, exact in integers, for cyclic and finite abelian
   groups acting by permutation and phase on both the ambient factors and the
-  defining polynomials. Two independent freeness tests.
+  defining polynomials — and, via an explicit matrix lift, the invariant index
+  and freeness test for arbitrary finite groups including non-abelian ones.
+  Two independent freeness tests.
 - `breaking` — Wilson lines, `SU(5)`/`SO(10)`/`E_6` branchings,
   doublet–triplet splitting, and the chiral spectrum on the quotient derived
   rather than assumed.
@@ -456,6 +458,43 @@ Totals still match `line_co_euler` to 9e-16 across all 25 `sigma`-invariant
 bundles in the box, and every character is equidistributed. The order-2 version
 of the same shape is valid and *not* free, which is the contrast the argument
 rests on and which the tests assert side by side.
+
+### Non-abelian groups, and why they need an explicit lift
+
+An element acts on the ambient by a permutation of factors plus linear maps,
+and two such data give the *same* map on the ambient exactly when they differ
+by a scalar on each factor. The defining polynomials do not respect that
+quotient: rescaling factor `i` by `lambda_i` multiplies `p_a` by
+`prod_i lambda_i^{d[i][a]}`, so the charge is a property of the representative,
+not of the geometric element. Element equality is projective on the ambient and
+**not** projective on the polynomials, and there is no way to have both.
+
+`MatrixGroupAction` resolves it by working with an explicit lift: the group is
+whatever the generators close up to under composition, with *exact* equality on
+the full data. Every character is then unambiguous and the trace formula
+applies verbatim — for arbitrary finite groups, abelian or not. The cost is
+stated rather than hidden: `order` is the order of the lift, and
+`scalar_subgroup` finds the elements acting trivially on the ambient, so
+`geometric_order` is what belongs in `-ind(V)/|Gamma|`.
+
+The demonstration is small and sharp. Rescaling one tetraquadric factor by
+`-1` acts trivially on `P^1`, hence trivially on X, so the geometric group is
+trivial while the lift has order 2. At `k = (1,0,0,0)` the two sections of
+`O(1)` are odd under the scalar and **none** descend; at `k = (2,0,0,0)` they
+are even and all four do. The ordinary index cannot see the difference; the
+invariant index can.
+
+**What is computed without a character table.** Decomposing the index into
+irreducibles of a non-abelian group needs its character table, which this
+package does not compute. But the two quantities the physics needs do not
+require one: the multiplicity of the *trivial* representation — the index of
+the descended bundle — is `(1/|Gamma|) sum_h L(h)`, an average of traces; and
+the freeness diagnostic is the vanishing of every `L(h)` for `h != e`, tested
+directly. So non-abelian groups are supported for those and **refused** for the
+irreducible decomposition, rather than being handed a decomposition computed
+against a table that isn't there. `S_3` and `S_4` on the tetraquadric factors
+close correctly at orders 6 and 24, with `L(e)` matching `line_co_euler` to
+4e-15.
 
 ### Permuting the defining polynomials, and an oracle for the sign
 
@@ -1227,6 +1266,15 @@ The module has been developed in the context of the following papers:
   - https://arxiv.org/pdf/2606.27588
 - Lara B. Anderson, James Gray, Sunit A. Patil, Caoimhín Scanlon (2025) Mapping moduli across heterotic conifolds
   - https://arxiv.org/pdf/2512.18124
+
+- Pasquale Marra, Valerio Proietti, Xiaobing Sheng (2024) Hofstadter-Toda spectral duality and quantum groups
+  - https://arxiv.org/abs/2312.14242 ; J. Math. Phys. 65, 072102
+- Ahmed Farag Ali (2025) Quantum Spacetime Imprints: The 24-Cell, Standard Model Symmetry and its Flavor Mixing
+  - https://arxiv.org/abs/2511.10685
+- Volker Braun (2012) The 24-cell and Calabi-Yau threefolds with Hodge numbers (1,1)
+  - https://arxiv.org/abs/1102.4880 ; JHEP 05 (2012) 101
+- Lara B. Anderson, James Gray, Andre Lukas, Eran Palti (2011) Heterotic Line Bundle Standard Models
+  - https://arxiv.org/abs/1106.4804 ; Phys. Rev. D 84, 106005
 
 - Larfors, Magdalena and Schneider, Robin (2019) Line bundle cohomologies on CICYs with Picard number two
   - arXiv; 1906.00392 hep-th; doi:10.1002/prop.201900083; Fortsch. Phys.
