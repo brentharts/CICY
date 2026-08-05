@@ -252,6 +252,43 @@ the diagonalising coordinates. Permuting the ambient *factors* is genuinely not
 implemented: it needs element-wise traces over the cycles of the permutation
 rather than a product over factors.
 
+`PermutationAction` handles the factors moving. `g^j` permutes the tensor
+factors of `H^*(A, O(k))` by `sigma^j`, so its trace is a product over the
+**cycles** of `sigma^j` rather than over the factors: on a cycle of length `L`
+through `i` the contribution is the trace of the composite going once around,
+diagonal with weights `sum_{s<jL} w_{sigma^s(i)}`, and the multiplicities
+follow by Fourier inversion of `tr(g^j)`. With `sigma` the identity every cycle
+has length one and this collapses to `CyclicAction` — checked on 625 bundles,
+which is the regression oracle it was built against.
+
+Two things it enforces. Only `sigma`-invariant bundles carry an equivariant
+structure (`g^* O(k) = O(sigma^{-1} k)`), so `euler` raises rather than
+returning a meaningless number, and `invariant_charges` enumerates the ones
+that work — one free charge per *cycle*, so a box of 625 collapses to 25.
+And `check_order` verifies the action really has the claimed order: `g^n` sends
+factor `i` to itself by the composite of `n` maps, which must be a scalar
+(not the identity — a global rescaling acts trivially on projective space).
+My first version composed `n·L` steps instead of `n`, which is a different
+group element; it accepted a `Z_4` action as a `Z_2` one, and the integrality
+of the multiplicities did **not** catch it. `euler` now consults it.
+
+A structural result falls out. **No cyclic action permuting the factors of the
+tetraquadric is free.** Fixed points need an eigenvector of the composite map
+around each `sigma`-cycle, and a linear map always has one; requiring
+`g^n = id` forces that composite to be scalar, so the fixed locus is
+positive-dimensional and X cannot avoid it. Checked exhaustively over all 1920
+valid `Z_2` factor-permuting actions. This is why Braun's free actions on that
+manifold are non-cyclic — they need a second generator, which is the next
+extension rather than a limitation of the trace formula.
+
+The defining polynomials are not permuted: only `p_a -> zeta^{c_a} p_a`, which
+forces every column of the degree matrix to be `sigma`-invariant and is
+checked. A genuine permutation of the polynomials would make the Koszul trace a
+sum over *invariant* subsets with a sign from each induced wedge permutation,
+and that bookkeeping is not implemented — an incorrect sign there is invisible
+in the total at the identity, which is the kind of error this package tries not
+to ship.
+
 ```python
 from pyCICY import equivariant as E
 A = E.TETRAQUADRIC_Z2()
