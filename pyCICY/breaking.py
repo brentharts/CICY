@@ -83,6 +83,7 @@ __all__ = [
     "minimal_order", "project", "doublet_triplet_split", "worked_example",
     "anomaly_trace_of_generation",
     "generations_downstairs", "chiral_spectrum",
+    "gut_group", "gut_multiplets", "GUT_GROUPS",
 ]
 
 
@@ -470,6 +471,62 @@ def doublet_triplet_split(charges, gamma_order, wilson):
             "split": bool(doub > 0 and trip == 0)}
 
 
+#: Which GUT group the commutant of an SU(r) bundle in E_8 is.
+GUT_GROUPS = {3: "E_6", 4: "SO(10)", 5: "SU(5)"}
+
+
+def gut_group(rank):
+    """The commutant of SU(``rank``) in E_8, for the ranks a heterotic model uses.
+
+    rank 3 -> E_6, rank 4 -> SO(10), rank 5 -> SU(5). Other ranks are refused
+    rather than given a label: the decomposition of the 248 is different for
+    each and there is no generic answer.
+    """
+    if int(rank) not in GUT_GROUPS:
+        raise ValueError(
+            "rank %s has no GUT group implemented here. The commutant of "
+            "SU(r) in E_8 is E_6, SO(10) or SU(5) for r = 3, 4, 5; other "
+            "ranks decompose the 248 differently." % (rank,))
+    return GUT_GROUPS[int(rank)]
+
+
+def gut_multiplets(rank):
+    r"""
+    Which cohomology group carries which GUT representation.
+
+    From the decomposition of the adjoint of E_8 under SU(r) x G:
+
+        r = 3, G = E_6      248 -> (78,1) + (27,3-bar) + (27-bar,3) + (1,8)
+        r = 4, G = SO(10)   248 -> (45,1) + (16,4-bar) + (16-bar,4)
+                                 + (10,6) + (1,15)
+        r = 5, G = SU(5)    248 -> (24,1) + (10,5-bar) + (10-bar,5)
+                                 + (5-bar,10) + (5,10-bar) + (1,24)
+
+    so the chiral matter sits in ``H^1`` of V, of ``Lambda^2 V``, and of the
+    endomorphisms. Returns a list of ``(name, bundle, chiral)`` where
+    ``bundle`` is one of ``'V'``, ``'wedge2'``, ``'endomorphisms'`` and
+    ``chiral`` says whether an index determines its net count.
+
+    Two identities make useful checks and both hold exactly, over 300 random
+    bundles each in ``tests/test_bundles.py``:
+
+    * for r = 4 the ``Lambda^2 V`` is the **6** of SU(4), which is self-dual,
+      so ``ind(Lambda^2 V) = 0`` identically -- the 10 of SO(10) is vector-like
+      and no index can count it;
+    * for r = 3 the ``Lambda^2 V`` is ``V*``, so
+      ``ind(Lambda^2 V) = -ind(V)`` identically.
+    """
+    r = int(rank)
+    gut_group(r)
+    if r == 5:
+        return [("10", "V", True), ("5bar", "wedge2", True),
+                ("1", "endomorphisms", False)]
+    if r == 4:
+        return [("16", "V", True), ("10", "wedge2", False),
+                ("1", "endomorphisms", False)]
+    return [("27", "V", True), ("1", "endomorphisms", False)]
+
+
 def chiral_spectrum(action, summands, wilson=None, X=None):
     r"""
     The chiral spectrum on X/Gamma, **derived** rather than supplied.
@@ -542,6 +599,9 @@ def chiral_spectrum(action, summands, wilson=None, X=None):
             return [ch[k] for k in keys]
         return list(ch)
 
+    rank = V.rank
+    group = gut_group(rank)
+
     cV = character(V.summands)
     cW = character(V.wedge2().summands)
     cE = character(V.endomorphisms().summands)
@@ -549,6 +609,34 @@ def chiral_spectrum(action, summands, wilson=None, X=None):
     equid = {"V": len(set(cV)) == 1,
              "wedge2": len(set(cW)) == 1,
              "endomorphisms": len(set(cE)) == 1}
+
+    if rank != 5:
+        # SO(10) and E_6 are broken to the Standard Model by Wilson lines in
+        # *those* groups, not by the SU(5) hypercharge direction, and that
+        # group theory is not implemented. So the GUT multiplets are reported
+        # directly rather than being decomposed under a breaking that would be
+        # the wrong one.
+        if wilson is not None:
+            raise ValueError(
+                "a Wilson line is only implemented for rank 5, where the GUT "
+                "group is SU(5). This bundle has rank %d, whose commutant is "
+                "%s; breaking that to the Standard Model needs a Wilson line "
+                "in %s, which is different group theory."
+                % (rank, group, group))
+        spectrum = {}
+        widths = {}
+        for name, bundle, chiral in gut_multiplets(rank):
+            ch = {"V": cV, "wedge2": cW, "endomorphisms": cE}[bundle]
+            spectrum[(group, name, bundle)] = -sum(ch) // n if chiral else 0
+            widths[(group, name, bundle)] = 1
+        gens = spectrum.get((group, "16" if rank == 4 else "27", "V"), 0)
+        return {"spectrum": spectrum, "widths": widths,
+                "generations": gens, "anomaly": F(0),
+                "equidistributed": equid, "index_V": sum(cV),
+                "character_V": cV, "character_wedge2": cW,
+                "character_endomorphisms": cE,
+                "gut_group": group, "rank": rank, "gamma_order": n,
+                "chiral_only": [nm for nm, _, c in gut_multiplets(rank) if c]}
 
     shift = _wilson_shift(wilson, len(cV)) if wilson else {}
     spectrum = {}
@@ -569,6 +657,8 @@ def chiral_spectrum(action, summands, wilson=None, X=None):
     anomaly = sum(F(k[2]) * v * widths[k] for k, v in spectrum.items())
     return {"spectrum": spectrum,
             "widths": widths,
+            "gut_group": group,
+            "rank": rank,
             "generations": gens,
             "anomaly": anomaly,
             "equidistributed": equid,
