@@ -18,7 +18,8 @@ SUITES = ["tests/test_viz.py", "tests/test_pycicy.py",
           "tests/test_polytope.py",
           "tests/test_flavor.py",
           "tests/test_breaking.py",
-          "tests/test_equivariant.py"]
+          "tests/test_equivariant.py",
+          "tests/test_export.py"]
 
 
 def main():
