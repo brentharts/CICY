@@ -148,6 +148,59 @@ duality is a constraint line_co has no knowledge of and must satisfy anyway.
 This is the same discipline as node_validation elsewhere in the package.""")
 
 
+def monad_act(order):
+    banner("Aside: the other construction")
+    print("""\
+A sum of line bundles is not the only rank-5 bundle available. A monad
+
+    0 -> V -> B -> C -> 0,   B, C sums of line bundles,
+
+has the same Chern character arithmetic -- ch(V) = ch(B) - ch(C) -- so its
+index is just as free, and scan_monads() searches them with the same
+cost-ordered filters. What differs is the cohomology: it is not determined by
+the degrees, because the ranks of the maps H^q(B) -> H^q(C) depend on the
+morphism. cohomology_bounds() returns intervals instead of numbers.""")
+
+    from pyCICY import CICY
+    X7833 = CICY([[2, 2, 1], [3, 1, 3]])
+    print("\n  Two things the degrees do settle, and both are cheap filters:")
+    M = B.Monad(CICY([[4, 5]]), [[1], [1], [1]], [[0], [3]])
+    try:
+        M.cohomology_bounds()
+        print("     (unexpected: no exception)")
+    except B.NotABundle as e:
+        print("     %s" % str(e).split(".")[0])
+    print("""
+     and imposing h^0 = h^3 = 0 forces one particular rank for
+     H^2(B) -> H^2(C), which need not be attainable -- for about one monad in
+     ninety it is not, and no stable bundle exists however the coefficients
+     are chosen.
+""")
+    t0 = time.time()
+    found = B.scan_monads(X7833, rank=4, nC=2, charge=3, generations=3,
+                          symmetry_order=order, limit=6, max_seconds=20)
+    print("  CICY 7833, rank 4, charge 3, |Gamma| = %d: %d monads  [%.1fs]"
+          % (order, len(found), time.time() - t0))
+    trivial = 0
+    for Bc, Cc in found[:4]:
+        triv = sum(1 for x in Bc if not any(x))
+        trivial += 1 if triv else 0
+        print("     B=%s" % Bc)
+        print("     C=%s   (%d trivial summands in B)" % (Cc, triv))
+    print("""
+Every one of them has a trivial summand in B. That is not bad luck: O_X has all
+charges zero, so every summand of C exceeds it somewhere and positivity lets it
+through, and in this box there is nothing else. A V with a trivial summand has
+a smaller structure group than advertised, so none of these is a model. Nothing
+in scan_monads rejects them, because telling costs more than the filter is
+worth -- the keep= argument is where such a predicate belongs.
+
+Two arithmetic facts before choosing a box. On the quintic every realisable
+monad index is a multiple of five, so three generations is unreachable at any
+charge and rank. On the tetraquadric ind = -3 is unreachable for the same
+parity reason that blocks it for sums of line bundles, while -6 is not.""")
+
+
 def breaking_act(order):
     banner("Stage 6: down to the Standard Model")
     from pyCICY import breaking as B
@@ -232,10 +285,18 @@ def main(argv=None):
     spectrum(X, stable, args.order, limit=args.show)
     if stable:
         cross_checks(X, stable[0])
-        breaking_act(args.order)
     else:
         print("\nNo poly-stable model in this box. That is a statement about "
-              "the box, not about the manifold; try --charge 2.")
+              "the box, not about the manifold: the search was truncated by "
+              "the %gs budget, not exhausted. Raise --budget, or widen "
+              "--charge beyond %d." % (args.budget, args.charge))
+
+    # These two do not depend on a model having been found above: the monad
+    # aside is about a different construction entirely, and the breaking act
+    # is group theory. Running them only on success made them invisible
+    # whenever the budget truncated the scan, which is most of the time.
+    monad_act(args.order)
+    breaking_act(args.order)
     return 0
 
 
