@@ -270,6 +270,61 @@ def _raises(fn, *a, **kw):
     return False
 
 
+def test_quotient_conditions():
+    print("\n[4c] conditions for the quotient to exist")
+    A = E.TETRAQUADRIC_Z2()
+
+    # Gamma must preserve Omega or X/Gamma is not Calabi-Yau at all. This is
+    # independent of freeness: neither implies the other, and the tests below
+    # exhibit both failures separately.
+    check("omega character of the free Z_2", X_.omega_character(TETRA, A), 0)
+    check_true("so it preserves Omega",
+               X_.preserves_holomorphic_form(TETRA, A))
+
+    notCY = E.CyclicAction(TETRA, 2, [[0, 1]] * 4, [1])
+    check_true("a charge-1 quartic breaks Omega",
+               not X_.preserves_holomorphic_form(TETRA, notCY))
+
+    # preserves Omega but is not free
+    z4 = E.CyclicAction(TETRA, 4, [[0, 1]] * 4, [0])
+    check_true("Z_4 preserves Omega", X_.preserves_holomorphic_form(TETRA, z4))
+    check_true("but is not free", not z4.looks_free()[0])
+
+    # The textbook case: the free Z_5 on the quintic, x_i -> zeta^i x_i, which
+    # must satisfy both. Weights sum to 10, vanishing mod 5, against a
+    # charge-0 quintic.
+    q = E.CyclicAction([[4, 5]], 5, [[0, 1, 2, 3, 4]], [0])
+    check("omega character of the quintic Z_5",
+          X_.omega_character([[4, 5]], q), 0)
+    check_true("and it is free",
+               q.looks_free(probes=[[k] for k in range(-3, 4)])[0])
+
+    # The group as matrices, which is all a metric package needs.
+    G = X_.group_matrices(A)
+    check("one matrix per element", len(G), 2)
+    check_true("the identity is present",
+               any(np.allclose(g, np.eye(8)) for g in G))
+    check_true("and the group closes",
+               all(any(np.allclose(a @ b, c) for c in G) for a in G for b in G))
+    check_true("the non-trivial element is an involution",
+               np.allclose(G[1] @ G[1], np.eye(8)))
+
+    # The Kahler class must descend too.
+    r = X_.kmoduli_from_stability(TETRA, MODEL)
+    check_true("kmoduli are invariant under a non-permuting action",
+               X_.kmoduli_are_invariant(A, r["kmoduli"]))
+    perm = E.PermutationAction(TETRA, 2, [1, 0, 3, 2], [[0, 1]] * 4, [0])
+    check_true("but not under one that permutes factors",
+               not X_.kmoduli_are_invariant(perm, r["kmoduli"]))
+    check_true("and they are, if constant on the orbits",
+               X_.kmoduli_are_invariant(perm, np.array([2., 2., 5., 5.])))
+
+    rep = X_.quotient_report(TETRA, A, summands=MODEL)
+    check_true("the quotient report passes for this model", rep["ok"])
+    check_true("and fails when Omega is broken",
+               not X_.quotient_report(TETRA, notCY)["ok"])
+
+
 def test_integration():
     print("\n[5] integration with cymetric / cymyc")
     A = E.TETRAQUADRIC_Z2()
@@ -337,6 +392,56 @@ def test_integration():
         check_true("our triple intersections match cymetric's (%.1e)" % worst,
                    worst < 1e-9)
 
+        # The equivariant generator on the fork: the point set must be closed
+        # under Gamma, the measure unchanged, and a non-invariant polynomial
+        # rejected rather than quietly accepted.
+        try:
+            from cymetric.pointgen import EquivariantCICYPointGenerator
+        except ImportError:
+            print("  EquivariantCICYPointGenerator not present; skipping")
+            SKIPPED.append("cymetric-equivariant")
+            EquivariantCICYPointGenerator = None
+
+        if EquivariantCICYPointGenerator is not None:
+            eargs = X_.to_cymetric(TETRA, action=A, kmoduli="stability",
+                                   summands=MODEL, seed=3, include_group=True)
+            plain = {k: v for k, v in eargs.items() if k != "group_matrices"}
+            pe = EquivariantCICYPointGenerator(**eargs, verbose=3)
+            pp = CICYPointGenerator(**plain, verbose=3)
+            we = pe.generate_point_weights(500)
+            wp = pp.generate_point_weights(500)
+            check("the orbit doubles the sample", len(we), 2 * len(wp))
+
+            # Comparing the two generators' weight *sums* would compare two
+            # Monte Carlo estimates on different random samples, which differ
+            # by sampling noise and tests nothing. The exact property is that
+            # the measure is Gamma-invariant: a point and its image carry the
+            # same weight. Rows 0..n-1 are the identity images and rows n..2n-1
+            # are their images under the second group element.
+            half = len(we) // 2
+            wa, wb = we["weight"][:half], we["weight"][half:]
+            rel = float(np.max(np.abs(wa - wb)
+                               / np.maximum(np.abs(wa), 1e-30)))
+            check_true("a point and its image carry the same weight (%.1e)"
+                       % rel, rel < 1e-9)
+
+            zz = we["point"]
+            gg = eargs["group_matrices"][1]
+            img = pe._rescale_to_patch(zz @ gg.T)
+            dist = np.min(np.abs(img[:, None, :] - zz[None, :, :]).max(-1),
+                          axis=1).max()
+            check_true("the point set is Gamma-closed (%.1e)" % dist,
+                       dist < 1e-8)
+            check_true("invariance verified on the sample (%.1e)"
+                       % pe.verify_invariance(zz[:50]),
+                       pe.verify_invariance(zz[:50]) < 1e-6)
+
+            bad = X_.to_cymetric(TETRA, action=None, seed=3)
+            bad["group_matrices"] = eargs["group_matrices"]
+            check_true("a non-invariant polynomial is rejected",
+                       _raises(lambda: EquivariantCICYPointGenerator(
+                           **bad, verbose=3).generate_point_weights(50)))
+
     try:
         from cymyc import alg_geo
         import jax.numpy as jnp
@@ -365,6 +470,7 @@ def main():
     test_polynomials()
     test_formats()
     test_kmoduli()
+    test_quotient_conditions()
     test_integration()
 
     print("\n" + "=" * 72)
