@@ -419,6 +419,84 @@ def test_abelian_polynomial_permutations():
                        polynomial_perms=[[1, 0]]))
 
 
+def test_matrix_group_action():
+    print("\n[2f] arbitrary finite groups, given as a matrix lift")
+
+    idp = [0, 1, 2, 3]
+    zero = [[0, 0]] * 4
+
+    # Regression: a cyclic action through the general machinery must give the
+    # trivial-character multiplicity that CyclicAction computes.
+    G = E.MatrixGroupAction(TETRA_CONF, [(idp, [[0, 1]] * 4, [0], [0])], 2)
+    A = E.CyclicAction(TETRA_CONF, 2, [[0, 1]] * 4, [0])
+    bad = sum(1 for k in itertools.product((-2, -1, 0, 1, 2), repeat=4)
+              if G.invariant_index(list(k)) != A.euler(list(k))[0])
+    check("invariant_index matches the trivial character, 625 bundles", bad, 0)
+    check_true("and it agrees on freeness", G.looks_free()[0])
+
+    # -- non-abelian -------------------------------------------------------
+    S3 = E.MatrixGroupAction(TETRA_CONF,
+                             [((1, 0, 2, 3), zero, [0], [0]),
+                              ((1, 2, 0, 3), zero, [0], [0])], 2)
+    check("S_3 on three factors closes to order 6", S3.order, 6)
+    check_true("and is non-abelian", not S3.is_abelian())
+
+    S4 = E.MatrixGroupAction(TETRA_CONF,
+                             [((1, 0, 2, 3), zero, [0], [0]),
+                              ((1, 2, 3, 0), zero, [0], [0])], 2)
+    check("S_4 on all four factors closes to order 24", S4.order, 24)
+    check_true("also non-abelian", not S4.is_abelian())
+
+    # L(e) is the ordinary index, so it must match line_co_euler even though
+    # the group is non-abelian and no character table exists.
+    worst = 0.0
+    for k in S3._invariant_box(-2, 2):
+        worst = max(worst, abs(S3.lefschetz(S3._identity(), k).real
+                               - float(TETRA.line_co_euler(k))))
+    check_true("L(e) matches line_co_euler for S_3 (%.1e)" % worst,
+               worst < 1e-6)
+
+    # The invariant index is an integer for every invariant bundle, which is a
+    # real constraint: it is an average of complex traces over the group.
+    ints = all(isinstance(S3.invariant_index(k), int)
+               for k in S3._invariant_box(-1, 1))
+    check_true("the invariant index is an integer throughout", ints)
+    check_true("S_3 by permutations alone is not free", not S3.looks_free()[0])
+
+    # -- the central extension --------------------------------------------
+    #
+    # This is the design problem the class exists to resolve. Rescaling factor
+    # 0 by -1 acts trivially on P^1, hence trivially on X -- but not on O(k).
+    # The lift has order 2 and the geometric group is trivial.
+    Sc = E.MatrixGroupAction(
+        TETRA_CONF, [(idp, [[1, 1], [0, 0], [0, 0], [0, 0]], [0], [0])], 2)
+    check("the lift has order 2", Sc.order, 2)
+    check("both elements are scalars", len(Sc.scalar_subgroup()), 2)
+    check("so the geometric order is 1", Sc.geometric_order(), 1)
+    check_true("and report() says so",
+               "central extension" in Sc.report())
+
+    # O(1) sections on that factor are odd under the scalar, so none descend;
+    # O(2) sections are even, so all do. The invariant index sees the
+    # difference and the ordinary index cannot.
+    check("index of O(1,0,0,0) upstairs",
+          int(Sc.lefschetz(Sc._identity(), [1, 0, 0, 0]).real), 2)
+    check("but none of it descends", Sc.invariant_index([1, 0, 0, 0]), 0)
+    check("index of O(2,0,0,0) upstairs",
+          int(Sc.lefschetz(Sc._identity(), [2, 0, 0, 0]).real), 4)
+    check("and all of that descends", Sc.invariant_index([2, 0, 0, 0]), 4)
+
+    # -- guards ------------------------------------------------------------
+    check_true("a non-invariant bundle is refused",
+               _raises(S3.invariant_index, [1, 0, 0, 0]))
+    check_true("an incompatible generator is refused",
+               _raises(E.MatrixGroupAction, [[1, 1, 2], [1, 2, 1]],
+                       [(( 0, 1), [[0, 0], [0, 0]], [1, 0], [0, 0])], 2))
+    check_true("generators that do not close finitely are refused",
+               _raises(E.MatrixGroupAction, TETRA_CONF,
+                       [(idp, [[0, 1]] * 4, [0], [0])], 5, max_order=1))
+
+
 def test_structures():
     print("\n[3] equivariant structures")
     A = E.TETRAQUADRIC_Z2()
@@ -511,6 +589,7 @@ def main():
     test_abelian_and_free_permuting()
     test_polynomial_permutations()
     test_abelian_polynomial_permutations()
+    test_matrix_group_action()
     test_structures()
     test_bridge()
 
