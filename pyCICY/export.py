@@ -77,6 +77,8 @@ __all__ = [
     "ambient_vector", "coordinate_blocks", "monomials", "monomial_charges",
     "invariant_monomials", "defining_polynomials", "is_smooth_over_Fp",
     "kmoduli_from_stability", "kahler_volume",
+    "omega_character", "preserves_holomorphic_form", "group_matrices",
+    "kmoduli_are_invariant", "quotient_report",
     "to_cymetric", "to_cymyc", "poly_spec_source",
 ]
 
@@ -407,6 +409,151 @@ def kmoduli_from_stability(X, summands, normalisation="volume", target=1.0,
             "normalisation": normalisation}
 
 
+
+# ---------------------------------------------------------------------------
+# exporting the group itself
+# ---------------------------------------------------------------------------
+
+def omega_character(X, action):
+    r"""
+    The character by which Gamma acts on the holomorphic (3,0)-form.
+
+    Omega is built from the holomorphic volume form of the ambient divided by
+    the Jacobian of the defining polynomials, so under a diagonal action it
+    picks up
+
+        chi(Omega) = sum over all coordinates of the weights
+                     - sum over the defining polynomials of their charges,
+
+    modulo the order. Returned as an integer in ``[0, n)``.
+    """
+    n = _modulus(action)
+    w = sum(sum(row) for row in action.weights)
+    pc = action.polynomial_charges
+    if pc and isinstance(pc[0], (list, tuple)):
+        pc = pc[0]
+    return int((w - sum(pc)) % n)
+
+
+def preserves_holomorphic_form(X, action):
+    r"""
+    Whether X/Gamma is Calabi-Yau at all.
+
+    A quotient of a Calabi-Yau by a freely acting group is again Calabi-Yau
+    only if the group preserves the holomorphic form -- equivalently sits in
+    SU(3) rather than merely U(3). If it does not, Omega does not descend,
+    the quotient has no covariantly constant spinor, and asking a metric
+    package for "the Ricci-flat metric on X/Gamma" is asking for something
+    that does not exist.
+
+    This is **independent** of freeness and neither implies the other. On the
+    tetraquadric, the order-4 factor-permuting action preserves Omega and is
+    not free; the Z_3 diagonal action is neither. The classic free Z_5 on the
+    quintic, ``x_i -> zeta^i x_i``, satisfies both -- weights summing to 10,
+    which vanishes mod 5, against a charge-0 quintic.
+    """
+    return omega_character(X, action) == 0
+
+
+def group_matrices(action):
+    r"""
+    Every group element as an explicit matrix on the homogeneous coordinates.
+
+    Returned as a list of complex ``(ncoords, ncoords)`` arrays, in the
+    coordinate ordering of :func:`coordinate_blocks`, so that ``M @ z`` is the
+    action on a point. Diagonal for actions within factors, a permutation with
+    phases when factors are exchanged.
+
+    This is what a metric package needs in order to work equivariantly: it
+    never has to know anything about configuration matrices or characters, only
+    how to move a point.
+    """
+    n = _modulus(action)
+    conf = np.asarray(action.conf, dtype=int)
+    dims = conf[:, 0]
+    ncoord = int(sum(dims + 1))
+    starts = []
+    acc = 0
+    for d in dims:
+        starts.append(acc)
+        acc += int(d) + 1
+    zeta = np.exp(2j * np.pi / n)
+
+    perms_weights = []
+    if hasattr(action, "perm"):                      # PermutationAction
+        from .equivariant import _permutation_power
+        for j in range(n):
+            sj = _permutation_power(list(action.perm), j)
+            w = []
+            for i in range(len(dims)):
+                u = [0] * (int(dims[i]) + 1)
+                x = i
+                for _ in range(j):
+                    for t in range(int(dims[i]) + 1):
+                        u[t] += action.weights[x][t]
+                    x = action.perm[x]
+                w.append(u)
+            perms_weights.append((sj, w))
+    else:                                            # CyclicAction
+        for j in range(n):
+            perms_weights.append(
+                (list(range(len(dims))),
+                 [[j * t for t in row] for row in action.weights]))
+
+    out = []
+    for perm, w in perms_weights:
+        M = np.zeros((ncoord, ncoord), dtype=complex)
+        for i in range(len(dims)):
+            for t in range(int(dims[i]) + 1):
+                src = starts[i] + t
+                dst = starts[perm[i]] + t
+                M[dst, src] = zeta ** (w[i][t] % n)
+        out.append(M)
+    return out
+
+
+def kmoduli_are_invariant(action, kmoduli, tol=1e-9):
+    """Whether the Kahler class is fixed by the group.
+
+    A permuting action moves the Kahler parameters around with the factors, so
+    unless ``t`` is constant on each orbit the class is not invariant, does not
+    descend, and the quotient metric is not the one being asked for. Trivially
+    true for an action that does not permute factors.
+    """
+    t = np.asarray(kmoduli, dtype=float)
+    perm = list(getattr(action, "perm", range(len(t))))
+    return bool(np.all(np.abs(t[perm] - t) < tol))
+
+
+def quotient_report(X, action, kmoduli=None, summands=None):
+    """The conditions for X/Gamma to be a Calabi-Yau the model can live on.
+
+    Returns a dict of independent checks. None implies the others, and a
+    metric computed when any of them fails is a metric on the wrong space:
+
+    ``preserves_omega``   Gamma in SU(3), so Omega descends and the quotient
+                          is Calabi-Yau
+    ``looks_free``        no fixed points, so the quotient is smooth
+    ``kmoduli_invariant`` the Kahler class descends
+    """
+    out = {"order": _modulus(action),
+           "omega_character": omega_character(X, action),
+           "preserves_omega": preserves_holomorphic_form(X, action)}
+    try:
+        out["looks_free"] = bool(action.looks_free()[0])
+    except Exception:                                            # noqa: BLE001
+        out["looks_free"] = None
+    if kmoduli is None and summands is not None:
+        kmoduli = kmoduli_from_stability(X, summands)["kmoduli"]
+    if kmoduli is not None:
+        out["kmoduli"] = np.asarray(kmoduli)
+        out["kmoduli_invariant"] = kmoduli_are_invariant(action, kmoduli)
+    out["ok"] = bool(out["preserves_omega"]
+                     and (out["looks_free"] is not False)
+                     and out.get("kmoduli_invariant", True))
+    return out
+
+
 # ---------------------------------------------------------------------------
 # the two output formats
 # ---------------------------------------------------------------------------
@@ -429,7 +576,7 @@ def _resolve_kmoduli(X, kmoduli, summands, normalisation, n):
 
 
 def to_cymetric(X, action=None, kmoduli=None, seed=0, summands=None,
-                normalisation="volume", **kw):
+                normalisation="volume", include_group=False, **kw):
     """Arguments for ``cymetric.pointgen.pointgen_cicy.CICYPointGenerator``.
 
     Returns a dict with ``monomials``, ``coefficients``, ``kmoduli`` and
@@ -437,12 +584,20 @@ def to_cymetric(X, action=None, kmoduli=None, seed=0, summands=None,
 
         from cymetric.pointgen.pointgen_cicy import CICYPointGenerator
         pg = CICYPointGenerator(**export.to_cymetric(X, action))
+
+    With ``include_group`` the result also carries ``group_matrices``, which
+    the stock ``CICYPointGenerator`` does not accept -- it is for the
+    equivariant subclass, and is left out by default so that the dict can be
+    splatted straight into the upstream constructor.
     """
     mons, coeffs = defining_polynomials(X, action=action, seed=seed, **kw)
     amb = ambient_vector(X)
     km = _resolve_kmoduli(X, kmoduli, summands, normalisation, len(amb))
-    return {"monomials": mons, "coefficients": coeffs,
-            "kmoduli": km, "ambient": amb}
+    out = {"monomials": mons, "coefficients": coeffs,
+           "kmoduli": km, "ambient": amb}
+    if action is not None and include_group:
+        out["group_matrices"] = group_matrices(action)
+    return out
 
 
 def to_cymyc(X, action=None, kmoduli=None, seed=0, summands=None,
