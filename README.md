@@ -790,6 +790,38 @@ keeps the doublets and projects the triplets out entirely. Splitting the
 charges evenly instead leaves both, and hides the mechanism — worth knowing
 when reading a spectrum that looks symmetric.
 
+### The pipeline, end to end
+
+`breaking.chiral_spectrum` joins the three modules: `bundles.scan` produces a
+model, `equivariant` computes its index characters, and the Standard Model
+spectrum comes out with nothing chosen by hand.
+
+```python
+from pyCICY import equivariant as E, breaking as B
+A = E.TETRAQUADRIC_Z2()
+B.chiral_spectrum(A, model, wilson=(0,1))
+# 3 of every SM piece, anomaly 0, ind(V) = -6, |Gamma| = 2
+```
+
+And the result is forced in a way worth spelling out. The 10 sits in `H^1(V)`
+and the 5-bar in `H^1(Lambda^2 V)`, so their net counts are read off `ind(V)`
+and `ind(Lambda^2 V)`. A Wilson line shifts each Standard Model piece within
+its multiplet by a *different* amount — that is how it splits them — and the
+surviving multiplicity is the one at the shifted charge. But for a free
+`Gamma` every index character is a multiple of the regular representation,
+hence **constant**, so every shift lands on the same multiplicity and the
+Wilson line **cannot split the chiral spectrum at all**. What comes out is
+complete SU(5) generations, `-ind(V)/|Gamma|` of them, for any Wilson line
+whatever.
+
+That is the right physics, and it resolves an apparent tension in this
+package: `doublet_triplet_split` *does* split things, and still takes
+Gamma-charges by hand. Both are correct, because they describe different
+halves of the spectrum. Doublet-triplet splitting is necessarily a statement
+about **vector-like pairs** — the non-chiral content an index cannot see —
+which is exactly the half that remains undetermined. The tests assert the two
+side by side.
+
 **The boundary.** The representation of Gamma on cohomology is *not* a function
 of the configuration matrix, the charges, or anything else this package holds:
 it needs an equivariant structure, a lift of the Gamma action to the total
