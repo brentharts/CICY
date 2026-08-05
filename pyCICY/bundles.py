@@ -149,10 +149,14 @@ logger = logging.getLogger('pyCICY.bundles')
 
 __all__ = [
     "Bundle", "LineBundleSum", "Monad",
-    "NotFavourable",
+    "NotFavourable", "NotABundle",
     "chern_character", "index", "anomaly", "slope", "slope_is_definite", "slope_candidates", "slope_subsets_definite", "stability_locus",
     "scan",
 ]
+
+
+class NotABundle(ValueError):
+    """Raised when a monad's degrees make the defining sequence impossible."""
 
 
 class NotFavourable(ValueError):
@@ -669,7 +673,7 @@ class Monad(Bundle):
         self.B = [list(map(int, L)) for L in B]
         self.C = [list(map(int, L)) for L in C]
 
-    def cohomology_bounds(self, SpaSM=False):
+    def cohomology_bounds(self, SpaSM=False, stable=False):
         r"""
         What the long exact sequence gives, and no more.
 
@@ -688,8 +692,23 @@ class Monad(Bundle):
         interval has width zero the sequence has determined that h^q outright.
 
         A monad is only a bundle when the map B -> C is surjective as a sheaf
-        map, which is a genericity condition on the coefficients; it is
-        assumed, not checked.
+        map. That is a genericity condition on the coefficients and is not
+        checked here -- but one *necessary* consequence of it is, because it
+        is free: exactness at the right-hand end forces H^3(B) -> H^3(C) to be
+        onto, so h^3(B) < h^3(C) makes the sequence impossible and
+        :exc:`NotABundle` is raised. Without that check the formula below
+        returns a negative h^3, which is how the case was found: B = O(1)^3
+        and C = O + O(3) on the quintic gives h^3(V) = -1, because the trivial
+        summand of C contributes h^3(O_X) = 1 by Serre duality and B has
+        nothing to map onto it.
+
+        With ``stable=True`` the bounds are tightened by imposing
+        h^0(V) = h^3(V) = 0, which holds for any slope-stable bundle with
+        c_1(V) = 0 on a Calabi-Yau threefold: a section would give a map
+        O_X -> V from a sheaf of the same slope, contradicting stability, and
+        h^3(V) = h^0(V*) vanishes by the same argument on the dual. This is
+        an assumption about the bundle, not a consequence of the degrees, so
+        it is off by default and flagged in the return value.
         """
         hB = np.zeros(4, dtype=int)
         for L in self.B:
@@ -697,6 +716,12 @@ class Monad(Bundle):
         hC = np.zeros(4, dtype=int)
         for L in self.C:
             hC += np.array(self.X.line_co(L, SpaSM=SpaSM), dtype=int)
+
+        if hB[3] < hC[3]:
+            raise NotABundle(
+                "h^3(B) = %d < h^3(C) = %d, so H^3(B) -> H^3(C) cannot be "
+                "surjective and 0 -> V -> B -> C -> 0 cannot be exact. This "
+                "monad does not define a bundle." % (hB[3], hC[3]))
 
         # r_q = rank of H^q(B) -> H^q(C), with 0 <= r_q <= min(h^q B, h^q C).
         # The sequence terminates ... -> H^3(V) -> H^3(B) -> H^3(C) -> 0, so
@@ -712,10 +737,57 @@ class Monad(Bundle):
             # h^q(V) = (h^{q-1}(C) - r_{q-1}) + (h^q(B) - r_q)
             lo.append((prevC - prev_rmax) + (int(hB[q]) - rmax[q]))
             hi.append((prevC - prev_rmin) + (int(hB[q]) - rmin[q]))
-        return {"hB": hB, "hC": hC,
-                "bounds": list(zip(lo, hi)),
-                "index": self.index(),
-                "determined": [a == b for a, b in zip(lo, hi)]}
+        if stable:
+            # h^0(V) = 0 forces H^0(B) -> H^0(C) injective, so r_0 = h^0(B);
+            # h^3(V) = 0 forces r_2 = h^2(C) + h^3(B) - h^3(C). Substituting
+            # both leaves r_1 as the only freedom, and then
+            #
+            #   h^1 = h^0(C) - h^0(B) + h^1(B) - r_1
+            #   h^2 = h^1(C) - r_1 + h^2(B) - h^2(C) - h^3(B) + h^3(C)
+            #
+            # whose difference h^2 - h^1 is independent of r_1 and equals the
+            # index, as it must. So the two intervals have the same width,
+            # min(h^1(B), h^1(C)), and are rigidly offset by ind(V).
+            if hB[0] > hC[0]:
+                raise NotABundle(
+                    "h^0(V) = 0 would need H^0(B) -> H^0(C) injective, but "
+                    "h^0(B) = %d exceeds h^0(C) = %d. A stable bundle with "
+                    "c_1(V) = 0 cannot arise from this monad."
+                    % (hB[0], hC[0]))
+            # h^3(V) = 0 forces r_2 to one specific value, which must lie in
+            # the range a rank can occupy. When it does not -- and it does not
+            # for about one monad in ninety -- h^3(V) is pinned above zero by
+            # the sequence itself and no stable bundle can arise, however the
+            # coefficients are chosen. Without this test the returned interval
+            # escapes the unconditional one, which is impossible for a
+            # tightening and is how the case was found.
+            r2_forced = int(hC[2]) + int(hB[3]) - int(hC[3])
+            if not (0 <= r2_forced <= min(int(hB[2]), int(hC[2]))):
+                raise NotABundle(
+                    "h^3(V) = 0 would force rank(H^2(B) -> H^2(C)) = %d, "
+                    "outside its possible range [0, %d]. The sequence pins "
+                    "h^3(V) above zero, so no slope-stable bundle with "
+                    "c_1 = 0 arises from this monad."
+                    % (r2_forced, min(int(hB[2]), int(hC[2]))))
+            ind = int(self.index())
+            base = int(hC[0]) - int(hB[0]) + int(hB[1])
+            lo[0] = hi[0] = 0
+            lo[3] = hi[3] = 0
+            lo[1], hi[1] = base - rmax[1], base - rmin[1]
+            lo[2], hi[2] = lo[1] + ind, hi[1] + ind
+            if lo[1] < 0 or lo[2] < 0:
+                raise NotABundle(
+                    "imposing h^0(V) = h^3(V) = 0 forces a negative "
+                    "cohomology dimension (h^1 in [%d, %d], h^2 in [%d, %d]), "
+                    "so no stable bundle arises from this monad"
+                    % (lo[1], hi[1], lo[2], hi[2]))
+
+        out = {"hB": hB, "hC": hC,
+               "bounds": list(zip(lo, hi)),
+               "index": self.index(),
+               "assumed_stable": bool(stable),
+               "determined": [a == b for a, b in zip(lo, hi)]}
+        return out
 
 
 # ---------------------------------------------------------------------------
