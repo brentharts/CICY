@@ -291,6 +291,16 @@ that the generators commute projectively, and that the degree columns are
 invariant — because none implies the others and a failure of any one makes the
 index meaningless rather than merely inaccurate.
 
+`AbelianAction` takes `polynomial_perms` too, one per generator, carrying the
+same wedge sign and invariant-subset filter and validated by the same oracle —
+which remains sensitive there (16 of 25 with the sign forced, identity total
+still `1.4e-14`). It adds one consistency condition the cyclic case cannot
+have: the generators must commute **on the defining polynomials** as well, and
+that has no projective slack, since the `p_a` are functions rather than
+homogeneous coordinates. Two transpositions on three polynomials fail it while
+the factor data says nothing at all — both factor permutations may be the
+identity.
+
 ### The free action, and why it has order four
 
 A `Z_2 x Z_2` with one generator permuting and one phasing turns out **never**
