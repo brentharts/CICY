@@ -97,11 +97,30 @@ result worth having in its own right: it *derives* the equidistribution that
 
 Scope
 -----
-* Cyclic Gamma acting diagonally on the homogeneous coordinates, by phases.
-  Actions permuting coordinates within a factor, or permuting the ambient
-  factors, are not implemented; the latter would also require the charges of
-  the line bundle to be permutation-invariant before an equivariant structure
-  exists at all.
+* Cyclic Gamma, acting within each ambient factor without permuting the
+  factors themselves.
+
+  The weights below are exponents of a diagonal action, but that is less
+  restrictive than it looks and the first version of this docstring got it
+  wrong. Any linear map of finite order n is diagonalisable with n-th roots
+  of unity as eigenvalues, so an action that *permutes coordinates* inside a
+  factor is the diagonal case in a different basis -- the swap
+  [x_0 : x_1] -> [x_1 : x_0] is diag(1, -1) in the basis x_0 +- x_1, i.e.
+  weights (0, 1), and a cyclic permutation of d+1 coordinates has weights
+  (0, 1, ..., d). Characters do not depend on the basis, so :meth:`euler` is
+  already correct for all of these. :func:`weights_from_matrix` performs the
+  conversion.
+
+  What does change with the basis is everything phrased in terms of
+  monomials: which polynomial charges are admissible, and which coordinate
+  points are fixed. So :meth:`admissible_polynomial_charges` and
+  :meth:`forced_fixed_points` are statements about the diagonalising
+  coordinates and must be read there.
+
+  Permuting the ambient factors is genuinely not implemented. It needs
+  element-wise traces over the cycles of the permutation rather than a
+  product over factors, and it also requires the line bundle charges to be
+  permutation-invariant before an equivariant structure exists at all.
 * Freeness is diagnosed, not decided. Deciding it needs the defining
   polynomials, not just their degrees and characters, and this package works
   with configuration matrices.
@@ -116,7 +135,7 @@ import itertools
 import numpy as np
 
 __all__ = [
-    "CyclicAction", "regular_representation", "is_regular_multiple",
+    "CyclicAction", "weights_from_matrix", "regular_representation", "is_regular_multiple",
     "bundle_index_character", "enumerate_structures", "gamma_charges",
     "TETRAQUADRIC_Z2",
 ]
@@ -403,6 +422,33 @@ class CyclicAction(object):
 # ---------------------------------------------------------------------------
 # representation-theoretic helpers
 # ---------------------------------------------------------------------------
+
+def weights_from_matrix(M, order, tol=1e-7):
+    """Weights of a finite-order linear map, from its eigenvalues.
+
+    A map of order n has eigenvalues that are n-th roots of unity, so it is
+    the diagonal action ``x_j -> zeta^{w_j} x_j`` in the eigenbasis. Returns
+    the sorted exponents, suitable for :class:`CyclicAction`.
+
+    Raises if the eigenvalues are not n-th roots of unity, which is the case
+    where the map does not have the claimed order.
+    """
+    M = np.asarray(M, dtype=complex)
+    n = int(order)
+    ev = np.linalg.eigvals(M)
+    out = []
+    for e in ev:
+        if abs(abs(e) - 1.0) > tol:
+            raise ValueError(
+                "eigenvalue %r is not on the unit circle, so this map does "
+                "not have finite order" % (e,))
+        w = np.angle(e) / (2 * np.pi / n)
+        if abs(w - round(w)) > tol * n:
+            raise ValueError(
+                "eigenvalue %r is not an %d-th root of unity" % (e, n))
+        out.append(int(round(w)) % n)
+    return sorted(out)
+
 
 def regular_representation(n, multiple=1):
     """The regular representation of Z_n, or a multiple of it."""

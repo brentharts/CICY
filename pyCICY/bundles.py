@@ -151,7 +151,7 @@ __all__ = [
     "Bundle", "LineBundleSum", "Monad",
     "NotFavourable", "NotABundle",
     "chern_character", "index", "anomaly", "slope", "slope_is_definite", "slope_candidates", "slope_subsets_definite", "stability_locus",
-    "scan",
+    "scan", "scan_monads",
 ]
 
 
@@ -669,9 +669,31 @@ class Monad(Bundle):
     def __init__(self, X, B, C, name=None):
         summands = list(B) + list(C)
         signs = [1] * len(B) + [-1] * len(C)
+        self.nB = len(B)
+        self.nC = len(C)
         Bundle.__init__(self, X, summands, signs, name)
         self.B = [list(map(int, L)) for L in B]
         self.C = [list(map(int, L)) for L in C]
+
+    def positivity_ok(self):
+        """The positive-monad condition of Anderson, He and Lukas.
+
+        All charges non-negative, and every summand of C strictly exceeding
+        every summand of B in at least one direction. This is the standard
+        sufficient condition for a generic morphism B -> C to be surjective,
+        so that the monad defines a bundle rather than a sheaf. Failing it
+        does not prove the monad is not a bundle; it means this criterion has
+        nothing to say.
+        """
+        Bc = np.array(self.summands[:self.nB], dtype=np.int64)
+        Cc = np.array(self.summands[self.nB:], dtype=np.int64)
+        if np.any(Bc < 0) or np.any(Cc < 0):
+            return False
+        for cj in Cc:
+            for bi in Bc:
+                if not np.any(cj > bi):
+                    return False
+        return True
 
     def cohomology_bounds(self, SpaSM=False, stable=False):
         r"""
@@ -1055,4 +1077,120 @@ def scan(X, rank=5, charge=2, generations=3, symmetry_order=1,
             'covered %d of the outer choices. The result is a truncation of '
             'the search box, not all of it.',
             _time.time() - started, max_seconds, count)
+    return out
+
+
+def scan_monads(X, rank=4, nC=2, charge=2, generations=3, symmetry_order=1,
+                require_anomaly=True, require_positivity=True,
+                require_stable_cohomology=False, limit=20000,
+                max_seconds=None, keep=None, as_objects=False):
+    r"""
+    Search monads ``0 -> V -> B -> C -> 0`` for candidate models.
+
+    The companion to :func:`scan`, and it exists because monads have filters
+    that sums of line bundles do not. The same discipline applies: conditions
+    are ordered by cost and the expensive ones never see the whole box.
+
+    1. ``c_1(V) = 0``                integer arithmetic on the charges
+    2. ``ind(V) = -3|Gamma|``        one tensor contraction
+    3. anomaly cancellation          one tensor contraction
+    4. positivity of the monad       sign arithmetic
+    5. ``h^3(B) >= h^3(C)``          two ``line_co`` calls
+    6. a stable bundle can exist     the rest of :meth:`Monad.cohomology_bounds`
+
+    Steps 5 and 6 are the ones this function adds over :func:`scan`, and they
+    are the two :exc:`NotABundle` conditions. Both need cohomology, so both
+    are last, and step 6 is off by default; between them they reject roughly
+    one candidate in eight that passes everything cheaper.
+
+    Parameters
+    ----------
+    X : CICY or configuration matrix
+    rank : int
+        Rank of V. ``rank(B) = rank + nC``.
+    nC : int
+        Number of summands in C. ``nC = 1`` is the common case.
+    charge : int
+        Charges of B and C range over ``0..charge``. Monad charges are taken
+        non-negative, which is the positivity convention; unlike :func:`scan`
+        the box is one-sided, so it grows more slowly.
+    limit, max_seconds, keep, as_objects
+        As in :func:`scan`.
+
+    Returns
+    -------
+    list of Monad, or of ``(B, C)`` charge pairs when ``as_objects`` is False.
+    """
+    X = _as_cicy(X)
+    if rank < 1:
+        raise ValueError("rank must be positive")
+    if nC < 1:
+        raise ValueError("a monad needs at least one summand in C")
+    h11 = X.len
+    nB = rank + nC
+    d = np.asarray(X.triple_intersection(), dtype=float)
+    c2X = np.asarray(X.second_chern(), dtype=float)
+    target = -generations * symmetry_order
+
+    pool = [np.array(v, dtype=np.int64) for v in
+            itertools.product(range(charge + 1), repeat=h11)]
+    started = _time.time()
+    out = []
+    truncated = None
+
+    for Bi in itertools.combinations_with_replacement(range(len(pool)), nB):
+        if truncated:
+            break
+        Bc = np.array([pool[i] for i in Bi], dtype=np.int64)
+        sB = Bc.sum(axis=0)
+        for Ci in itertools.combinations_with_replacement(range(len(pool)), nC):
+            if max_seconds is not None and _time.time() - started > max_seconds:
+                truncated = "budget"
+                break
+            Cc = np.array([pool[i] for i in Ci], dtype=np.int64)
+
+            # 1. c_1(V) = 0
+            if np.any(sB - Cc.sum(axis=0)):
+                continue
+            # 2. index
+            ind = (np.einsum("rst,ar,as,at->", d, Bc, Bc, Bc)
+                   - np.einsum("rst,ar,as,at->", d, Cc, Cc, Cc)) / 6.0
+            if abs(ind - target) > 1e-6:
+                continue
+            # 3. anomaly: c_2(V) = -ch_2(V)
+            if require_anomaly:
+                ch2 = 0.5 * (np.einsum("rst,as,at->r", d, Bc, Bc)
+                             - np.einsum("rst,as,at->r", d, Cc, Cc))
+                if np.any(c2X + ch2 < -1e-9):
+                    continue
+
+            try:
+                M = Monad(X, Bc, Cc)
+            except ValueError:
+                continue
+            # 4. positivity
+            if require_positivity and not M.positivity_ok():
+                continue
+            # 5 and 6. the cohomology conditions
+            try:
+                M.cohomology_bounds(stable=require_stable_cohomology)
+            except NotABundle:
+                continue
+            except Exception:                                    # noqa: BLE001
+                continue
+
+            if keep is not None and not keep(Bc.tolist(), Cc.tolist()):
+                continue
+            out.append(M if as_objects else (Bc.tolist(), Cc.tolist()))
+            if len(out) >= limit:
+                logger.warning(
+                    "scan_monads() stopped at limit=%d; the result is a "
+                    "truncation of the search box, not all of it.", limit)
+                return out
+
+    if truncated == "budget":
+        logger.warning(
+            "scan_monads() stopped after %.1fs on a max_seconds=%s budget. "
+            "The result is a truncation of the search box, not all of it.",
+            _time.time() - started, max_seconds)
     return out
