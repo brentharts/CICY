@@ -152,6 +152,75 @@ def _has_charge_one(A):
     return 1 in A.admissible_polynomial_charges(0)
 
 
+def test_smoothness():
+    print("\n[3b] the smoothness filter")
+    A = E.TETRAQUADRIC_Z2()
+    mons = X_.monomials(TETRA, 0)
+
+    # A single monomial is a union of hyperplanes with multiplicity, singular
+    # all along the intersections. If the check cannot see that, it sees
+    # nothing.
+    i = [k for k, r in enumerate(mons) if list(r) == [2, 0, 2, 0, 2, 0, 2, 0]][0]
+    c = np.zeros(len(mons), dtype=complex)
+    c[i] = 1.0
+    ok, on_X, drops = X_.is_smooth_over_Fp(TETRA, [mons], [c], samples=8000)
+    check_true("a single monomial is detected as singular", not ok)
+    check_true("and the rank drops at every point of X found (%d/%d)"
+               % (drops, on_X), on_X > 0 and drops == on_X)
+
+    # A polynomial divisible by x_00^2 is non-reduced along x_00 = 0.
+    rng = np.random.default_rng(0)
+    c2 = np.zeros(len(mons), dtype=complex)
+    for k, r in enumerate(mons):
+        if list(r)[:2] == [2, 0]:
+            c2[k] = rng.integers(1, 9) + 1j * rng.integers(1, 9)
+    check_true("a non-reduced polynomial is detected",
+               not X_.is_smooth_over_Fp(TETRA, [mons], [c2], samples=8000)[0])
+
+    # The reduction must be faithful, or the check tests a different
+    # polynomial. Floats are refused rather than rounded: rounding the real
+    # part of 0.3 + 0.7i gives 0, which deletes the monomial, and an earlier
+    # version of this function reported a false singularity for exactly that
+    # reason on the first seed it was pointed at.
+    check_true("float coefficients are refused",
+               _raises(X_.is_smooth_over_Fp, TETRA, [mons],
+                       [np.random.default_rng(0).normal(size=len(mons))],
+                       samples=200))
+    check_true("and a prime with no square root of -1 is refused",
+               _raises(X_.is_smooth_over_Fp, TETRA, [mons], [c], p=103,
+                       samples=200))
+
+    # A generic one passes, and finds points to test on.
+    rng3 = np.random.default_rng(5)
+    c3 = (rng3.integers(1, 13, size=len(mons))
+          + 1j * rng3.integers(1, 13, size=len(mons))).astype(complex)
+    ok3, on3, dr3 = X_.is_smooth_over_Fp(TETRA, [mons], [c3], samples=8000)
+    check_true("a generic polynomial passes", ok3)
+    check_true("having found %d points of X to test" % on3, on3 > 20)
+    check("with no rank drops", dr3, 0)
+
+    # The export path now runs this by default, so a singular draw cannot
+    # reach a metric package silently.
+    # Every seed in a range must pass, since a generic member of the family
+    # is smooth. Failures here mean the check is wrong, not the geometry.
+    good = 0
+    for sd in range(6):
+        try:
+            X_.defining_polynomials(TETRA, action=A, seed=sd, samples=4000)
+            good += 1
+        except ValueError:
+            pass
+    check("six consecutive seeds all give smooth polynomials", good, 6)
+
+    m, cc = X_.defining_polynomials(TETRA, action=A, seed=3)
+    check_true("defining_polynomials checks by default", len(m) == 1)
+    check_true("and its coefficients are Gaussian integers",
+               np.allclose(cc[0], np.rint(cc[0].real) + 1j * np.rint(cc[0].imag)))
+    check_true("and the check can be turned off",
+               len(X_.defining_polynomials(TETRA, action=A, seed=3,
+                                           check_smooth=False)[0]) == 1)
+
+
 def test_formats():
     print("\n[4] the two output formats")
     A = E.TETRAQUADRIC_Z2()
@@ -442,6 +511,24 @@ def test_integration():
                        _raises(lambda: EquivariantCICYPointGenerator(
                            **bad, verbose=3).generate_point_weights(50)))
 
+            # Which space the weights integrate over. The augmented sample is
+            # a sample of the cover, so integrals against it are |Gamma| times
+            # the quotient answer -- a trap, since nothing downstream knows.
+            pq = EquivariantCICYPointGenerator(**eargs, measure="quotient",
+                                               verbose=3)
+            wq = pq.generate_point_weights(500)
+            ratio = float(we["weight"].sum() / wq["weight"].sum())
+            check_true("measure='quotient' divides by |Gamma| (%.4f)" % ratio,
+                       abs(ratio - pe.gamma_order) < 1e-9)
+            check("gamma_order is exposed", pe.gamma_order, 2)
+            check_true("vol_quotient is vol(X)/|Gamma|",
+                       abs(pe.vol_quotient
+                           - pe.get_volume_from_intersections(pe.kmoduli) / 2)
+                       < 1e-9)
+            check_true("an unknown measure is refused",
+                       _raises(lambda: EquivariantCICYPointGenerator(
+                           **eargs, measure="nonsense", verbose=3)))
+
     try:
         from cymyc import alg_geo
         import jax.numpy as jnp
@@ -468,6 +555,7 @@ def main():
     test_layout()
     test_charges()
     test_polynomials()
+    test_smoothness()
     test_formats()
     test_kmoduli()
     test_quotient_conditions()
