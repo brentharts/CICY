@@ -166,6 +166,58 @@ def test_projection():
     check("and a divisible one is not", B.generations_downstairs(-6, 2), 3)
 
 
+def test_chiral_spectrum():
+    print("\n[4b] the chiral spectrum, derived end to end")
+    from pyCICY import equivariant as E
+
+    MODEL = [[-2, -2, -1, 2], [-2, 1, 0, 0], [1, -2, 1, 0],
+             [1, 1, -1, 0], [2, 2, 1, -2]]
+    A = E.TETRAQUADRIC_Z2()
+    r = B.chiral_spectrum(A, MODEL, wilson=(0, 1))
+
+    check("ind(V) upstairs", r["index_V"], -6)
+    check("generations downstairs", r["generations"], 3)
+    check("which is -ind(V)/|Gamma|",
+          B.generations_downstairs(r["index_V"], r["gamma_order"]), 3)
+    check("hypercharge anomaly", r["anomaly"], F(0))
+
+    # Complete SU(5) generations: every piece has the same multiplicity.
+    mults = set(r["spectrum"].values())
+    check("every Standard Model piece has the same net multiplicity",
+          mults, {3})
+
+    # ... and that is forced. For a free action each index character is a
+    # multiple of the regular representation, so it is constant, so every
+    # Wilson shift lands on the same multiplicity and the Wilson line cannot
+    # split the chiral spectrum at all.
+    check_true("all three characters are equidistributed",
+               all(r["equidistributed"].values()))
+    same = 0
+    for w in [(0, 1), None]:
+        if B.chiral_spectrum(A, MODEL, wilson=w)["spectrum"] == r["spectrum"]:
+            same += 1
+    check("the Wilson line makes no difference to the chiral content",
+          same, 2)
+
+    # This is not a contradiction with doublet_triplet_split, which acts on
+    # the *non-chiral* content -- the vector-like pairs an index cannot see.
+    # Both statements hold at once, and the tests assert them side by side.
+    charges = {"10": [0] * 12 + [1] * 12, "10bar": [0] * 9 + [1] * 9,
+               "5bar": [1] * 3, "5": [1] * 3}
+    dt = B.doublet_triplet_split(charges, 2, (0, 1))
+    check_true("the Wilson line still splits the vector-like content",
+               dt["split"])
+
+    # The widths must match the branching, since the anomaly is weighted by
+    # them and pairing them wrongly would give a plausible non-zero number.
+    check("width of a (3,2)", r["widths"][("10", "(3, 2)", F(1, 6))], 6)
+    check("width of a (1,2)", r["widths"][("5bar", "(1, 2)", F(-1, 2))], 2)
+
+    # The character of V (x) V* is the singlet index, and it vanishes: the
+    # singlets are non-chiral, so no count of them is determined here.
+    check("V (x) V* has vanishing index", sum(r["character_endomorphisms"]), 0)
+
+
 def test_boundary():
     print("\n[5] the input really drives the answer")
     base = {"10": [0] * 12 + [1] * 12, "10bar": [0] * 9 + [1] * 9,
@@ -196,6 +248,7 @@ def main():
     test_anomaly()
     test_wilson()
     test_projection()
+    test_chiral_spectrum()
     test_boundary()
 
     print("\n" + "=" * 72)
