@@ -1017,11 +1017,22 @@ class AbelianAction(object):
     * each generator has the order claimed, in the projective sense that
       ``g_k^{n_k}`` is a scalar on each factor rather than the identity matrix;
     * the generators commute, again projectively;
-    * every column of the degree matrix is invariant under every ``perms[k]``,
-      since the defining polynomials are phased and not permuted.
+    * the generators commute *on the defining polynomials* as well, which is
+      a separate condition with no projective slack: the p_a are functions,
+      not homogeneous coordinates, so a scalar discrepancy is a real one. Two
+      transpositions on three polynomials fail it while the factor data says
+      nothing at all, since both factor permutations may be the identity;
+    * ``d[sigma_k(i)][pi_k(a)] = d[i][a]`` for each generator, so neither
+      permutation alone need preserve the degree matrix -- only the pair.
+
+    ``polynomial_perms`` carries the same wedge sign and invariant-subset
+    filter as :class:`PermutationAction`, and is validated by the same
+    diagonalisation oracle; see that class for what the oracle is and why the
+    usual check against :meth:`pyCICY.CICY.line_co_euler` cannot replace it.
     """
 
-    def __init__(self, conf, orders, perms, weights, polynomial_charges):
+    def __init__(self, conf, orders, perms, weights, polynomial_charges,
+                 polynomial_perms=None):
         self.conf = np.asarray(conf, dtype=int)
         self.dims = self.conf[:, 0]
         self.degrees = self.conf[:, 1:].T
@@ -1080,15 +1091,34 @@ class AbelianAction(object):
             if len(ck) != self.K:
                 raise ValueError("generator %d: one charge per polynomial" % k)
 
-        for k, p in enumerate(self.perms):
-            for a in range(self.K):
-                deg = self.degrees[a]
-                if any(int(deg[p[i]]) != int(deg[i]) for i in range(m)):
+        if polynomial_perms is None:
+            self.poly_perms = [list(range(self.K)) for _ in range(self.r)]
+        else:
+            if len(polynomial_perms) != self.r:
+                raise ValueError("need one polynomial permutation per "
+                                 "generator")
+            self.poly_perms = []
+            for k, pp in enumerate(polynomial_perms):
+                pp = [int(x) for x in pp]
+                if sorted(pp) != list(range(self.K)):
                     raise ValueError(
-                        "generator %d permutes factors in a way that does not "
-                        "fix the multidegree %s of polynomial %d. This class "
-                        "phases the defining polynomials but does not permute "
-                        "them." % (k, list(deg), a))
+                        "generator %d: polynomial_perms[%d] is not a "
+                        "permutation of the %d polynomials" % (k, k, self.K))
+                self.poly_perms.append(pp)
+
+        # d[sigma_k(i)][pi_k(a)] = d[i][a], for each generator separately.
+        for k in range(self.r):
+            p, pp = self.perms[k], self.poly_perms[k]
+            for a in range(self.K):
+                for i in range(m):
+                    if int(self.degrees[pp[a]][p[i]]) != int(self.degrees[a][i]):
+                        raise ValueError(
+                            "generator %d is incompatible with the "
+                            "configuration: polynomial %d has degree %d in "
+                            "factor %d, but its image polynomial %d has "
+                            "degree %d in the image factor %d"
+                            % (k, a, int(self.degrees[a][i]), i, pp[a],
+                               int(self.degrees[pp[a]][p[i]]), p[i]))
         self._checked = False
 
     def __repr__(self):
@@ -1112,6 +1142,24 @@ class AbelianAction(object):
                 perm, w = _compose(perm, w, self.perms[k], self.weights[k],
                                    self.N)
         return perm, w
+
+    def polynomial_data(self, j):
+        """The ``(pi, charges)`` of ``g_1^{j_1} ... g_r^{j_r}`` on the
+        defining polynomials.
+
+        Composed exactly as the factor data is, since it is the same kind of
+        object -- a permutation with phases. The charge of the image reads at
+        ``pi_1(a)``, not at ``a``, which is the step that makes the
+        accumulated charge differ from ``j * c_a`` whenever pi is non-trivial.
+        """
+        pi = list(range(self.K))
+        c = [0] * self.K
+        for k, jk in enumerate(j):
+            for _ in range(int(jk)):
+                pi2, c2 = self.poly_perms[k], self.polynomial_charges[k]
+                c = [(c[a] + c2[pi[a]]) % self.N for a in range(self.K)]
+                pi = [pi2[pi[a]] for a in range(self.K)]
+        return pi, c
 
     def check(self):
         """Orders, commutativity, and degree invariance. Returns ``(ok, msgs)``."""
@@ -1152,6 +1200,22 @@ class AbelianAction(object):
                         "generators %d and %d fail to commute on factor %d: "
                         "the commutator has weights %s, not a scalar"
                         % (k, l, i, diff))
+        # the polynomial permutations must commute too, and with the same
+        # phases up to nothing -- there is no projective slack here, since the
+        # p_a are honest functions and not homogeneous coordinates
+        for k, l in itertools.combinations(range(self.r), 2):
+            ek = [1 if t == k else 0 for t in range(self.r)]
+            el = [1 if t == l else 0 for t in range(self.r)]
+            pk, ck = self.polynomial_data(ek)
+            pl, cl = self.polynomial_data(el)
+            c_kl = [(ck[a] + cl[pk[a]]) % self.N for a in range(self.K)]
+            p_kl = [pl[pk[a]] for a in range(self.K)]
+            c_lk = [(cl[a] + ck[pl[a]]) % self.N for a in range(self.K)]
+            p_lk = [pk[pl[a]] for a in range(self.K)]
+            if p_kl != p_lk or c_kl != c_lk:
+                msgs.append(
+                    "generators %d and %d do not commute on the defining "
+                    "polynomials" % (k, l))
         return (not msgs), msgs
 
     # -- index ------------------------------------------------------------
@@ -1242,17 +1306,18 @@ class AbelianAction(object):
         traces = {}
         for j in self.elements():
             perm, w = self.element_data(j)
+            pi, pc = self.polynomial_data(j)
             t = 0j
             for r in range(self.K + 1):
                 for S in itertools.combinations(range(self.K), r):
+                    if set(pi[a] for a in S) != set(S):
+                        continue
                     kk = [int(kvec[i]) - int(sum(self.degrees[a][i]
                                                  for a in S))
                           for i in range(len(self.dims))]
-                    ph = 0
-                    for k in range(self.r):
-                        ph += j[k] * sum(self.polynomial_charges[k][a]
-                                         for a in S)
-                    t += ((-1) ** r) * (z ** ((-ph) % self.N)) \
+                    ph = sum(pc[a] for a in S)
+                    sign = _restricted_sign(pi, S)
+                    t += ((-1) ** r) * sign * (z ** ((-ph) % self.N)) \
                         * self._trace_element(perm, w, kk)
             traces[j] = t
 
