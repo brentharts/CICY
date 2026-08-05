@@ -347,6 +347,78 @@ def test_polynomial_permutations():
                "(%.1e)" % worst, worst < 1e-6)
 
 
+def test_abelian_polynomial_permutations():
+    print("\n[2e] polynomial permutations through AbelianAction")
+
+    ORACLE = [[1, 1, 1]] * 5
+    ident = list(range(5))
+    ks = [[k[0]] * 3 + [k[1]] * 2
+          for k in itertools.product((-2, -1, 0, 1, 2), repeat=2)]
+    X = CICY(ORACLE)
+
+    # One generator must reproduce PermutationAction, pi included.
+    P = E.PermutationAction(ORACLE, 2, ident, [[0, 0]] * 5, [0, 0],
+                            polynomial_perm=[1, 0])
+    A = E.AbelianAction(ORACLE, [2], [ident], [[[0, 0]] * 5], [[0, 0]],
+                        polynomial_perms=[[1, 0]])
+    check("one generator with pi reproduces PermutationAction",
+          sum(1 for k in ks
+              if [A.euler(k)[(c,)] for c in range(2)] != P.euler(k)), 0)
+
+    # The same diagonalisation oracle, through the abelian path.
+    D = E.AbelianAction(ORACLE, [2], [ident], [[[0, 0]] * 5], [[0, 1]])
+    check("swap equals the diagonalised phase action, via AbelianAction",
+          sum(1 for k in ks if A.euler(k) != D.euler(k)), 0)
+
+    # ... and it is still sensitive here, which is the point of repeating it.
+    orig = E._restricted_sign
+    try:
+        E._restricted_sign = lambda perm, S: 1
+        broken = E.AbelianAction(ORACLE, [2], [ident], [[[0, 0]] * 5],
+                                 [[0, 0]], polynomial_perms=[[1, 0]])
+        wrong = sum(1 for k in ks if broken.euler(k) != D.euler(k))
+        worst = max(abs(sum(broken.euler(k).values())
+                        - float(X.line_co_euler(k))) for k in ks)
+        check_true("a forced +1 sign is caught (%d of %d)" % (wrong, len(ks)),
+                   wrong > 0)
+        check_true("and still not by the identity total (%.1e)" % worst,
+                   worst < 1e-6)
+    finally:
+        E._restricted_sign = orig
+
+    # A genuine two-generator case: one swaps the polynomials, one phases.
+    G = E.AbelianAction(ORACLE, [2, 2], [ident, ident],
+                        [[[0, 0]] * 5, [[0, 1]] * 5], [[0, 0], [0, 0]],
+                        polynomial_perms=[[1, 0], [0, 1]])
+    ok, msgs = G.check()
+    check_true("Z_2 x Z_2 with a polynomial swap validates", ok)
+    check("its order", G.order, 4)
+    worst = max(abs(sum(G.euler(k).values()) - float(X.line_co_euler(k)))
+                for k in G.invariant_charges(-2, 2))
+    check_true("totals match line_co_euler (%.1e)" % worst, worst < 1e-6)
+    check("and the character has one entry per element of the dual group",
+          len(G.euler([1, 1, 1, 1, 1])), 4)
+
+    # Non-commuting polynomial permutations must be refused. Two transpositions
+    # on three polynomials do not commute, and nothing about the factors would
+    # reveal it -- the factor permutations here are both the identity.
+    H = E.AbelianAction([[1, 1, 1, 1]] * 7, [2, 2],
+                        [list(range(7))] * 2, [[[0, 0]] * 7] * 2,
+                        [[0, 0, 0], [0, 0, 0]],
+                        polynomial_perms=[[1, 0, 2], [0, 2, 1]])
+    ok2, msgs2 = H.check()
+    check_true("non-commuting polynomial permutations are caught", not ok2)
+    check_true("with a message naming the polynomials",
+               "defining polynomials" in msgs2[0])
+    check_true("and euler refuses", _raises(H.euler, [1] * 7))
+
+    # Compatibility is per generator.
+    check_true("an incompatible generator is refused",
+               _raises(E.AbelianAction, [[1, 1, 2], [1, 2, 1]], [2],
+                       [[0, 1]], [[[0, 0], [0, 0]]], [[0, 0]],
+                       polynomial_perms=[[1, 0]]))
+
+
 def test_structures():
     print("\n[3] equivariant structures")
     A = E.TETRAQUADRIC_Z2()
@@ -438,6 +510,7 @@ def main():
     test_permutation_action()
     test_abelian_and_free_permuting()
     test_polynomial_permutations()
+    test_abelian_polynomial_permutations()
     test_structures()
     test_bridge()
 
