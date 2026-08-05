@@ -26,6 +26,8 @@ import sys
 import time
 from fractions import Fraction as F
 
+import numpy as np
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pyCICY import breaking as B
@@ -46,6 +48,21 @@ def check_true(name, cond):
                                       "ok" if cond else "FAIL"))
     if not cond:
         FAILURES.append(name)
+
+
+def check_raises(name, exc, fn, *a, **kw):
+    try:
+        fn(*a, **kw)
+    except exc:
+        print("  {:<58} {:>12} ok".format(name, "raised"))
+        return
+    except Exception as e:                                       # noqa: BLE001
+        print("  {:<58} {:>12} FAIL wrong exception {!r}".format(
+            name, "raised", e))
+        FAILURES.append(name)
+        return
+    print("  {:<58} {:>12} FAIL no exception".format(name, "-"))
+    FAILURES.append(name)
 
 
 def test_branching():
@@ -218,6 +235,78 @@ def test_chiral_spectrum():
     check("V (x) V* has vanishing index", sum(r["character_endomorphisms"]), 0)
 
 
+def test_other_gut_groups():
+    print("\n[4c] SO(10) and E_6")
+    from pyCICY import equivariant as E
+    from pyCICY import bundles as BU
+    from pyCICY import CICY
+
+    check("rank 3 commutant", B.gut_group(3), "E_6")
+    check("rank 4 commutant", B.gut_group(4), "SO(10)")
+    check("rank 5 commutant", B.gut_group(5), "SU(5)")
+    check_raises("other ranks are refused, not labelled", ValueError,
+                 B.gut_group, 6)
+
+    X = CICY([[1, 2], [1, 2], [1, 2], [1, 2]])
+    A = E.TETRAQUADRIC_Z2()
+
+    # -- the two identities, which are free consistency checks -------------
+    rng = np.random.default_rng(0)
+    bad4 = bad3 = 0
+    for _ in range(200):
+        f = rng.integers(-3, 4, size=(3, 4))
+        V4 = BU.LineBundleSum(X, np.vstack([f, -f.sum(axis=0)]))
+        if abs(V4.wedge2().index()) > 1e-9:
+            bad4 += 1
+        g = rng.integers(-3, 4, size=(2, 4))
+        V3 = BU.LineBundleSum(X, np.vstack([g, -g.sum(axis=0)]))
+        if abs(V3.wedge2().index() + V3.index()) > 1e-9:
+            bad3 += 1
+    check("rank 4: ind(Lambda^2 V) = 0, the 6 of SU(4) being self-dual",
+          bad4, 0)
+    check("rank 3: ind(Lambda^2 V) = -ind(V), Lambda^2 V being V*", bad3, 0)
+
+    # -- SO(10) ------------------------------------------------------------
+    M4 = [[-2, -2, -2, -1], [-2, -1, -1, -1], [2, 1, 2, 0], [2, 2, 1, 2]]
+    r4 = B.chiral_spectrum(A, M4)
+    check("rank 4 model gives SO(10)", r4["gut_group"], "SO(10)")
+    check("three 16s", r4["spectrum"][("SO(10)", "16", "V")], 3)
+    check("the 10 is vector-like, so no index counts it",
+          r4["spectrum"][("SO(10)", "10", "wedge2")], 0)
+    check("and its character vanishes identically",
+          sum(r4["character_wedge2"]), 0)
+    check("only the 16 is chiral", r4["chiral_only"], ["16"])
+
+    # A Wilson line in the SU(5) hypercharge direction is the wrong group
+    # theory here, so it is refused rather than applied to the wrong thing.
+    check_raises("a Wilson line is refused for rank 4", ValueError,
+                 B.chiral_spectrum, A, M4, wilson=(0, 1))
+
+    # -- E_6 ---------------------------------------------------------------
+    M3 = [[-2, -2, -2, -1], [-1, 0, 1, 0], [3, 2, 1, 1]]
+    V3 = BU.LineBundleSum(X, M3)
+    check("the rank 3 model has ind(V) = -6", int(V3.index()), -6)
+    r3 = B.chiral_spectrum(A, M3)
+    check("rank 3 model gives E_6", r3["gut_group"], "E_6")
+    check("three 27s", r3["spectrum"][("E_6", "27", "V")], 3)
+    check_true("char(Lambda^2 V) = -char(V) at character level, not just total",
+               [-x for x in r3["character_V"]] == r3["character_wedge2"])
+    check_raises("a Wilson line is refused for rank 3", ValueError,
+                 B.chiral_spectrum, A, M3, wilson=(0, 1))
+
+    # -- rank 5 is unchanged ----------------------------------------------
+    M5 = [[-2, -2, -1, 2], [-2, 1, 0, 0], [1, -2, 1, 0],
+          [1, 1, -1, 0], [2, 2, 1, -2]]
+    r5 = B.chiral_spectrum(A, M5, wilson=(0, 1))
+    check("rank 5 still gives SU(5)", r5["gut_group"], "SU(5)")
+    check("and still three generations", r5["generations"], 3)
+
+    # All three ranks agree on the generation count, which is -ind(V)/|Gamma|
+    # and has nothing to do with the GUT group.
+    check_true("all three ranks give three generations",
+               r3["generations"] == r4["generations"] == r5["generations"] == 3)
+
+
 def test_boundary():
     print("\n[5] the input really drives the answer")
     base = {"10": [0] * 12 + [1] * 12, "10bar": [0] * 9 + [1] * 9,
@@ -249,6 +338,7 @@ def main():
     test_wilson()
     test_projection()
     test_chiral_spectrum()
+    test_other_gut_groups()
     test_boundary()
 
     print("\n" + "=" * 72)
