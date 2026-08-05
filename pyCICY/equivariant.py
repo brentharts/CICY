@@ -130,12 +130,13 @@ Scope
   the particular one cutting out X has that character is not.
 """
 
+import cmath
 import itertools
 
 import numpy as np
 
 __all__ = [
-    "CyclicAction", "weights_from_matrix", "regular_representation", "is_regular_multiple",
+    "CyclicAction", "PermutationAction", "weights_from_matrix", "regular_representation", "is_regular_multiple",
     "bundle_index_character", "enumerate_structures", "gamma_charges",
     "TETRAQUADRIC_Z2",
 ]
@@ -570,3 +571,297 @@ def TETRAQUADRIC_Z2():
     """
     conf = [[1, 2], [1, 2], [1, 2], [1, 2]]
     return CyclicAction(conf, 2, [[0, 1]] * 4, [0])
+
+
+# ---------------------------------------------------------------------------
+# actions that permute the ambient factors
+# ---------------------------------------------------------------------------
+
+def _permutation_power(perm, j):
+    out = list(range(len(perm)))
+    for _ in range(int(j)):
+        out = [perm[x] for x in out]
+    return out
+
+
+def _cycles(perm):
+    seen = [False] * len(perm)
+    out = []
+    for i in range(len(perm)):
+        if seen[i]:
+            continue
+        c, x = [], i
+        while not seen[x]:
+            seen[x] = True
+            c.append(x)
+            x = perm[x]
+        out.append(c)
+    return out
+
+
+class PermutationAction(object):
+    r"""
+    A Z_n action that permutes the ambient projective factors.
+
+    :class:`CyclicAction` handles everything that acts within each factor,
+    including coordinate permutations (see :func:`weights_from_matrix`). What
+    it cannot do is move one factor to another, and most of the freely acting
+    symmetries in Braun's classification of CICY quotients do exactly that.
+
+    Parameters
+    ----------
+    conf : configuration matrix
+    order : int
+        n.
+    factor_perm : list of int
+        ``factor_perm[i]`` is the factor that factor i is sent to. Must be a
+        permutation, and must preserve the dimension of each factor.
+    weights : list of lists
+        ``weights[i]`` are the exponents of the diagonal map
+        ``V_i -> V_{sigma(i)}``, in matched bases of the two factors. As
+        elsewhere in this module, diagonal is not a restriction on the map
+        within a factor, only a choice of basis.
+    polynomial_charges : list of int
+        ``g^*(p_a) = zeta^{c_a} p_a``.
+
+    The trace formula
+    -----------------
+    ``g^j`` permutes the tensor factors of ``H^*(A, O(k))`` by ``sigma^j``, so
+    its trace is a product over the *cycles* of ``sigma^j`` rather than over
+    the factors. On a cycle of length L through i, the contribution is the
+    trace of the composite map going once around, which is diagonal with
+    weights
+
+        u = sum_{s=0}^{jL-1} w_{sigma^s(i)} ,
+
+    acting on ``H^*(P^{n_i}, O(k_i))``. Multiplying those over the cycles
+    gives ``tr(g^j)``, and the multiplicities follow by Fourier inversion,
+
+        m_c = (1/n) sum_j tr(g^j) zeta^{-jc} .
+
+    This reduces to :meth:`CyclicAction.euler` when sigma is the identity --
+    every cycle has length one and the product is over factors again -- and
+    ``tests/test_equivariant.py`` checks that on 625 bundles, which is the
+    regression oracle this class was built against.
+
+    Restrictions
+    ------------
+    *The line bundle must be sigma-invariant.* ``g^* O(k) = O(sigma^{-1} k)``,
+    so unless ``k_{sigma(i)} = k_i`` the bundle is not sent to itself and no
+    equivariant structure exists. :meth:`is_invariant` tests it and
+    :meth:`euler` raises rather than returning a meaningless number.
+
+    *The defining polynomials are not permuted.* Only ``p_a -> zeta^{c_a} p_a``
+    is handled, which forces every column of the degree matrix to be
+    sigma-invariant and is checked. A genuine permutation of the polynomials
+    would make the Koszul trace a sum over the *invariant* subsets only, with
+    a sign from the induced permutation of each wedge factor, and that
+    bookkeeping is not implemented -- an incorrect sign there would be
+    invisible in the total at the identity, which is exactly the kind of error
+    this package tries not to ship.
+    """
+
+    def __init__(self, conf, order, factor_perm, weights, polynomial_charges):
+        self.conf = np.asarray(conf, dtype=int)
+        self.n = int(order)
+        if self.n < 1:
+            raise ValueError("order must be a positive integer")
+        self.dims = self.conf[:, 0]
+        self.degrees = self.conf[:, 1:].T
+        self.K = self.degrees.shape[0]
+        m = len(self.dims)
+
+        perm = [int(x) for x in factor_perm]
+        if sorted(perm) != list(range(m)):
+            raise ValueError(
+                "factor_perm must be a permutation of the %d ambient factors, "
+                "got %s" % (m, perm))
+        for i in range(m):
+            if self.dims[perm[i]] != self.dims[i]:
+                raise ValueError(
+                    "factor %d is P^%d but is sent to factor %d, which is "
+                    "P^%d; a permutation must preserve dimensions"
+                    % (i, self.dims[i], perm[i], self.dims[perm[i]]))
+        self.perm = perm
+
+        if len(weights) != m:
+            raise ValueError("need one weight list per ambient factor")
+        for i, w in enumerate(weights):
+            if len(w) != self.dims[i] + 1:
+                raise ValueError(
+                    "factor %d is P^%d and needs %d weights, got %d"
+                    % (i, self.dims[i], self.dims[i] + 1, len(w)))
+        self.weights = [[int(x) % self.n for x in w] for w in weights]
+
+        if len(polynomial_charges) != self.K:
+            raise ValueError("need one charge per defining polynomial")
+        self.polynomial_charges = [int(c) % self.n for c in polynomial_charges]
+
+        for a in range(self.K):
+            deg = self.degrees[a]
+            if any(int(deg[perm[i]]) != int(deg[i]) for i in range(m)):
+                raise ValueError(
+                    "polynomial %d has multidegree %s, which is not invariant "
+                    "under the factor permutation %s. This class does not "
+                    "permute the defining polynomials, so their degrees must "
+                    "be fixed by sigma." % (a, list(deg), perm))
+
+        self._order_checked = False
+
+    def __repr__(self):
+        return "<PermutationAction Z_%d sigma=%s weights=%s>" % (
+            self.n, self.perm, self.weights)
+
+    # -- validity ---------------------------------------------------------
+
+    def is_invariant(self, kvec):
+        """Whether O(k) is sent to itself, i.e. ``k_{sigma(i)} = k_i``."""
+        k = list(kvec)
+        return all(k[self.perm[i]] == k[i] for i in range(len(k)))
+
+    def invariant_charges(self, lo=-2, hi=2):
+        """All sigma-invariant charge vectors in a box.
+
+        The permutation collapses the search: only one charge per cycle of
+        sigma is free, so a box that would hold ``(hi-lo+1)^m`` vectors holds
+        ``(hi-lo+1)^{#cycles}`` invariant ones.
+        """
+        cyc = _cycles(self.perm)
+        out = []
+        for vals in itertools.product(range(lo, hi + 1), repeat=len(cyc)):
+            k = [0] * len(self.dims)
+            for c, v in zip(cyc, vals):
+                for i in c:
+                    k[i] = v
+            out.append(k)
+        return out
+
+    def check_order(self):
+        r"""
+        Whether the action really has order dividing n.
+
+        Two conditions. The permutation must satisfy ``sigma^n = id``. And the
+        composite map around each cycle of sigma, taken n times, must be a
+        *scalar* -- not necessarily the identity, since a global rescaling of
+        the homogeneous coordinates of one factor acts trivially on the
+        projective space. So the composite weights must all be equal modulo n
+        within a factor, not all zero.
+
+        Returns ``(ok, messages)``.
+        """
+        msgs = []
+        m = len(self.dims)
+        if _permutation_power(self.perm, self.n) != list(range(m)):
+            msgs.append("sigma^%d is not the identity" % self.n)
+        # g^n sends factor i to sigma^n(i) = i by the composite of n maps,
+        # so the relevant weight sum runs over n steps -- not over n times the
+        # cycle length, which is g^{nL} and a different element. Getting that
+        # wrong accepted a Z_4 action as a Z_2 one, and the integrality of the
+        # multiplicities did not notice.
+        for i in range(m):
+            u = [0] * (self.dims[i] + 1)
+            x = i
+            for _ in range(self.n):
+                for t in range(self.dims[i] + 1):
+                    u[t] += self.weights[x][t]
+                x = self.perm[x]
+            u = [t % self.n for t in u]
+            if len(set(u)) != 1:
+                msgs.append(
+                    "factor %d composes to weights %s after %d steps, which "
+                    "is not a scalar, so g^%d is not the identity on it"
+                    % (i, u, self.n, self.n))
+        return (not msgs), msgs
+
+    # -- traces -----------------------------------------------------------
+
+    def _trace(self, j, kvec):
+        """tr(g^j) on the Euler characteristic of O_A(k). See the class docstring."""
+        z = cmath.exp(2j * cmath.pi / self.n)
+        sj = _permutation_power(self.perm, j)
+        total = 1.0 + 0j
+        for c in _cycles(sj):
+            i = c[0]
+            L = len(c)
+            u = [0] * (self.dims[i] + 1)
+            x = i
+            for _ in range(j * L):
+                for t in range(self.dims[i] + 1):
+                    u[t] += self.weights[x][t]
+                x = self.perm[x]
+            k = int(kvec[i])
+            d = int(self.dims[i])
+            s = 0.0 + 0j
+            if k >= 0:
+                for mono in itertools.combinations_with_replacement(
+                        range(d + 1), k):
+                    s += z ** (sum(u[t] for t in mono) % self.n)
+            elif k <= -d - 1:
+                tu = sum(u) % self.n
+                for mono in itertools.combinations_with_replacement(
+                        range(d + 1), -k - d - 1):
+                    s += z ** ((-sum(u[t] for t in mono) - tu) % self.n)
+                s *= (-1) ** d
+            total *= s
+        return total
+
+    def euler(self, kvec, twist=0, tol=1e-6):
+        """The character-valued index of O_X(k), as Z_n irrep multiplicities.
+
+        Raises when ``k`` is not sigma-invariant: there is no equivariant
+        structure to compute an index of.
+        """
+        if not self._order_checked:
+            ok, msgs = self.check_order()
+            self._order_checked = True
+            if not ok:
+                raise ValueError(
+                    "this is not an action of Z_%d: %s. Computing an index "
+                    "for it would be meaningless, and the integrality of the "
+                    "multiplicities does not reliably catch it."
+                    % (self.n, msgs[0]))
+        if not self.is_invariant(kvec):
+            raise ValueError(
+                "k = %s is not invariant under the factor permutation %s, so "
+                "O(k) is not sent to itself and carries no equivariant "
+                "structure. Use invariant_charges() to enumerate the ones "
+                "that do." % (list(kvec), self.perm))
+        z = cmath.exp(2j * cmath.pi / self.n)
+        traces = []
+        for j in range(self.n):
+            t = 0j
+            for r in range(self.K + 1):
+                for S in itertools.combinations(range(self.K), r):
+                    kk = [int(kvec[i]) - int(sum(self.degrees[a][i] for a in S))
+                          for i in range(len(self.dims))]
+                    phase = z ** ((-j * sum(self.polynomial_charges[a]
+                                            for a in S)) % self.n)
+                    t += ((-1) ** r) * phase * self._trace(j, kk)
+            traces.append(t)
+        out = []
+        for c in range(self.n):
+            v = sum(traces[j] * z ** (-j * c) for j in range(self.n)) / self.n
+            if abs(v.imag) > tol or abs(v.real - round(v.real)) > tol:
+                raise ArithmeticError(
+                    "multiplicity %r is not an integer; the action is "
+                    "probably inconsistent (check check_order())" % (v,))
+            out.append(int(round(v.real)))
+        if twist:
+            t = int(twist) % self.n
+            out = [out[(c - t) % self.n] for c in range(self.n)]
+        return out
+
+    def looks_free(self, probes=None):
+        """As :meth:`CyclicAction.looks_free`, over sigma-invariant bundles only."""
+        if probes is None:
+            probes = self.invariant_charges(-2, 2)
+        failures, sample = [], []
+        for k in probes:
+            ch = self.euler(k)
+            reg, mult = is_regular_multiple(ch)
+            if reg:
+                if len(sample) < 5:
+                    sample.append((list(k), ch, True, mult))
+            else:
+                failures.append((list(k), ch, False, mult))
+        return (not failures), (failures if failures else sample)
