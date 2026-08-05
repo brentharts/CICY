@@ -407,6 +407,89 @@ def test_monad():
                pinned.cohomology_bounds()["assumed_stable"] is False)
 
 
+def test_monad_scan():
+    print("\n[6b] scan_monads")
+
+    # positivity_ok is a real filter with a documented meaning.
+    # Positivity needs every summand of C to *strictly* exceed every summand
+    # of B in at least one direction. A B summand equal to a C summand fails
+    # it, which is why [1,1,1,1] cannot appear on both sides.
+    good = B.Monad(TETRA, [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0],
+                           [0, 0, 0, 1], [1, 1, 0, 0]],
+                   [[1, 1, 1, 1], [2, 2, 2, 2]])
+    check_true("a positive monad passes positivity_ok", good.positivity_ok())
+    equal = B.Monad(TETRA, [[1, 1, 1, 1], [0, 1, 0, 0], [0, 0, 1, 0],
+                            [0, 0, 0, 1], [1, 1, 0, 0]],
+                    [[1, 1, 1, 1], [2, 2, 2, 2]])
+    check_true("a B summand equal to a C summand fails it",
+               not equal.positivity_ok())
+    neg = B.Monad(TETRA, [[-1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0],
+                          [1, 1, 1, 1], [1, 1, 1, 1]],
+                  [[1, 1, 1, 1], [1, 1, 1, 1]])
+    check_true("a negative charge fails it", not neg.positivity_ok())
+
+    # The scans run on CICY 7833 rather than the tetraquadric: h^{1,1} = 2
+    # instead of 4 makes the box small enough for a test suite, and the
+    # conditions being checked do not care which manifold they hold on.
+    t0 = time.time()
+    found = B.scan_monads(M7833, rank=4, nC=2, charge=3, generations=3,
+                          symmetry_order=2, limit=12, max_seconds=45)
+    dt = time.time() - t0
+    check_true("scan_monads finds monads (%d in %.0fs)" % (len(found), dt),
+               len(found) > 0)
+
+    bad_c1 = bad_ind = bad_pos = 0
+    for Bc, Cc in found:
+        M = B.Monad(M7833, Bc, Cc)
+        if np.any(M.c1 != 0):
+            bad_c1 += 1
+        if abs(M.index() + 6) > 1e-9:
+            bad_ind += 1
+        if not M.positivity_ok():
+            bad_pos += 1
+    check("every monad has c1 = 0", bad_c1, 0)
+    check("every monad has ind(V) = -3|Gamma| = -6", bad_ind, 0)
+    check("every monad is positive", bad_pos, 0)
+    check_true("and every one survives cohomology_bounds",
+               all(_bounds_ok(M7833, Bc, Cc) for Bc, Cc in found))
+
+    # Neither target is reachable in the charge-2 box, and that box completes
+    # rather than being truncated, so the emptiness is a real statement.
+    for so in (1, 2):
+        empty = B.scan_monads(M7833, rank=4, nC=2, charge=2, generations=3,
+                              symmetry_order=so, max_seconds=45)
+        check("no monad at charge 2 with |Gamma| = %d" % so, len(empty), 0)
+
+    # Every hit here has a trivial summand in B, and that is worth asserting
+    # rather than filtering away. O_X passes positivity -- all its charges are
+    # zero, so every summand of C exceeds it somewhere -- and a V with a
+    # trivial summand has a smaller structure group than advertised, so none
+    # of these is a model. The degeneracy is not incidental to this box: it
+    # is all of it.
+    def no_trivial(Bc, Cc):
+        return all(any(x) for x in Bc)
+
+    check("hits with a trivial summand in B",
+          sum(1 for Bc, Cc in found if not no_trivial(Bc, Cc)), len(found))
+
+    # Running the same scan with that predicate as keep= therefore returns
+    # nothing, which would make an "the filter works" assertion vacuous. So
+    # the hook is checked directly instead, with a predicate that must reject
+    # everything and a small budget.
+    rejected = B.scan_monads(M7833, rank=4, nC=2, charge=3, generations=3,
+                             symmetry_order=2, keep=lambda Bc, Cc: False,
+                             limit=12, max_seconds=8)
+    check("a keep= that rejects everything returns nothing", len(rejected), 0)
+
+
+def _bounds_ok(X, Bc, Cc):
+    try:
+        B.Monad(X, Bc, Cc).cohomology_bounds()
+        return True
+    except B.NotABundle:
+        return False
+
+
 def test_scan():
     print("\n[7] scan: correctness and its budgets")
 
@@ -510,6 +593,7 @@ def main():
     test_anomaly()
     test_stability()
     test_monad()
+    test_monad_scan()
     test_scan()
     test_guards()
 
