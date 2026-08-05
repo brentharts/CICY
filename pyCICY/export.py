@@ -70,8 +70,11 @@ points 1 and 3 and checked on point 2.
 """
 
 import itertools
+import logging
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "ambient_vector", "coordinate_blocks", "monomials", "monomial_charges",
@@ -182,7 +185,9 @@ def _modulus(action):
     return int(getattr(action, "n", getattr(action, "N", 1)))
 
 
-def defining_polynomials(X, action=None, seed=0, real=False, scale=1.0):
+def defining_polynomials(X, action=None, seed=0, real=False, scale=1.0,
+                         check_smooth=True, p=101, samples=20000,
+                         integer_coefficients=True, spread=12):
     r"""
     A defining polynomial for each hypersurface, as ``(monomials, coefficients)``.
 
@@ -194,6 +199,23 @@ def defining_polynomials(X, action=None, seed=0, real=False, scale=1.0):
 
     Coefficients are drawn from a fixed seed so that a run is reproducible;
     both target packages treat them as given data.
+
+    Coefficients are Gaussian integers by default. That is not cosmetic: the
+    smoothness check reduces them modulo a prime, and reducing a float by
+    rounding its real part discards the imaginary part and collapses most
+    coefficients to 0 or +-1, so the check would be testing a different and far
+    more degenerate polynomial than the one exported. With integer
+    coefficients the reduction is exact. Pass
+    ``integer_coefficients=False`` for floats, in which case the smoothness
+    check refuses to run rather than run on the wrong thing.
+
+    With ``check_smooth`` the result is passed through
+    :func:`is_smooth_over_Fp` and a detected singularity raises. That test is
+    one-sided -- it can prove singularity and never smoothness -- so this is a
+    filter against a bad draw rather than a guarantee, and it is cheap: about a
+    second for twenty thousand samples. It is on by default because a singular
+    X reaching a metric package produces a training run that looks fine and
+    converges to nothing in particular.
     """
     conf = _conf(X)
     K = conf.shape[1] - 1
@@ -209,13 +231,41 @@ def defining_polynomials(X, action=None, seed=0, real=False, scale=1.0):
                     "no monomial of the multidegree of polynomial %d carries "
                     "the declared charge, so no invariant hypersurface of this "
                     "shape exists. Check admissible_polynomial_charges()." % a)
-        if real:
+        if integer_coefficients:
+            # Gaussian integers, so that reduction mod p is exact and the
+            # smoothness check tests the polynomial actually being exported.
+            # Zero coefficients are avoided: a monomial with coefficient zero
+            # is a monomial that is not there, which changes the variety.
+            lo = rng.integers(1, spread + 1, size=len(m))
+            sg = rng.choice([-1, 1], size=len(m))
+            re = lo * sg
+            if real:
+                c = scale * re.astype(float)
+            else:
+                lo2 = rng.integers(1, spread + 1, size=len(m))
+                sg2 = rng.choice([-1, 1], size=len(m))
+                c = scale * (re + 1j * lo2 * sg2).astype(complex)
+        elif real:
             c = scale * rng.normal(size=len(m))
         else:
             c = scale * (rng.normal(size=len(m))
                          + 1j * rng.normal(size=len(m)))
         mons.append(m)
         coeffs.append(c)
+    if check_smooth:
+        ok, on_X, drops = is_smooth_over_Fp(X, mons, coeffs, p=p,
+                                            samples=samples, seed=seed)
+        if not ok:
+            raise ValueError(
+                "this defining polynomial is singular: the Jacobian drops "
+                "rank at %d of the %d sampled points of X over F_%d. Try "
+                "another seed. (The test is one-sided: it can prove "
+                "singularity, never smoothness.)" % (drops, on_X, p))
+        if on_X == 0:
+            logger.warning(
+                "the smoothness check found no points of X over F_%d in %d "
+                "samples, so it checked nothing. Raise samples or lower p.",
+                p, samples)
     return mons, coeffs
 
 
@@ -223,43 +273,71 @@ def is_smooth_over_Fp(X, mons, coeffs, p=101, samples=20000, seed=0):
     r"""
     A Jacobian-criterion smoothness check over ``F_p``, by sampling.
 
-    The variety is singular at a point of X where the Jacobian of the defining
-    polynomials drops rank. Sampling points of the ambient over ``F_p``,
-    keeping those on X, and testing the rank there is a one-sided test: finding
-    a rank drop proves singularity, finding none over a sample proves nothing.
-    Returns ``(no_singularity_found, n_points_on_X, n_rank_drops)`` and the
-    docstring is the disclaimer -- this is a filter against a bad random draw,
-    not a proof of smoothness.
+    The variety is singular where the Jacobian of the defining polynomials
+    drops rank on X. Sampling points of the ambient over ``F_p``, keeping those
+    on X, and testing the rank there is **one-sided**: finding a rank drop
+    proves singularity, finding none proves nothing. Returns
+    ``(no_singularity_found, n_points_on_X, n_rank_drops)``.
 
-    Exact smoothness over a finite field for a whole configuration is what
-    :mod:`pyCICY.smoothness` does exhaustively; this is the cheap version for
-    one explicit polynomial with coefficients reduced mod ``p``.
+    Coefficients must be Gaussian integers, and ``p`` must be congruent to 1
+    modulo 4 so that ``F_p`` contains a square root of ``-1`` and the reduction
+    ``a + b i -> a + b i_p`` is exact. An earlier version reduced floats by
+    rounding the real part, which threw the imaginary part away and turned most
+    coefficients into 0 or +-1 -- it was testing a much sparser polynomial than
+    the one exported, and reported a false singularity on the very first seed
+    it was pointed at. Faithfulness of the reduction is the whole content of
+    this function being worth running.
     """
     conf = _conf(X)
     dims = conf[:, 0]
     ncoord = int(sum(dims + 1))
     K = len(mons)
-    rng = np.random.default_rng(seed)
-    ic = [np.rint(np.real(c)).astype(np.int64) % p for c in coeffs]
+    if p % 4 != 1:
+        raise ValueError(
+            "p must be 1 mod 4 so that F_p contains a square root of -1 and "
+            "Gaussian integer coefficients reduce exactly; got p = %d" % p)
+    i_p = next(x for x in range(p) if (x * x) % p == p - 1)
 
+    ic = []
+    for c in coeffs:
+        c = np.asarray(c)
+        re, im = np.real(c), np.imag(c)
+        if (np.max(np.abs(re - np.rint(re))) > 1e-9
+                or np.max(np.abs(im - np.rint(im))) > 1e-9):
+            raise ValueError(
+                "the coefficients are not Gaussian integers, so reducing them "
+                "modulo %d would not be faithful and this check would test a "
+                "different polynomial. Use integer_coefficients=True, or pass "
+                "check_smooth=False and accept that smoothness is unverified."
+                % p)
+        ic.append((np.rint(re).astype(np.int64)
+                   + i_p * np.rint(im).astype(np.int64)) % p)
+
+    rng = np.random.default_rng(seed)
+    blocks = coordinate_blocks(X)
+    maxdeg = int(max(m.max() for m in mons)) + 1
     on_X = 0
     drops = 0
     for _ in range(samples):
         z = rng.integers(0, p, size=ncoord)
-        # avoid the origin of any factor, which is not a point of P^n
-        ok = True
-        for (s, e) in coordinate_blocks(X):
-            if not np.any(z[s:e] % p):
-                ok = False
-                break
-        if not ok:
+        if any(not np.any(z[s0:e0] % p) for (s0, e0) in blocks):
             continue
+        # Powers table: pw[j, e] = z_j^e mod p, for e up to the largest
+        # exponent that occurs. Degrees are small, so this replaces a Python
+        # pow() per (monomial, coordinate) with an array lookup and takes the
+        # check from ~90s to a couple of seconds over the suite.
+        pw = np.ones((ncoord, maxdeg + 1), dtype=np.int64)
+        for e in range(1, maxdeg + 1):
+            pw[:, e] = (pw[:, e - 1] * z) % p
+        idx = np.arange(ncoord)
+
         vals = []
         for a in range(K):
-            powers = np.ones(len(mons[a]), dtype=np.int64)
+            terms = pw[idx[None, :], mons[a]]
+            prod = np.ones(len(mons[a]), dtype=np.int64)
             for j in range(ncoord):
-                powers = (powers * pow(int(z[j]), 1, p) ** mons[a][:, j]) % p
-            vals.append(int((ic[a] * powers).sum() % p))
+                prod = (prod * terms[:, j]) % p
+            vals.append(int((ic[a] * prod).sum() % p))
         if any(v != 0 for v in vals):
             continue
         on_X += 1
@@ -270,13 +348,14 @@ def is_smooth_over_Fp(X, mons, coeffs, p=101, samples=20000, seed=0):
                 nz = e > 0
                 if not np.any(nz):
                     continue
-                term = ic[a][nz] * e[nz] % p
+                sub = mons[a][nz].copy()
+                coef = (ic[a][nz] * e[nz]) % p
+                sub[:, j] -= 1
+                terms = pw[idx[None, :], sub]
+                prod = coef
                 for jj in range(ncoord):
-                    ex = mons[a][nz, jj] - (1 if jj == j else 0)
-                    term = (term * np.array(
-                        [pow(int(z[jj]), int(x), p) for x in ex],
-                        dtype=np.int64)) % p
-                J[a, j] = int(term.sum() % p)
+                    prod = (prod * terms[:, jj]) % p
+                J[a, j] = int(prod.sum() % p)
         if _rank_mod_p(J, p) < K:
             drops += 1
     return (drops == 0), on_X, drops
