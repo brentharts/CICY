@@ -268,6 +268,85 @@ def test_abelian_and_free_permuting():
     check_true("but not free", not G.looks_free()[0])
 
 
+def test_polynomial_permutations():
+    print("\n[2d] permuting the defining polynomials")
+
+    # pi = identity must reproduce the previous behaviour exactly.
+    A = E.CyclicAction(TETRA_CONF, 2, [[0, 1]] * 4, [0])
+    P = E.PermutationAction(TETRA_CONF, 2, [0, 1, 2, 3], [[0, 1]] * 4, [0])
+    bad = sum(1 for k in itertools.product((-2, -1, 0, 1, 2), repeat=4)
+              if A.euler(list(k)) != P.euler(list(k)))
+    check("pi = identity is unchanged, 625 bundles", bad, 0)
+
+    # -- the oracle -------------------------------------------------------
+    #
+    # The sign from the induced permutation of each wedge factor is the part
+    # that cannot be checked at the identity, so it needs an independent
+    # route. Here is one. On a configuration whose two defining polynomials
+    # have identical multidegree, swapping them is -- in the eigenbasis
+    # p_+- = p_1 +- p_2 -- exactly the phase-only action with charges 0 and 1,
+    # which the already-tested code handles. The two must agree.
+    ORACLE = [[1, 1, 1]] * 5          # a favourable CY3, chi = -80
+    ident = list(range(5))
+    swapped = E.PermutationAction(ORACLE, 2, ident, [[0, 0]] * 5, [0, 0],
+                                  polynomial_perm=[1, 0])
+    diagonalised = E.PermutationAction(ORACLE, 2, ident, [[0, 0]] * 5, [0, 1])
+    ks = [[k[0]] * 3 + [k[1]] * 2
+          for k in itertools.product((-2, -1, 0, 1, 2), repeat=2)]
+    check("swapping two polynomials equals the diagonalised phase action",
+          sum(1 for k in ks if swapped.euler(k) != diagonalised.euler(k)), 0)
+
+    # ... and the oracle is sensitive to the sign, which is the whole point.
+    # Forcing it wrong breaks 16 of the 25, while the identity-total check
+    # below passes either way and would have shipped the bug.
+    orig = E._restricted_sign
+    try:
+        E._restricted_sign = lambda perm, S: 1
+        broken = E.PermutationAction(ORACLE, 2, ident, [[0, 0]] * 5, [0, 0],
+                                     polynomial_perm=[1, 0])
+        wrong = sum(1 for k in ks if broken.euler(k) != diagonalised.euler(k))
+        check_true("a forced +1 sign is caught by the oracle (%d of %d)"
+                   % (wrong, len(ks)), wrong > 0)
+        X = CICY(ORACLE)
+        worst = max(abs(sum(broken.euler(k)) - float(X.line_co_euler(k)))
+                    for k in ks)
+        check_true("but NOT by the total at the identity (%.1e)" % worst,
+                   worst < 1e-6)
+    finally:
+        E._restricted_sign = orig
+
+    # The sign itself, directly: a transposition inside an invariant subset.
+    check("sign of a transposition on its own support",
+          E._restricted_sign([1, 0], (0, 1)), -1)
+    check("sign of the identity", E._restricted_sign([0, 1], (0, 1)), 1)
+    check("a 3-cycle is even", E._restricted_sign([1, 2, 0], (0, 1, 2)), 1)
+
+    # -- compatibility ----------------------------------------------------
+    #
+    # Permuting the polynomials must be compatible with permuting the factors:
+    # d[sigma(i)][pi(a)] = d[i][a]. Neither permutation alone need preserve
+    # the degree matrix, only the pair.
+    check_true("swapping polynomials alone is refused when degrees differ",
+               _raises(E.PermutationAction, [[1, 1, 2], [1, 2, 1]], 2, [0, 1],
+                       [[0, 0], [0, 0]], [0, 0], polynomial_perm=[1, 0]))
+    both = E.PermutationAction([[1, 1, 2], [1, 2, 1]], 2, [1, 0],
+                               [[0, 0], [0, 0]], [0, 0], polynomial_perm=[1, 0])
+    check_true("but swapping factors and polynomials together is fine",
+               both is not None)
+    check_true("a non-permutation is refused",
+               _raises(E.PermutationAction, ORACLE, 2, ident, [[0, 0]] * 5,
+                       [0, 0], polynomial_perm=[0, 0]))
+
+    # Both permutations non-trivial at once, checked the only way available.
+    Q = E.PermutationAction(ORACLE, 2, [1, 0, 3, 2, 4], [[0, 0]] * 5, [0, 0],
+                            polynomial_perm=[1, 0])
+    X = CICY(ORACLE)
+    worst = max(abs(sum(Q.euler(k)) - float(X.line_co_euler(k)))
+                for k in Q.invariant_charges(-2, 2))
+    check_true("sigma and pi together: totals still match line_co_euler "
+               "(%.1e)" % worst, worst < 1e-6)
+
+
 def test_structures():
     print("\n[3] equivariant structures")
     A = E.TETRAQUADRIC_Z2()
@@ -358,6 +437,7 @@ def main():
     test_freeness()
     test_permutation_action()
     test_abelian_and_free_permuting()
+    test_polynomial_permutations()
     test_structures()
     test_bridge()
 
