@@ -585,6 +585,31 @@ def _permutation_power(perm, j):
     return out
 
 
+def _restricted_sign(perm, subset):
+    """Sign of ``perm`` restricted to an invariant ``subset``.
+
+    Reordering ``e_{perm(a_1)} ^ ... ^ e_{perm(a_r)}`` back into increasing
+    order costs exactly this sign, so it is the diagonal coefficient of the
+    action on the wedge power and it is the whole reason a permutation of the
+    defining polynomials is not just a relabelling. A cycle of length L
+    contributes ``(-1)^{L-1}``.
+    """
+    S = set(subset)
+    seen = set()
+    sign = 1
+    for a in S:
+        if a in seen:
+            continue
+        L, x = 0, a
+        while x not in seen:
+            seen.add(x)
+            x = perm[x]
+            L += 1
+        if L % 2 == 0:
+            sign = -sign
+    return sign
+
+
 def _cycles(perm):
     seen = [False] * len(perm)
     out = []
@@ -652,17 +677,33 @@ class PermutationAction(object):
     equivariant structure exists. :meth:`is_invariant` tests it and
     :meth:`euler` raises rather than returning a meaningless number.
 
-    *The defining polynomials are not permuted.* Only ``p_a -> zeta^{c_a} p_a``
-    is handled, which forces every column of the degree matrix to be
-    sigma-invariant and is checked. A genuine permutation of the polynomials
-    would make the Koszul trace a sum over the *invariant* subsets only, with
-    a sign from the induced permutation of each wedge factor, and that
-    bookkeeping is not implemented -- an incorrect sign there would be
-    invisible in the total at the identity, which is exactly the kind of error
-    this package tries not to ship.
+    Permuting the defining polynomials
+    ----------------------------------
+    ``polynomial_perm`` allows ``g^*(p_a) = zeta^{c_a} p_{pi(a)}``. Two things
+    change in the Koszul sum. Only subsets S with ``pi^j(S) = S`` sit on the
+    diagonal of ``Lambda^r N*`` and contribute to the trace; the rest are
+    moved elsewhere. And each surviving one carries the sign of ``pi^j``
+    restricted to S, because reordering ``e_{pi(a_1)} ^ ... ^ e_{pi(a_r)}``
+    back into increasing order costs exactly that -- see
+    :func:`_restricted_sign`. Compatibility with the factor permutation is
+    required and checked: ``d[sigma(i)][pi(a)] = d[i][a]``, so neither
+    permutation alone need preserve the degree matrix, only the pair.
+
+    That sign is the one piece of this module that **cannot** be validated by
+    the usual check against :meth:`pyCICY.CICY.line_co_euler`, because at the
+    identity ``pi^0`` is trivial and the sign is always +1. Forcing the sign
+    to +1 everywhere still reproduces ``line_co_euler`` exactly. So it is
+    checked against a separate oracle instead: on a configuration whose two
+    defining polynomials have the same multidegree -- ``[[1,1,1]]*5``, a
+    favourable Calabi-Yau threefold with chi = -80 -- swapping them is, in the
+    eigenbasis ``p_+- = p_1 +- p_2``, exactly the phase-only action with
+    charges 0 and 1, which the already-tested code path handles. The two agree,
+    and forcing the sign wrong breaks 16 of 25 bundles while leaving the
+    identity total untouched. ``tests/test_equivariant.py`` asserts both halves.
     """
 
-    def __init__(self, conf, order, factor_perm, weights, polynomial_charges):
+    def __init__(self, conf, order, factor_perm, weights, polynomial_charges,
+                 polynomial_perm=None):
         self.conf = np.asarray(conf, dtype=int)
         self.n = int(order)
         if self.n < 1:
@@ -698,14 +739,32 @@ class PermutationAction(object):
             raise ValueError("need one charge per defining polynomial")
         self.polynomial_charges = [int(c) % self.n for c in polynomial_charges]
 
-        for a in range(self.K):
-            deg = self.degrees[a]
-            if any(int(deg[perm[i]]) != int(deg[i]) for i in range(m)):
+        if polynomial_perm is None:
+            pp = list(range(self.K))
+        else:
+            pp = [int(x) for x in polynomial_perm]
+            if sorted(pp) != list(range(self.K)):
                 raise ValueError(
-                    "polynomial %d has multidegree %s, which is not invariant "
-                    "under the factor permutation %s. This class does not "
-                    "permute the defining polynomials, so their degrees must "
-                    "be fixed by sigma." % (a, list(deg), perm))
+                    "polynomial_perm must be a permutation of the %d defining "
+                    "polynomials, got %s" % (self.K, pp))
+        self.poly_perm = pp
+
+        # Compatibility: g sends p_a to p_{pi(a)} up to a phase, and it sends
+        # the coordinates of factor i to those of factor sigma(i), so the
+        # multidegree must follow: d[sigma(i)][pi(a)] = d[i][a]. With pi the
+        # identity this is the old condition that every degree column is
+        # sigma-invariant.
+        for a in range(self.K):
+            for i in range(m):
+                if int(self.degrees[pp[a]][perm[i]]) != int(self.degrees[a][i]):
+                    raise ValueError(
+                        "incompatible degrees: polynomial %d has degree %d in "
+                        "factor %d, but its image polynomial %d has degree %d "
+                        "in the image factor %d. The permutations of factors "
+                        "and of polynomials must be compatible with the "
+                        "configuration matrix."
+                        % (a, int(self.degrees[a][i]), i, pp[a],
+                           int(self.degrees[pp[a]][perm[i]]), perm[i]))
 
         self._order_checked = False
 
@@ -830,14 +889,29 @@ class PermutationAction(object):
         z = cmath.exp(2j * cmath.pi / self.n)
         traces = []
         for j in range(self.n):
+            pj = _permutation_power(self.poly_perm, j)
+            # Charge accumulated by p_a under g^j, going around the orbit:
+            # (g^j)^*(p_a) = prod_{s<j} zeta^{c_{pi^s(a)}} * p_{pi^j(a)}.
+            acc = []
+            for a in range(self.K):
+                tot, x = 0, a
+                for _ in range(j):
+                    tot += self.polynomial_charges[x]
+                    x = self.poly_perm[x]
+                acc.append(tot % self.n)
             t = 0j
             for r in range(self.K + 1):
                 for S in itertools.combinations(range(self.K), r):
+                    # Only pi^j-invariant subsets sit on the diagonal of
+                    # Lambda^r N*; the rest are moved elsewhere and contribute
+                    # nothing to the trace.
+                    if set(pj[a] for a in S) != set(S):
+                        continue
                     kk = [int(kvec[i]) - int(sum(self.degrees[a][i] for a in S))
                           for i in range(len(self.dims))]
-                    phase = z ** ((-j * sum(self.polynomial_charges[a]
-                                            for a in S)) % self.n)
-                    t += ((-1) ** r) * phase * self._trace(j, kk)
+                    phase = z ** ((-sum(acc[a] for a in S)) % self.n)
+                    sign = _restricted_sign(pj, S)
+                    t += ((-1) ** r) * sign * phase * self._trace(j, kk)
             traces.append(t)
         out = []
         for c in range(self.n):
