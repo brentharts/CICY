@@ -63,6 +63,7 @@ import numpy as np
 __all__ = [
     "up_type_patterns", "down_type_patterns", "charge_allowed",
     "texture", "viable_triples", "singlet_charges", "mass_terms",
+    "search_viable_models", "CICY5299",
 ]
 
 
@@ -402,3 +403,98 @@ def mass_terms(X, charges, SpaSM=False):
                         if pairs and liftable == len(pairs) else
                         "no vector-like pair can be lifted" if liftable == 0
                         else "some pairs can be lifted and some cannot")}
+
+
+#: A model on CICY 5299 passing every exact test this package applies.
+#: Three generations with *no* quotient, poly-stable, anomaly free, six
+#: up-type and one down-type Yukawa coupling present, and its single
+#: vector-like pair liftable. Found by :func:`search_viable_models`.
+CICY5299 = {
+    "configuration": [[2, 2, 1, 0], [2, 1, 0, 2], [2, 0, 2, 1]],
+    "summands": [[-1, 0, 1], [-1, 1, 0], [0, -1, 1], [1, 0, -1], [1, 0, -1]],
+    "symmetry_order": 1,
+}
+
+
+def search_viable_models(configurations, charge=1, generations=3,
+                         symmetry_orders=(1, 2), limit=150,
+                         max_seconds_each=120, require_mass_terms=True):
+    r"""
+    Search for a model that passes every exact test at once.
+
+    The tests, in increasing order of cost, are the ones developed across this
+    package:
+
+    1. the manifold admits a viable triple at all (:func:`viable_triples`);
+    2. a rank-five sum exists with ``c_1 = 0``, the right index and the anomaly
+       satisfied (:func:`pyCICY.bundles.scan`);
+    3. it is jointly poly-stable, which is the condition that defeated every
+       earlier attempt;
+    4. some Yukawa coupling survives the texture (:func:`texture`);
+    5. every vector-like pair can be lifted (:func:`mass_terms`), without
+       which the model has no confining QCD.
+
+    Nothing here is numerical and nothing needs a metric. Steps 3 and 4 are
+    the binding ones: viable triples are common at the level of the manifold
+    and rare at the level of a stable bundle.
+
+    The search succeeds. On CICY 5299,
+    ``[[P^2, 2, 1, 0], [P^2, 1, 0, 2], [P^2, 0, 2, 1]]`` with
+    ``h^{1,1} = 3``, ``h^{2,1} = 27``, ``chi = -48``, the bundle
+
+        L = (-1,0,1), (-1,1,0), (0,-1,1), (1,0,-1), (1,0,-1)
+
+    has ``ind(V) = -3`` --- three generations with **no quotient at all** ---
+    is poly-stable at ``t = (1,1,1)/\sqrt3``, has ``h^0 = h^3 = 0``, carries
+    six up-type and one down-type coupling, and its single vector-like pair is
+    liftable by an existing singlet. It is recorded as :data:`CICY5299`.
+
+    Returns a list of records, each with the configuration, the summands and
+    the outcome of every test.
+    """
+    from ..pyCICY import CICY
+    from .. import bundles as _b
+    from . import running as _r
+
+    out = []
+    for conf in configurations:
+        try:
+            X = CICY(conf)
+        except Exception:                                        # noqa: BLE001
+            continue
+        if X.nfold != 3 or not X.fav or X.len < 2:
+            continue
+        if not viable_triples(X, charge=max(2, charge), limit=1):
+            continue
+        for so in symmetry_orders:
+            try:
+                models = _b.scan(X, rank=5, charge=charge,
+                                 generations=generations, symmetry_order=so,
+                                 require_stability=True, limit=limit,
+                                 max_seconds=max_seconds_each)
+            except Exception:                                    # noqa: BLE001
+                continue
+            for m in models:
+                t = texture(X, m)
+                n_up = t["summary"]["up"]["present"]
+                n_dn = t["summary"]["down"]["present"]
+                if n_up + n_dn == 0:
+                    continue
+                mt = mass_terms(X, m)
+                if require_mass_terms and mt["liftable"] < len(mt["pairs"]):
+                    continue
+                V = _b.LineBundleSum(X, m)
+                sp = V.su5_spectrum()
+                vl = min(sp["n10"], sp["n10bar"])
+                out.append({
+                    "configuration": conf, "summands": m,
+                    "symmetry_order": so,
+                    "index": int(V.index()),
+                    "generations": sp["n10"] - sp["n10bar"],
+                    "up_couplings": n_up, "down_couplings": n_dn,
+                    "vectorlike_pairs": vl,
+                    "all_liftable": mt["liftable"] == len(mt["pairs"]),
+                    "verdict_after_lifting":
+                        _r.vectorlike_verdict(generations, vectorlike_10=0)
+                        ["verdict"]})
+    return out
