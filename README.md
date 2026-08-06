@@ -346,6 +346,38 @@ source. Higher-dimension operators, Giudice–Masiero, or non-perturbative
 effects could still generate a mass. "No mass term here" removes the mechanism
 that would ordinarily do the job; it is not a proof of masslessness.
 
+### Representatives: a finer rule the dimensions cannot see
+
+`theories.yukawa` decides couplings from dimensions. That is exact but not
+complete: a coupling can pass both charge and dimension rules and still vanish
+because the cup product of the actual classes is zero.
+
+`theories.representatives` gets at the classes without any metric or numerics.
+On a favourable CICY the Koszul resolution plus Künneth makes them explicit —
+each `P^n` contributes cohomology only in degree `0` or `n`, so when a class of
+`H^m(X,L)` comes from a **single** Koszul term it is labelled by one index set
+`S` and one choice of which factors carry top degree. On CICY 5299 every
+relevant class does.
+
+Two independent obstructions then follow, neither visible in a dimension count:
+
+- **repeated Koszul index** — the product carries `e_{S₁} ∧ e_{S₂} ∧ e_{S₃}`,
+  zero if any index repeats;
+- **top degree not reached** — the three classes must contribute their top
+  degrees in *different* projective factors.
+
+Applied to CICY 5299: the texture reports **six** up-type couplings, the cup
+product keeps **five**. The casualty is `10_3 10_4 5_34`, and the reason is
+sharp — the model has two identical summands `L_3 = L_4 = O(1,0,-1)`, so both
+classes carry the Koszul index `e_1`, and `e_1 ∧ e_1 = 0`. All three groups are
+one-dimensional; nothing in the dimensions could have told you. This is the
+phenomenon the heterotic literature calls a type II vanishing.
+
+What is *not* computed is the overall normalisation of a surviving coupling —
+what is returned is whether it vanishes, which is the part carrying the
+physics. Classes without a unique Koszul origin are reported as **undecided**
+rather than assumed non-zero.
+
 ### The number 137, and what unification actually predicts
 
 `theories.couplings` addresses `α⁻¹(0) = 137.036`. The first thing to say is
