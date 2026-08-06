@@ -63,6 +63,7 @@ def _raises(exc, fn, *a, **kw):
 
 QUINTIC = [[4, 5]]
 TETRA = [[1, 2], [1, 2], [1, 2], [1, 2]]
+M7833 = [[2, 2, 1], [3, 1, 3]]
 MODEL = [[-2, -2, -1, 2], [-2, 1, 0, 0], [1, -2, 1, 0],
          [1, 1, -1, 0], [2, 2, 1, -2]]
 
@@ -292,6 +293,49 @@ def test_yukawa_texture():
                    for r in t["down"]))
 
 
+def test_viable_triples():
+    print("\n[6] can a manifold support a coupling at all?")
+    from pyCICY.theories import yukawa as Y
+    from pyCICY import bundles as BU
+
+    # A necessary condition on the manifold, asked before any model is built.
+    v = Y.viable_triples(TETRA, charge=2, limit=50)
+    check_true("the tetraquadric admits viable triples at charge 2", len(v) > 0)
+
+    # Every returned triple must satisfy both conditions it claims.
+    X = CICY(TETRA)
+    d = np.asarray(X.triple_intersection())
+    bad_sum = bad_h1 = bad_slope = 0
+    for a, b, c in v[:20]:
+        if np.any(np.asarray(a) + np.asarray(b) + np.asarray(c)):
+            bad_sum += 1
+        for x in (a, b, c):
+            if int(np.asarray(X.line_co(list(x)))[1]) == 0:
+                bad_h1 += 1
+            if BU.slope_is_definite(d, x):
+                bad_slope += 1
+    check("every triple has charges summing to zero", bad_sum, 0)
+    check("every member has h^1 > 0", bad_h1, 0)
+    check("and a non-definite slope", bad_slope, 0)
+
+    # The slope filter is not decoration. Without it the first triple found on
+    # the tetraquadric contains (0,0,-2,0), whose slope is one-signed, so no
+    # bundle containing it can be poly-stable -- 9390 models built around that
+    # pair contained exactly zero stable ones.
+    check_true("(0,0,-2,0) has a definite slope",
+               BU.slope_is_definite(d, [0, 0, -2, 0]))
+    check_true("so it is excluded when require_slope is on",
+               all([0, 0, -2, 0] not in t for t in v))
+
+    # The answer depends on the box, and the docstring says so. CICY 7833 has
+    # none at charge 4 and three at charge 5, which is a statement about the
+    # box as much as the manifold.
+    check("CICY 7833 has no viable triple at charge 4",
+          len(Y.viable_triples(M7833, charge=4)), 0)
+    check_true("but does at charge 5",
+               len(Y.viable_triples(M7833, charge=5)) > 0)
+
+
 def main():
     t0 = time.time()
     test_interface()
@@ -299,6 +343,7 @@ def main():
     test_convergence()
     test_line_bundle_model()
     test_yukawa_texture()
+    test_viable_triples()
 
     print("\n" + "=" * 72)
     if FAILURES:
