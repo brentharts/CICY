@@ -336,6 +336,62 @@ def test_viable_triples():
                len(Y.viable_triples(M7833, charge=5)) > 0)
 
 
+def test_running():
+    print("\n[7] from the spectrum to the gauge couplings")
+    from pyCICY.theories import running as RUN
+    from fractions import Fraction as Fr
+
+    # Calibration: the formulas must reproduce the MSSM at Standard Model
+    # content, or they are not the right formulas.
+    check("MSSM one-loop coefficients", RUN.beta_coefficients(3, 1),
+          RUN.MSSM_BETAS)
+    check("b_3 = -9 + 2 n_g", RUN.beta_coefficients(3, 1)[2], Fr(-3))
+    check("an extra Higgs pair moves b_2 but not b_3",
+          (RUN.beta_coefficients(3, 2)[1], RUN.beta_coefficients(3, 2)[2]),
+          (Fr(2), Fr(-3)))
+
+    # The sharpest thing the topology says about hadrons: whether QCD confines
+    # at all is decided by the generation count, which is an index.
+    check("three generations confine", RUN.confines(3), True)
+    check("four still do (b_3 = -1)", RUN.confines(4), True)
+    check("five do not (b_3 = +1)", RUN.confines(5), False)
+    check_true("and the scale is then refused, not invented",
+               _raises(ValueError, RUN.lambda_qcd, n_generations=5))
+
+    # Vector-like colour changes the running, which is why heterotic models
+    # with extra matter cannot use the MSSM numbers.
+    check("a vector-like 3+3bar shifts b_3 by one",
+          RUN.beta_coefficients(3, 1, {"3+3bar": 1})[2], Fr(-2))
+
+    # The sensitivity, which is the honest reason this is hard: the exact
+    # integer sits in an exponent multiplied by an unknown.
+    s = RUN.sensitivity()
+    check_true("d ln(Lambda)/d ln(alpha) is about 52 (%.1f)"
+               % s["dlnLambda_dlnalpha"],
+               50 < s["dlnLambda_dlnalpha"] < 55)
+    lo = RUN.lambda_qcd(alpha_gut=1 / 25.)["lambda_qcd"]
+    hi = RUN.lambda_qcd(alpha_gut=1 / 18.)["lambda_qcd"]
+    check_true("a 30%% change in alpha spans >6 orders of magnitude (%.0e)"
+               % (hi / lo), hi / lo > 1e6)
+
+    # The chain returns no number, deliberately.
+    c = RUN.mass_ratio_chain()
+    check("four factors in m_p/m_e", len(c["factors"]), 4)
+    check_true("none carries a value",
+               all(f["value"] is None or "b_3" in str(f["value"])
+                   for f in c["factors"]))
+    check("three are unavailable",
+          sum(1 for f in c["factors"] if f["status"] != "exact"), 4)
+    check_true("and the reasons are distinct",
+               len({f["status"] for f in c["factors"]}) >= 3)
+
+    # Reached from a model, using its exact generation count.
+    m = T.LineBundleModel(TETRA, MODEL, action=E.TETRAQUADRIC_Z2(),
+                          wilson=(0, 1))
+    check("the model's own beta coefficients", m.beta_coefficients(),
+          RUN.MSSM_BETAS)
+
+
 def main():
     t0 = time.time()
     test_interface()
@@ -344,6 +400,7 @@ def main():
     test_line_bundle_model()
     test_yukawa_texture()
     test_viable_triples()
+    test_running()
 
     print("\n" + "=" * 72)
     if FAILURES:
