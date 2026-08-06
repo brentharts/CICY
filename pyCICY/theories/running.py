@@ -64,6 +64,7 @@ from fractions import Fraction as F
 __all__ = [
     "beta_coefficients", "confines", "unification_scale", "lambda_qcd",
     "mass_ratio_chain", "sensitivity", "MSSM_BETAS",
+    "beta_with_vectorlike", "vectorlike_verdict",
 ]
 
 #: The MSSM one-loop coefficients, for calibration.
@@ -281,3 +282,61 @@ def sensitivity(alpha_gut=1.0 / 25.0, n_generations=3, n_higgs_pairs=1,
             "moral": "b_3 is exact and sits in an exponent multiplied by a "
                      "modulus; the exactness is amplified into irrelevance "
                      "until alpha_GUT is known to about 0.1 per cent"}
+
+
+def beta_with_vectorlike(n_generations=3, n_higgs_pairs=1,
+                         vectorlike_10=0, vectorlike_5=0, extra=None):
+    r"""
+    Beta coefficients including complete vector-like SU(5) multiplets.
+
+    A vector-like ``10 + 10-bar`` pair contributes ``3`` to every ``b_i`` in
+    supersymmetric normalisation; a ``5 + 5-bar`` pair contributes ``1``. Being
+    complete multiplets they shift all three equally, so they **cancel from the
+    differences** and leave the unification prediction of
+    :func:`pyCICY.theories.couplings.predict_alpha3` untouched --- but they
+    change the absolute values, and with them asymptotic freedom.
+
+    That is the sharp consequence, and it is severe::
+
+        b_3 = -9 + 2 n_g + 3 N_10 + N_5
+
+    so with three generations a *single* light ``10 + 10-bar`` pair takes
+    ``b_3`` from ``-3`` to ``0`` and QCD stops confining. Vector-like matter is
+    harmless only if it is heavy.
+
+    Whether it is heavy is a question about the superpotential mass terms,
+    which are Yukawa couplings of the same kind as
+    :mod:`pyCICY.theories.yukawa` treats: quasi-topological, with an exactly
+    computable vanishing pattern and values that need explicit cohomology
+    representatives. So the question "is this model alive?" reduces to the same
+    missing computation as everything else here.
+    """
+    b1, b2, b3 = beta_coefficients(n_generations, n_higgs_pairs, extra)
+    n10 = int(vectorlike_10)
+    n5 = int(vectorlike_5)
+    shift = 3 * n10 + n5
+    return b1 + shift, b2 + shift, b3 + shift
+
+
+def vectorlike_verdict(n_generations=3, vectorlike_10=0, vectorlike_5=0,
+                       n_higgs_pairs=1, extra=None):
+    """Whether a model survives its own vector-like content.
+
+    Returns a dict with the shifted ``b3``, whether QCD still confines, and
+    the maximum number of light vector-like ``10 + 10-bar`` pairs the model
+    could tolerate.
+    """
+    _, _, b3 = beta_with_vectorlike(n_generations, n_higgs_pairs,
+                                    vectorlike_10, vectorlike_5, extra)
+    _, _, b3_bare = beta_coefficients(n_generations, n_higgs_pairs, extra)
+    max_pairs = 0
+    while float(b3_bare) + 3 * (max_pairs + 1) < 0:
+        max_pairs += 1
+    return {"b3": b3, "confines": bool(b3 < 0),
+            "b3_without_vectorlike": b3_bare,
+            "max_light_10_pairs": max_pairs,
+            "verdict": ("alive" if b3 < 0 else
+                        "dead unless the vector-like matter is massive"),
+            "note": "vector-like masses are superpotential couplings; their "
+                    "vanishing pattern is exact (theories.yukawa) but their "
+                    "values need cohomology representatives"}
