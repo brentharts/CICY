@@ -93,6 +93,7 @@ __all__ = [
     "hidden_group_constraint", "viable_hidden_groups",
     "rank_allowed", "dilaton_from_scale", "required_ratio",
     "hidden_commutant", "hidden_scan", "E8_COMMUTANT",
+    "rank_budget", "embeds_in_e8", "reachable_racetracks", "E8_MAXIMAL_RANK",
 ]
 
 
@@ -483,3 +484,133 @@ def hidden_scan(X, surplus, rank=4, charge=1, limit=200, max_seconds=None):
                     "supports a two-condensate racetrack; that needs a "
                     "reducible hidden bundle, which is not scanned here"
                     % (len(found), rank)}
+
+
+# ---------------------------------------------------------------------------
+# which racetrack groups actually embed
+# ---------------------------------------------------------------------------
+
+#: Maximal-rank subgroups of E_8, from the extended Dynkin diagram
+#: (Borel--de Siebenthal). Each is obtained by deleting one node of the
+#: affine E_8 diagram.
+E8_MAXIMAL_RANK = [
+    ("D8",        "SO(16)"),
+    ("A1 E7",     "SU(2) x E_7"),
+    ("A2 E6",     "SU(3) x E_6"),
+    ("A3 D5",     "SU(4) x SO(10)"),
+    ("A4 A4",     "SU(5) x SU(5)"),
+    ("A8",        "SU(9)"),
+]
+
+
+def rank_budget(hidden_rank, host_rank=8):
+    r"""
+    How much of ``E_8`` is left for the racetrack after the hidden bundle.
+
+    A hidden bundle with structure group ``SU(r)`` uses ``r - 1`` of the eight
+    available ranks, leaving ``9 - r`` for the unbroken group. Since the
+    condensing factors must fit inside that,
+
+        N_1 + N_2 - 2  \le  9 - r ,
+
+    so a *larger* hidden bundle forces a *smaller* racetrack group and hence a
+    smaller exponent. The trade-off is exact:
+
+    ====  =========  ==================  ==========
+    r     budget     best (N_1, N_2)     exponent
+    ====  =========  ==================  ==========
+    2     7          SU(4) x SU(5)       20/3
+    3     6          SU(3) x SU(4)       4
+    4     5          SU(3) x SU(4)       4
+    5     4          SU(2) x SU(3)       2
+    ====  =========  ==================  ==========
+
+    This is a **necessary** condition only. Rank counting does not decide
+    whether a particular product actually embeds; see
+    :func:`embeds_in_e8`, which uses the maximal-rank subgroups rather than
+    the rank alone, and reaches a more restrictive conclusion.
+    """
+    return int(host_rank) - (int(hidden_rank) - 1)
+
+
+def embeds_in_e8(N1, N2):
+    r"""
+    Whether ``SU(N_1) x SU(N_2)`` is known to embed in ``E_8``.
+
+    Rank counting is necessary and not sufficient. The maximal-rank subgroups
+    of ``E_8`` come from deleting a node of the affine Dynkin diagram, and of
+    those only ``A_4 \times A_4 = SU(5) \times SU(5)`` is a product of two
+    special unitary factors --- with *equal* ranks, so it gives no racetrack by
+    itself. Everything else must be reached by breaking further inside one of
+    the listed subgroups.
+
+    The reachable two-factor cases are therefore the subgroups of
+    ``SU(5) \times SU(5)``: a hidden bundle with structure group ``SU(n)``
+    inside the first factor leaves ``SU(5-n) \times SU(5)``. Hence
+
+        SU(3) x SU(5)   from n = 2,   exponent 5/2
+        SU(2) x SU(5)   from n = 3,   exponent 10/9
+        SU(2) x SU(3)   breaking both, exponent 2
+
+    and the largest exponent actually reachable is ``5/2``, not the ``20/3`` of
+    ``SU(4) \times SU(5)`` that rank counting alone permits. ``SU(4)`` cannot
+    appear at all by these chains: surviving as ``SU(5-n)`` with ``n = 1``
+    means the hidden bundle is trivial and nothing is broken, so the group is
+    ``SU(5) \times SU(5)`` and there is no racetrack.
+
+    Returns ``(embeds, route)``, the route naming the chain when one is known
+    and ``None`` otherwise. A ``False`` here means *not known to embed by these
+    chains*, which is weaker than a proof of impossibility; the tabulation is
+    of the standard maximal-rank subgroups, not of every subgroup of ``E_8``.
+    """
+    N1, N2 = sorted((int(N1), int(N2)))
+    if (N1, N2) == (5, 5):
+        return True, "A4 x A4, maximal rank in E_8"
+    # Breaking one SU(5) by a hidden bundle of structure group SU(n) leaves
+    # SU(5-n). The bundle must be non-trivial, so n >= 2 and the surviving
+    # factor has rank at most 3. SU(4) can therefore never appear: it would
+    # need n = 1, which is no bundle and no breaking.
+    if N2 == 5 and 2 <= N1 <= 3:
+        return True, ("SU(%d) x SU(5) inside A4 x A4, breaking one SU(5) by "
+                      "an SU(%d) hidden bundle" % (N1, 5 - N1))
+    if 2 <= N1 <= 3 and 2 <= N2 <= 3:
+        return True, ("inside A4 x A4, breaking both SU(5) factors by SU(%d) "
+                      "and SU(%d) hidden bundles" % (5 - N1, 5 - N2))
+    return False, None
+
+
+def reachable_racetracks(lambda_qcd=0.2, m_gut=5.0e17, n_generations=3):
+    r"""
+    Racetrack groups that both embed and are reachable, with the ratio each needs.
+
+    Combines :func:`embeds_in_e8` with :func:`required_ratio`. The conclusion is
+    the useful part and it is not encouraging: the largest reachable exponent is
+    ``5/2``, so
+
+        R  =  (M / Lambda)^{2/5}  ~  10^{7}
+
+    the two gaugino condensation scales must differ by about seven orders of
+    magnitude. That is a strong requirement on the hidden matter content, and
+    it is the sharpest statement this module makes about what a working
+    heterotic racetrack would need.
+
+    Returns a list of records sorted by the ratio required, most economical
+    first.
+    """
+    out = []
+    for n1 in range(2, 6):
+        for n2 in range(n1 + 1, 6):
+            ok, route = embeds_in_e8(n1, n2)
+            if not ok:
+                continue
+            try:
+                p = qcd_scale_exponent(n1, n2, n_generations)
+                r = required_ratio(n1, n2, lambda_qcd, m_gut, n_generations)
+            except ValueError:
+                continue
+            d = racetrack_dilaton(n1, n2, ratio=r)
+            out.append({"N1": n1, "N2": n2, "exponent": p,
+                        "ratio_required": r, "route": route,
+                        "alpha_gut_inv": 1.0 / d["alpha_gut"],
+                        "re_s": d["re_s"]})
+    return sorted(out, key=lambda x: x["ratio_required"])
