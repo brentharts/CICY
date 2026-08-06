@@ -42,6 +42,23 @@ forms, the split web over the published list of 7890 threefolds.
 - `symmetries`, `phenomenology` — freely acting quotients and standard-embedding
   generation counts.
 
+**String constructions (`theories/`)**
+A subpackage where different compactifications live, sharing the exact
+machinery underneath and each declaring what it can compute. Two so far:
+`StandardEmbedding` (V = TX, E₆) and `LineBundleModel` (SU(5) and the Standard
+Model). Type IIA, IIB orientifolds, F-theory would go here; they are not
+implemented.
+
+**The metric bridge (`export`)**
+Hands verified models to the numerical-metric packages. Generates a defining
+polynomial with the right multidegree, invariant under the model's freely
+acting group, and filtered for smoothness over a finite field; supplies the
+Kähler moduli at the point where the bundle is actually poly-stable; exports
+the group as explicit matrices. Plus, on a
+[cymetric fork](https://github.com/brentharts/cymetric), an equivariant point
+generator and a group-averaged network that makes the learned metric exactly
+invariant under the quotient group.
+
 **Toric and polytope geometry (`toric`, `polytope`)**
 The sixteen reflexive polygons, rederived rather than tabulated. Reflexive
 polytopes in *any* dimension, polar duality, face lattices, and Batyrev Hodge
@@ -67,6 +84,65 @@ with the places its arithmetic does not close recorded rather than smoothed
 over.
 
 ---
+
+## What "end to end" does and does not mean
+
+The chain now runs from a configuration matrix to a trained metric on a
+Calabi-Yau quotient:
+
+    configuration matrix
+      -> poly-stable SU(5) bundle with the right index          (bundles)
+      -> equivariant index character of a free group action      (equivariant)
+      -> three chiral generations downstairs                     (breaking)
+      -> a Gamma-invariant defining polynomial, smooth over F_p  (export)
+      -> Kahler moduli at the bundle's stability point           (export)
+      -> orbit-closed point sample and a trained metric          (cymetric fork)
+
+Every step before the last is **exact** and cross-checked. The last one is a
+neural-network fit, and it is worth being precise about its status.
+
+`make metric-validation` reports three residuals. Two of them —
+the Monge-Ampère residual and the Ricci measure — say whether the metric has
+converged, and on a short CPU run they emphatically have not: `sigma ~ 0.56`,
+`Ricci ~ 30`. They fall with epochs and points, and nothing in this repository
+has yet been run long enough to call the metric converged. The third, the
+deviation of the learned metric under the group, is `1.6e-07` for a
+symmetrised network against `1.8e-02` for a plain one, and that one *is* exact:
+group-averaging the potential makes invariance structural rather than learned.
+
+**One Yukawa coupling *is* exact.** For the standard embedding the coupling of
+three (1,1)-type families is the triple intersection number,
+
+    Y_rst = int_X J_r ^ J_s ^ J_t = d_rst ,
+
+an integer, computed from the configuration matrix with no metric anywhere. It
+receives worldsheet instanton corrections from the genus-zero Gopakumar-Vafa
+invariants, so on the quintic
+
+    Y(q) = 5 + 2875 q/(1-q) + 8 * 609250 q^2/(1-q^2) + ...
+
+with every coefficient an integer. `theories.StandardEmbedding` computes both,
+and reports whether the instanton sum has actually converged — the invariants
+grow fast enough (n_5 = 2.3e14 on the quintic) that at `q = 0.01` the
+degree-five term alone is 3e6 and the partial sum is meaningless, while at
+`q = 1e-4` it is a coupling.
+
+**But no physical couplings, no masses, no predictions.** Physical couplings need
+harmonic representatives of the cohomology classes as well as a metric, and
+neither this package nor the bridge computes them.
+`phenomenology.MassRatioNotComputable` is still an exception rather than a
+number, deliberately: *"a function that returned None or a placeholder float
+would sooner or later be plotted next to a measured constant, and at that point
+nothing in the figure would distinguish a computed number from an invented
+one."* That applies to the README as much as to the code.
+
+**The check that would settle it is not done.** Chern-Gauss-Bonnet gives `chi`
+from the curvature of any Hermitian metric, so computing it from the trained
+metric and comparing against the exact `chi = -128` this package derives from
+the configuration matrix would validate the entire chain rather than its
+interfaces. cymyc implements the integral; matching its local-coordinate and
+pullback conventions to cymetric's data has not been done. Until it is,
+"the metric is good" means "these residuals are small", which they are not yet.
 
 ## Where this sits among other open-source tools
 
@@ -95,9 +171,34 @@ group action's index character, quotient, break with a Wilson line — is not
 available end-to-end in another open-source package.
 
 ## Roadmap
-The natural workflow is to use both: fix the topology and the spectrum here,
-then hand the surviving models to `cymetric` or `cymyc` for the metric and the
-couplings.  We plan to automate this process.
+The natural workflow is to use both, and `pyCICY.export` now automates the
+handover: fix the topology and the spectrum here, then hand the surviving
+models to `cymetric` or `cymyc` for the metric and the couplings. What this
+package adds to that handover is the part a metric package cannot know — that
+the defining polynomial must be invariant under the model's freely acting
+group, that the Kähler moduli must sit at the bundle's stability point, and
+that the group must preserve the holomorphic form or the quotient is not
+Calabi-Yau at all. Get any of those wrong and a perfectly good metric gets
+trained on the wrong space, with nothing downstream to complain. That handover
+is automated; `make metric-validation` runs it.
+
+Next, in order of what would change what this package can claim:
+
+1. **Chern-Gauss-Bonnet.** Compute `chi` from the trained metric and compare
+   against the exact value. It is the one measurement that validates the whole
+   chain rather than its interfaces, and it needs cymyc's coordinate and
+   pullback conventions matched to cymetric's data.
+2. **A converged metric.** Long GPU runs, until the Monge-Ampère and Ricci
+   residuals are small enough to mean something.
+3. **Harmonic representatives.** The holomorphic Yukawa couplings of a line
+   bundle model are cup products `H^1(V) x H^1(V) x H^1(Lambda^2 V) -> C`.
+   They are quasi-topological and would be *exact*, like the standard-embedding
+   ones — but evaluating them needs explicit cohomology representatives, and
+   this package computes dimensions. That is a missing feature, not an
+   obstruction, and `theories` keeps it distinct from the physical coupling,
+   which is obstructed. Physical couplings additionally need the metric, and
+   masses additionally need moduli stabilisation. That chain is the remaining
+   distance between this toolkit and a prediction.
 
 
 ---
