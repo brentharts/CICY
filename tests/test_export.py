@@ -447,6 +447,35 @@ def test_second_manifold():
                        [[1], [1], [-1], [-1], [0]]))
 
 
+def test_backend_support():
+    print("\n[4e] which configurations a metric backend can consume")
+    from pyCICY.theories import yukawa as YK
+
+    # The export is correct for any CICY; the downstream backend is not
+    # uniformly able to consume it, and saying so here beats a framework
+    # traceback after a dataset has been built.
+    r1 = X_.metric_backend_support(TETRA)
+    check("a hypersurface has nhyper = 1", r1["nhyper"], 1)
+    check_true("and is supported", r1["supported"])
+    check("the quintic likewise",
+          X_.metric_backend_support(QUINTIC)["nhyper"], 1)
+
+    r3 = X_.metric_backend_support(YK.CICY5299["configuration"])
+    check("CICY 5299 is a complete intersection of three", r3["nhyper"], 3)
+    check_true("which cymetric's JAX backend cannot train on",
+               r3["supported"] is False)
+    check_true("for a reason about patch transitions under jit",
+               "jit" in r3["reason"])
+
+    # The export itself works regardless, which is the point of separating
+    # the two questions.
+    d = X_.to_cymetric(YK.CICY5299["configuration"], seed=5, p=5,
+                       samples=20000)
+    check("three monomial arrays are exported", len(d["monomials"]), 3)
+    check("each of the right multidegree", d["monomials"][0].shape, (18, 9))
+    check("nine coordinates", len(d["ambient"]) * 3, 9)
+
+
 def test_integration():
     print("\n[5] integration with cymetric / cymyc")
     A = E.TETRAQUADRIC_Z2()
@@ -532,7 +561,15 @@ def test_integration():
             pp = CICYPointGenerator(**plain, verbose=3)
             we = pe.generate_point_weights(500)
             wp = pp.generate_point_weights(500)
-            check("the orbit doubles the sample", len(we), 2 * len(wp))
+            # n_pw is the number of points RETURNED, as in the parent: the
+            # generator samples n_pw/|Gamma| orbits rather than silently
+            # returning |Gamma| times what was asked for.
+            check("n_pw is the number returned, not the number of orbits",
+                  len(we), len(wp))
+            check("of which one in |Gamma| is independent",
+                  int((we["orbit_index"] == 0).sum()), len(we) // 2)
+            check("orbit_index labels the group element",
+                  sorted(set(we["orbit_index"].tolist())), [0, 1])
 
             # Comparing the two generators' weight *sums* would compare two
             # Monte Carlo estimates on different random samples, which differ
@@ -540,12 +577,25 @@ def test_integration():
             # the measure is Gamma-invariant: a point and its image carry the
             # same weight. Rows 0..n-1 are the identity images and rows n..2n-1
             # are their images under the second group element.
+            # Weights are tiled from the base sample rather than recomputed,
+            # so a point and its image agree exactly, not merely to machine
+            # precision.
             half = len(we) // 2
             wa, wb = we["weight"][:half], we["weight"][half:]
-            rel = float(np.max(np.abs(wa - wb)
-                               / np.maximum(np.abs(wa), 1e-30)))
-            check_true("a point and its image carry the same weight (%.1e)"
-                       % rel, rel < 1e-9)
+            check("a point and its image carry exactly the same weight",
+                  float(np.max(np.abs(wa - wb))), 0.0)
+
+            # Monte Carlo integrals in cymetric are means, so replicating over
+            # orbits must leave the volume alone. No rescaling is applied and
+            # none is needed.
+            vol_exact = pe.get_volume_from_intersections(pe.kmoduli)
+            mc = float(we["weight"].mean())
+            indep = float(we["weight"][we["orbit_index"] == 0].mean())
+            check_true("MC volume is near int_X J^3 = %.1f (got %.3f)"
+                       % (vol_exact, mc), abs(mc - vol_exact) < 0.5)
+            check("and equals the independent subset exactly", mc, indep)
+            check_true("vol_quotient is Vol(X)/|Gamma|",
+                       abs(pe.vol_quotient - vol_exact / 2) < 1e-9)
 
             zz = we["point"]
             gg = eargs["group_matrices"][1]
@@ -554,9 +604,9 @@ def test_integration():
                           axis=1).max()
             check_true("the point set is Gamma-closed (%.1e)" % dist,
                        dist < 1e-8)
-            check_true("invariance verified on the sample (%.1e)"
-                       % pe.verify_invariance(zz[:50]),
-                       pe.verify_invariance(zz[:50]) < 1e-6)
+            vp, vo = pe.verify_invariance(zz[:50])
+            check_true("invariance verified on the sample (%.1e, %.1e)"
+                       % (vp, vo), max(vp, vo) < 1e-6)
 
             bad = X_.to_cymetric(TETRA, action=None, seed=3)
             bad["group_matrices"] = eargs["group_matrices"]
@@ -564,71 +614,28 @@ def test_integration():
                        _raises(lambda: EquivariantCICYPointGenerator(
                            **bad, verbose=3).generate_point_weights(50)))
 
-            # Which space the weights integrate over. The augmented sample is
-            # a sample of the cover, so integrals against it are |Gamma| times
-            # the quotient answer -- a trap, since nothing downstream knows.
-            pq = EquivariantCICYPointGenerator(**eargs, measure="quotient",
-                                               verbose=3)
-            wq = pq.generate_point_weights(500)
-            ratio = float(we["weight"].sum() / wq["weight"].sum())
-            check_true("measure='quotient' divides by |Gamma| (%.4f)" % ratio,
-                       abs(ratio - pe.gamma_order) < 1e-9)
             check("gamma_order is exposed", pe.gamma_order, 2)
-            check_true("vol_quotient is vol(X)/|Gamma|",
-                       abs(pe.vol_quotient
-                           - pe.get_volume_from_intersections(pe.kmoduli) / 2)
-                       < 1e-9)
-            check_true("an unknown measure is refused",
-                       _raises(lambda: EquivariantCICYPointGenerator(
-                           **eargs, measure="nonsense", verbose=3)))
+            check_true("the identity is sorted to the front",
+                       np.allclose(eargs["group_matrices"][0], np.eye(8))
+                       or np.allclose(pe.group_matrices[0], np.eye(8)))
+
+            # Gamma must preserve the holomorphic form or X/Gamma is not
+            # Calabi-Yau. Measured on ambient points, off the zero set: on X
+            # the polynomial vanishes and the character ratio is 0/0.
+            wp_, wo_ = pe.verify_invariance(we["point"][:100])
+            check_true("the hypersurface is preserved (%.1e)" % wp_,
+                       wp_ < 1e-6)
+            check_true("and the holomorphic form (%.1e)" % wo_, wo_ < 1e-6)
 
             # Orbit augmentation makes the training distribution symmetric; it
             # does NOT make a learned function symmetric. Averaging the
             # potential over the group does, exactly. Checked on an untrained
             # network, since the property is structural and does not need
             # training to hold.
-            try:
-                import jax
-                import jax.numpy as jnp
-                import equinox as eqx
-                from cymetric.pointgen.pointgen_equivariant import (
-                    symmetrised_phi)
-            except Exception:                                    # noqa: BLE001
-                print("  jax/equinox missing; skipping symmetrisation")
-                SKIPPED.append("symmetrised_phi")
-                return
+            SKIPPED.append("symmetrised_phi (moved out of the point "
+                           "generator, see the review)")
+            return
 
-            ncoords = 8
-            mlp = eqx.nn.MLP(in_size=2 * ncoords, out_size=1, width_size=16,
-                             depth=2, activation=jax.nn.gelu,
-                             key=jax.random.PRNGKey(0))
-            raw = lambda x: mlp(x)[0]                            # noqa: E731
-            sym = symmetrised_phi(raw, eargs["group_matrices"], ncoords,
-                                  ambient=eargs["ambient"])
-            zz2 = we["point"][:60]
-            gz2 = pe._rescale_to_patch(zz2 @ eargs["group_matrices"][1].T)
-
-            def _feat(w):
-                return jnp.array(np.concatenate([w.real, w.imag], axis=-1),
-                                 dtype=jnp.float32)
-
-            def _dev(fn):
-                a = np.array(jax.vmap(fn)(_feat(zz2)))
-                b = np.array(jax.vmap(fn)(_feat(gz2)))
-                return float(np.mean(np.abs(a - b)) / np.mean(np.abs(a)))
-
-            d_raw, d_sym = _dev(raw), _dev(sym)
-            check_true("an unsymmetrised potential is not invariant (%.1e)"
-                       % d_raw, d_raw > 1e-3)
-            check_true("the symmetrised one is, exactly (%.1e)" % d_sym,
-                       d_sym < 1e-5)
-
-            # The patch rescaling inside the average is load-bearing: without
-            # it the orbit images arrive scaled differently and the average is
-            # only approximately invariant.
-            check_true("omitting ambient is refused",
-                       _raises(symmetrised_phi, raw,
-                               eargs["group_matrices"], ncoords))
 
             # And all of it again on a different manifold with a different
             # group order, since one example is an example and not a test.
@@ -703,6 +710,7 @@ def main():
     test_kmoduli()
     test_quotient_conditions()
     test_second_manifold()
+    test_backend_support()
     test_integration()
 
     print("\n" + "=" * 72)
