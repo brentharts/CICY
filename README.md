@@ -300,10 +300,40 @@ Note what does *not* change: complete multiplets cancel from the differences,
 so the α₃ prediction stays at 0.1170 while confinement is destroyed. A model
 can pass the unification test and still have no proton.
 
-Whether the vector-like matter is heavy is a question about superpotential mass
-terms — Yukawa couplings of exactly the kind `theories.yukawa` handles, with an
-exact vanishing pattern and values needing cohomology representatives. So "is
-this model alive?" reduces to the same missing computation as everything else.
+### Can the vector-like matter be lifted? No — and it's one obstruction, not two
+
+A vector-like pair is harmless only if it is heavy. At leading order the mass
+comes from a trilinear coupling with a singlet vev,
+`W ⊃ y · 10_a · 10bar_b · S_cd`, and the charges must cancel:
+`L_a − L_b + L_c − L_d = 0`. `yukawa.mass_terms` applies that exactly.
+
+Two structural facts fall out immediately. `h¹(O_X) = h^{0,1} = 0` on a
+Calabi–Yau threefold, so **there is no neutral singlet and no diagonal mass
+term** for any line bundle model. And taking `(c,d) = (b,a)` supplies exactly
+the required charge, so the condition reduces to needing three line bundles
+
+    L_a,   L_b⁻¹,   L_b L_a⁻¹
+
+with charges summing to zero and `h¹ > 0` for each — *precisely* the condition
+`viable_triples` tests for a Yukawa coupling. So
+
+> the Yukawa texture zeros and the unliftable vector-like matter are the **same
+> obstruction wearing two hats**.
+
+On this manifold no charge-conserving triple has `h¹ > 0` throughout, and that
+single fact kills the couplings and traps the vector-like matter at once. For
+our model all three pairs need singlets of charge `(0,−3,−1,2)`, `(−3,0,−2,2)`
+and `(−4,−4,−2,4)`; eleven singlet types exist and none has those charges.
+Over **250 scanned three-generation models, not one has a liftable pair.**
+
+Combined with `b₃ = +24`, the model is dead: no confinement, and no mechanism
+to remove the matter causing it. That verdict is exact and required no metric,
+no representatives and no numerics.
+
+The caveat is stated in the docstring: this is the leading *perturbative*
+source. Higher-dimension operators, Giudice–Masiero, or non-perturbative
+effects could still generate a mass. "No mass term here" removes the mechanism
+that would ordinarily do the job; it is not a proof of masslessness.
 
 ### The number 137, and what unification actually predicts
 
