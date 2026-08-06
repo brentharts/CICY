@@ -186,7 +186,7 @@ def _modulus(action):
 
 
 def defining_polynomials(X, action=None, seed=0, real=False, scale=1.0,
-                         check_smooth=True, p=101, samples=20000,
+                         check_smooth=True, p=101, samples=8000,
                          integer_coefficients=True, spread=12):
     r"""
     A defining polynomial for each hypersurface, as ``(monomials, coefficients)``.
@@ -212,8 +212,10 @@ def defining_polynomials(X, action=None, seed=0, real=False, scale=1.0,
     With ``check_smooth`` the result is passed through
     :func:`is_smooth_over_Fp` and a detected singularity raises. That test is
     one-sided -- it can prove singularity and never smoothness -- so this is a
-    filter against a bad draw rather than a guarantee, and it is cheap: about a
-    second for twenty thousand samples. It is on by default because a singular
+    filter against a bad draw rather than a guarantee, and it is cheap. The
+    default sample count is set so that a hypersurface over F_101 yields a few
+    dozen points to test on, which is enough to catch the degenerate draws;
+    raise ``samples`` for more confidence, at linear cost. It is on by default because a singular
     X reaching a metric package produces a training run that looks fine and
     converges to nothing in particular.
     """
