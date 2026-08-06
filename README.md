@@ -127,6 +127,27 @@ grow fast enough (n_5 = 2.3e14 on the quintic) that at `q = 0.01` the
 degree-five term alone is 3e6 and the partial sum is meaningless, while at
 `q = 1e-4` it is a coupling.
 
+**And the line-bundle Yukawa *texture* is exact too.** The values need
+representatives, but which couplings can be non-zero at all does not.
+`theories.yukawa` applies two rules, both exact:
+
+- **charge:** a cup product lands in `H^3(O_X) = C` only if the participating
+  line bundles cancel. Up-type `10_a 10_b 5_{ab}` always does; down-type
+  `10_a 5bar_{bc} 5bar_{de}` does only when all five indices are distinct —
+  the `epsilon_{abcde}` of SU(5), reappearing as a statement about charges.
+  Exactly 15 down-type patterns, five choices of `a` times three pairings.
+- **dimension:** a charge-allowed coupling is still absent if any of the three
+  groups is zero-dimensional. Those dimensions come from `CICY.line_co`, so
+  this filter is as exact as the first, and it is what produces genuine
+  **texture zeros** — forbidden by the geometry rather than by the symmetry.
+
+For the tetraquadric model this package has been carrying throughout, all 25
+patterns are charge-allowed and **every one is a texture zero**: the model has
+no holomorphic Yukawa couplings whatever. That is a real and rather damning
+result about it, obtained exactly. The dimensions used are cross-checked
+against `su5_spectrum` — 24 tens, 54 five-bars, 48 fives — code that shares
+nothing with the texture computation.
+
 **But no physical couplings, no masses, no predictions.** Physical couplings need
 harmonic representatives of the cohomology classes as well as a metric, and
 neither this package nor the bridge computes them.
@@ -190,15 +211,12 @@ Next, in order of what would change what this package can claim:
    pullback conventions matched to cymetric's data.
 2. **A converged metric.** Long GPU runs, until the Monge-Ampère and Ricci
    residuals are small enough to mean something.
-3. **Harmonic representatives.** The holomorphic Yukawa couplings of a line
-   bundle model are cup products `H^1(V) x H^1(V) x H^1(Lambda^2 V) -> C`.
-   They are quasi-topological and would be *exact*, like the standard-embedding
-   ones — but evaluating them needs explicit cohomology representatives, and
-   this package computes dimensions. That is a missing feature, not an
-   obstruction, and `theories` keeps it distinct from the physical coupling,
-   which is obstructed. Physical couplings additionally need the metric, and
-   masses additionally need moduli stabilisation. That chain is the remaining
-   distance between this toolkit and a prediction.
+3. **Cohomology representatives.** The *pattern* of line-bundle Yukawa
+   couplings is already exact — see below — but the non-zero *values* need
+   explicit representatives, which this package does not construct. That is a
+   missing feature, not an obstruction. Physical couplings additionally need
+   the metric, and masses additionally need moduli stabilisation. That chain
+   is the remaining distance between this toolkit and a prediction.
 
 
 ---
