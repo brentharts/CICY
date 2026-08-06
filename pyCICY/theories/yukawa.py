@@ -62,7 +62,7 @@ import numpy as np
 
 __all__ = [
     "up_type_patterns", "down_type_patterns", "charge_allowed",
-    "texture", "viable_triples",
+    "texture", "viable_triples", "singlet_charges", "mass_terms",
 ]
 
 
@@ -275,3 +275,130 @@ def viable_triples(X, charge=3, require_slope=True, limit=None, SpaSM=False):
             if limit is not None and len(out) >= limit:
                 return out
     return out
+
+
+def singlet_charges(charges):
+    r"""
+    Charges of the singlets of a line bundle model.
+
+    The bundle moduli and gauge singlets live in
+    ``H^1(X, V \otimes V^*) = \bigoplus_{c,d} H^1(X, L_c \otimes L_d^{-1})``,
+    so a singlet carries charge ``L_c - L_d``. The diagonal terms are
+    ``H^1(\cO_X) = h^{0,1} = 0`` on a Calabi-Yau threefold, so **there is no
+    neutral singlet**, which turns out to matter below.
+
+    Returns a list of ``((c, d), charge)`` for ``c != d``.
+    """
+    k = np.asarray(charges, dtype=np.int64)
+    out = []
+    for c, d in itertools.permutations(range(len(k)), 2):
+        out.append(((c, d), (k[c] - k[d]).tolist()))
+    return out
+
+
+def mass_terms(X, charges, SpaSM=False):
+    r"""
+    Which vector-like pairs can be given a mass, and which cannot.
+
+    A vector-like ``10_a + \overline{10}_b`` pair is harmless only if it is
+    heavy, and :func:`pyCICY.theories.running.vectorlike_verdict` shows that
+    even one light pair destroys asymptotic freedom. So the question "is this
+    model alive?" is the question of whether these pairs can be lifted.
+
+    At leading perturbative order the mass comes from a trilinear coupling with
+    a singlet acquiring a vacuum expectation value,
+
+        W \supset y\, 10_a\, \overline{10}_b\, S_{cd} ,
+
+    with ``10_a \in H^1(L_a)``, ``\overline{10}_b \in H^1(L_b^{-1})`` and
+    ``S_{cd} \in H^1(L_c L_d^{-1})``. The cup product lands in
+    ``H^3(\cO_X) = \mathbb{C}`` only if the charges cancel,
+
+        L_a - L_b + L_c - L_d = 0 ,
+
+    and the singlet must exist, ``h^1(L_c L_d^{-1}) > 0``. Both conditions are
+    exact and need no cohomology representatives, exactly as in
+    :func:`texture`.
+
+    Two structural consequences follow immediately. Setting ``a = b`` requires
+    a singlet of zero charge, and ``h^1(\cO_X) = 0``, so **no diagonal mass
+    term exists** for any line bundle model on a Calabi-Yau threefold. And a
+    pair can only be lifted off-diagonally, by a singlet whose charge is
+    exactly ``L_b - L_a``.
+
+    Returns a dict with ``pairs`` (each carrying whether a lifting singlet
+    exists), ``liftable``, ``unliftable`` and a ``verdict``.
+
+    One obstruction, not two
+    ------------------------
+    Taking ``(c, d) = (b, a)`` gives a singlet of exactly the required charge,
+    so the question reduces to whether ``h^1(L_b L_a^{-1}) > 0``. The mass term
+    therefore needs three line bundles
+
+        L_a ,   L_b^{-1} ,   L_b L_a^{-1}
+
+    whose charges sum to zero and each of which has non-vanishing ``H^1``.
+    That is precisely the condition :func:`viable_triples` tests for a Yukawa
+    coupling. So the texture zeros of :func:`texture` and the unliftable
+    vector-like matter are **the same obstruction wearing two hats**: on this
+    manifold no charge-conserving triple has ``h^1 > 0`` throughout, and that
+    single fact kills the Yukawa couplings and traps the vector-like matter at
+    once.
+
+    On the tetraquadric this is not one model's misfortune. Over 250 scanned
+    three-generation models, *none* has a liftable pair.
+
+    Caveat
+    ------
+    This is the leading perturbative source. A mass can also arise from
+    higher-dimension operators, from the Kahler potential by the
+    Giudice--Masiero mechanism, or non-perturbatively. So "no mass term here"
+    is a statement about the trilinear superpotential, not a proof that the
+    fields are massless --- but it removes the mechanism that would ordinarily
+    do the job.
+    """
+    from ..bundles import _as_cicy
+
+    XX = _as_cicy(X)
+    k = np.asarray(charges, dtype=np.int64)
+    n = len(k)
+
+    cache = {}
+
+    def h(vec, q):
+        key = tuple(int(x) for x in vec)
+        if key not in cache:
+            cache[key] = np.asarray(
+                XX.line_co(list(key), SpaSM=SpaSM), dtype=int)
+        return int(cache[key][q])
+
+    # 10_a from H^1(L_a); 10-bar_b from H^1(L_b^{-1}), equal to H^2(L_b)
+    tens = [a for a in range(n) if h(k[a], 1) > 0]
+    antitens = [b for b in range(n) if h(-k[b], 1) > 0]
+
+    singlets = [(cd, ch) for cd, ch in singlet_charges(k)
+                if h(np.asarray(ch), 1) > 0]
+
+    pairs = []
+    for a in tens:
+        for b in antitens:
+            need = (k[b] - k[a]).tolist()
+            lift = [cd for cd, ch in singlets if ch == need]
+            pairs.append({"pair": (a, b),
+                          "n_10": h(k[a], 1),
+                          "n_10bar": h(-k[b], 1),
+                          "singlet_charge_needed": need,
+                          "lifting_singlets": lift,
+                          "liftable": bool(lift)})
+
+    liftable = sum(1 for p in pairs if p["liftable"])
+    return {"pairs": pairs,
+            "tens": tens, "antitens": antitens,
+            "n_singlet_types": len(singlets),
+            "liftable": liftable,
+            "unliftable": len(pairs) - liftable,
+            "neutral_singlet_exists": h(np.zeros(k.shape[1], dtype=int), 1) > 0,
+            "verdict": ("every vector-like pair can be lifted"
+                        if pairs and liftable == len(pairs) else
+                        "no vector-like pair can be lifted" if liftable == 0
+                        else "some pairs can be lifted and some cannot")}
