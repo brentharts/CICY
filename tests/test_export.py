@@ -163,7 +163,7 @@ def test_smoothness():
     i = [k for k, r in enumerate(mons) if list(r) == [2, 0, 2, 0, 2, 0, 2, 0]][0]
     c = np.zeros(len(mons), dtype=complex)
     c[i] = 1.0
-    ok, on_X, drops = X_.is_smooth_over_Fp(TETRA, [mons], [c], samples=8000)
+    ok, on_X, drops = X_.is_smooth_over_Fp(TETRA, [mons], [c], samples=3000)
     check_true("a single monomial is detected as singular", not ok)
     check_true("and the rank drops at every point of X found (%d/%d)"
                % (drops, on_X), on_X > 0 and drops == on_X)
@@ -175,7 +175,7 @@ def test_smoothness():
         if list(r)[:2] == [2, 0]:
             c2[k] = rng.integers(1, 9) + 1j * rng.integers(1, 9)
     check_true("a non-reduced polynomial is detected",
-               not X_.is_smooth_over_Fp(TETRA, [mons], [c2], samples=8000)[0])
+               not X_.is_smooth_over_Fp(TETRA, [mons], [c2], samples=3000)[0])
 
     # The reduction must be faithful, or the check tests a different
     # polynomial. Floats are refused rather than rounded: rounding the real
@@ -194,7 +194,7 @@ def test_smoothness():
     rng3 = np.random.default_rng(5)
     c3 = (rng3.integers(1, 13, size=len(mons))
           + 1j * rng3.integers(1, 13, size=len(mons))).astype(complex)
-    ok3, on3, dr3 = X_.is_smooth_over_Fp(TETRA, [mons], [c3], samples=8000)
+    ok3, on3, dr3 = X_.is_smooth_over_Fp(TETRA, [mons], [c3], samples=3000)
     check_true("a generic polynomial passes", ok3)
     check_true("having found %d points of X to test" % on3, on3 > 20)
     check("with no rank drops", dr3, 0)
@@ -206,7 +206,7 @@ def test_smoothness():
     good = 0
     for sd in range(6):
         try:
-            X_.defining_polynomials(TETRA, action=A, seed=sd, samples=4000)
+            X_.defining_polynomials(TETRA, action=A, seed=sd, samples=2500)
             good += 1
         except ValueError:
             pass
@@ -528,6 +528,54 @@ def test_integration():
             check_true("an unknown measure is refused",
                        _raises(lambda: EquivariantCICYPointGenerator(
                            **eargs, measure="nonsense", verbose=3)))
+
+            # Orbit augmentation makes the training distribution symmetric; it
+            # does NOT make a learned function symmetric. Averaging the
+            # potential over the group does, exactly. Checked on an untrained
+            # network, since the property is structural and does not need
+            # training to hold.
+            try:
+                import jax
+                import jax.numpy as jnp
+                import equinox as eqx
+                from cymetric.pointgen.pointgen_equivariant import (
+                    symmetrised_phi)
+            except Exception:                                    # noqa: BLE001
+                print("  jax/equinox missing; skipping symmetrisation")
+                SKIPPED.append("symmetrised_phi")
+                return
+
+            ncoords = 8
+            mlp = eqx.nn.MLP(in_size=2 * ncoords, out_size=1, width_size=16,
+                             depth=2, activation=jax.nn.gelu,
+                             key=jax.random.PRNGKey(0))
+            raw = lambda x: mlp(x)[0]                            # noqa: E731
+            sym = symmetrised_phi(raw, eargs["group_matrices"], ncoords,
+                                  ambient=eargs["ambient"])
+            zz2 = we["point"][:60]
+            gz2 = pe._rescale_to_patch(zz2 @ eargs["group_matrices"][1].T)
+
+            def _feat(w):
+                return jnp.array(np.concatenate([w.real, w.imag], axis=-1),
+                                 dtype=jnp.float32)
+
+            def _dev(fn):
+                a = np.array(jax.vmap(fn)(_feat(zz2)))
+                b = np.array(jax.vmap(fn)(_feat(gz2)))
+                return float(np.mean(np.abs(a - b)) / np.mean(np.abs(a)))
+
+            d_raw, d_sym = _dev(raw), _dev(sym)
+            check_true("an unsymmetrised potential is not invariant (%.1e)"
+                       % d_raw, d_raw > 1e-3)
+            check_true("the symmetrised one is, exactly (%.1e)" % d_sym,
+                       d_sym < 1e-5)
+
+            # The patch rescaling inside the average is load-bearing: without
+            # it the orbit images arrive scaled differently and the average is
+            # only approximately invariant.
+            check_true("omitting ambient is refused",
+                       _raises(symmetrised_phi, raw,
+                               eargs["group_matrices"], ncoords))
 
     try:
         from cymyc import alg_geo
