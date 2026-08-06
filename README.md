@@ -378,6 +378,33 @@ what is returned is whether it vanishes, which is the part carrying the
 physics. Classes without a unique Koszul origin are reported as **undecided**
 rather than assumed non-zero.
 
+### Handing CICY 5299 to a metric package — and where it stops
+
+The export works: three defining polynomials of 18 monomials each, kmoduli at
+the stability point `(0.382, 0.382, 0.382)`, smoothness verified over `F_5`
+(318 points on X, no rank drops — `F_101` finds nothing, since a codimension-3
+variety has `p⁻³` point density, and the guard says so rather than passing
+vacuously). cymetric generates points satisfying all three equations to
+**4.5e−08**, and its volume agrees with our intersection numbers exactly.
+
+Training does **not** work, and the reason is upstream. **cymetric's JAX
+backend cannot train any CICY with more than one defining polynomial.** For
+`nhyper = 1` the patch transitions are precomputed once as a static array; for
+`nhyper > 1` they are generated per point from data-dependent indices by a
+routine whose own comment says it *"runs eagerly"* — and eager numpy on traced
+values is what `jit` forbids. It fires whatever weight the transition loss is
+given, because the loss is computed before the weight is applied.
+
+Two contributing bugs in the same file *are* one-line fixes, and are in the
+fork: `self.degrees` and `self._proj_indices` are `jnp` arrays passed to
+`np.array` inside jitted code, though the class already keeps a static
+`_degrees_list` for exactly that purpose. Necessary, not sufficient.
+
+`export.metric_backend_support` reports this before a dataset is built, so the
+failure arrives as a sentence rather than a `TracerArrayConversionError`. The
+tetraquadric and the quintic are supported; CICY 5299 is not — a limitation of
+the backend, not of the export.
+
 ### The number 137, and what unification actually predicts
 
 `theories.couplings` addresses `α⁻¹(0) = 137.036`. The first thing to say is
