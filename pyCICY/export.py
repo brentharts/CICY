@@ -83,6 +83,7 @@ __all__ = [
     "omega_character", "preserves_holomorphic_form", "group_matrices",
     "kmoduli_are_invariant", "quotient_report",
     "to_cymetric", "to_cymyc", "poly_spec_source",
+    "metric_backend_support",
 ]
 
 
@@ -731,3 +732,51 @@ def poly_spec_source(X, action=None, name="pycicy_spec", seed=0, **kw):
                         for x in c])
     lines.append("    ]")
     return "\n".join(lines) + "\n"
+
+
+def metric_backend_support(X, backend="jax"):
+    r"""
+    Whether a metric package can actually train on this configuration.
+
+    The export is correct for any CICY, but the downstream packages are not
+    uniformly able to consume it, and it is better to say so here than to let
+    a user hit a framework traceback after building a dataset.
+
+    **cymetric's JAX backend cannot train a CICY with more than one defining
+    polynomial.** The transition loss needs the patch transitions of each
+    point, and for ``nhyper = 1`` those are precomputed once at construction,
+    as a static array. For ``nhyper > 1`` they are generated per point at run
+    time from data-dependent indices, by a routine whose own comment says it
+    "runs eagerly" -- and eager numpy on traced values is exactly what ``jit``
+    forbids. The failure is a ``TracerArrayConversionError`` deep inside
+    ``fubinistudy._generate_patches``, and it fires whatever weight the
+    transition loss is given, because the loss is computed before the weight
+    is applied.
+
+    Two contributing bugs in the same file are genuinely one-line fixes and
+    are worth reporting separately: ``self.degrees`` and ``self._proj_indices``
+    are stored as ``jnp`` arrays and then passed to ``np.array`` inside jitted
+    code, although the class already keeps a static ``_degrees_list`` for
+    exactly this purpose. Fixing those is necessary and not sufficient.
+
+    So a model on a hypersurface (``nhyper = 1``) can be handed to the JAX
+    backend today; a complete intersection cannot, and this is a limitation of
+    the backend rather than of the export. The TensorFlow and PyTorch backends
+    are untested here.
+
+    Returns a dict with ``supported``, ``nhyper`` and the reason.
+    """
+    conf = _conf(X)
+    nhyper = conf.shape[1] - 1
+    if backend != "jax":
+        return {"supported": None, "nhyper": nhyper,
+                "reason": "only the JAX backend has been tested from here"}
+    if nhyper == 1:
+        return {"supported": True, "nhyper": nhyper,
+                "reason": "a single defining polynomial: patch transitions are "
+                          "precomputed statically and jit is happy"}
+    return {"supported": False, "nhyper": nhyper,
+            "reason": "cymetric's JAX backend generates patch transitions per "
+                      "point for nhyper > 1, eagerly, which fails under jit "
+                      "with a TracerArrayConversionError. The export is fine; "
+                      "the backend cannot consume it."}
