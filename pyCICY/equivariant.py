@@ -139,6 +139,7 @@ import numpy as np
 __all__ = [
     "CyclicAction", "PermutationAction", "AbelianAction", "MatrixGroupAction", "weights_from_matrix", "regular_representation", "is_regular_multiple",
     "bundle_index_character", "enumerate_structures", "gamma_charges",
+    "cohomology_character", "bundle_cohomology_characters",
     "TETRAQUADRIC_Z2",
 ]
 
@@ -1712,3 +1713,92 @@ class MatrixGroupAction(object):
                 "available, the decomposition into non-trivial irreducibles "
                 "is not (it needs a character table)")
         return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# individual cohomology groups, when the degrees allow it
+# ---------------------------------------------------------------------------
+
+def cohomology_character(action, kvec, X=None, SpaSM=False):
+    r"""
+    The Gamma-representation of ``H^q(X, L)`` itself, not merely of the index.
+
+    The index character of :meth:`CyclicAction.euler` is an alternating sum, so
+    in general it does not determine the individual groups: that needs the
+    equivariant Leray spectral sequence, whose differentials are not fixed by
+    the degrees. This is the limitation that
+    :mod:`pyCICY.breaking` documents and works around by taking the
+    Gamma-charges as input.
+
+    There is a large case where the limitation does not bite. If the
+    cohomology of ``L`` is **concentrated in a single degree** ``q`` --- that
+    is, ``h^i(L) = 0`` for ``i != q`` --- then the alternating sum has only one
+    term and
+
+        ch H^q(X, L)  =  (-1)^q  ind_Gamma(L) ,
+
+    exactly. Nothing is lost, because there is nothing for the differentials to
+    do. And concentration is not rare: on the tetraquadric, **2288 of the 2401**
+    charge vectors in ``[-3,3]^4`` are concentrated, and so are all five
+    summands of the model :mod:`pyCICY.bundles` finds there.
+
+    Returns a dict with ``character``, the degree ``q``, ``concentrated``, and
+    the ordinary ``dimensions`` from :meth:`pyCICY.CICY.line_co`.
+
+    Raises when the cohomology is spread over more than one degree, since in
+    that case the character of each group genuinely is not determined and
+    returning one would be inventing it.
+    """
+    import numpy as np
+
+    from .bundles import _as_cicy
+
+    XX = _as_cicy(action.conf.tolist() if X is None else X)
+    h = np.asarray(XX.line_co(list(map(int, kvec)), SpaSM=SpaSM), dtype=int)
+    nz = [q for q in range(4) if h[q] > 0]
+    if len(nz) > 1:
+        raise ValueError(
+            "the cohomology of O(%s) is spread over degrees %s, so the index "
+            "character does not determine the individual groups; that needs "
+            "the equivariant spectral sequence, which is not implemented"
+            % (list(kvec), nz))
+    ind = action.euler(list(map(int, kvec)))
+    if isinstance(ind, dict):
+        keys = sorted(ind)
+        ind = [ind[k] for k in keys]
+    if not nz:
+        return {"character": [0] * len(ind), "q": None, "concentrated": True,
+                "dimensions": h.tolist(),
+                "note": "all cohomology vanishes"}
+    q = nz[0]
+    sign = (-1) ** q
+    char = [sign * c for c in ind]
+    if sum(char) != int(h[q]):
+        raise ArithmeticError(
+            "the character sums to %d but h^%d = %d; the index and the "
+            "dimensions disagree" % (sum(char), q, h[q]))
+    return {"character": char, "q": q, "concentrated": True,
+            "dimensions": h.tolist()}
+
+
+def bundle_cohomology_characters(action, summands, X=None, SpaSM=False):
+    """Per-summand cohomology characters of a sum of line bundles.
+
+    Returns ``(characters, degrees, all_concentrated)``. When every summand is
+    concentrated the whole ``H^q(V)`` decomposes as a Gamma-representation, and
+    the *vector-like* content downstairs becomes computable --- not just the
+    chiral part that an index gives.
+    """
+    chars, degs = [], []
+    ok = True
+    for k in summands:
+        try:
+            r = cohomology_character(action, k, X=X, SpaSM=SpaSM)
+        except ValueError:
+            ok = False
+            chars.append(None)
+            degs.append(None)
+            continue
+        chars.append(r["character"])
+        degs.append(r["q"])
+    return chars, degs, ok
