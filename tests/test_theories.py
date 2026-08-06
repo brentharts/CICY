@@ -31,6 +31,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pyCICY import CICY
+from pyCICY import bundles as BU
 from pyCICY import equivariant as E
 from pyCICY import theories as T
 
@@ -633,6 +634,53 @@ def test_couplings():
                sum(1 for st in chain["steps"] if st["status"] == "exact") == 1)
 
 
+def test_mass_terms():
+    print("\n[10] can the vector-like matter be lifted?")
+    from pyCICY.theories import yukawa as Y
+
+    r = Y.mass_terms(TETRA, MODEL)
+    check("10s come from three summands", r["tens"], [1, 2, 4])
+    check("10bars from one", r["antitens"], [0])
+    check_true("singlets exist (%d types)" % r["n_singlet_types"],
+               r["n_singlet_types"] > 0)
+
+    # h^1(O_X) = h^{0,1} = 0 on a Calabi-Yau threefold, so there is no neutral
+    # singlet and hence no diagonal mass term for any line bundle model.
+    check_true("no neutral singlet exists", not r["neutral_singlet_exists"])
+
+    check("no pair is liftable", r["liftable"], 0)
+    check("three pairs, all trapped", r["unliftable"], 3)
+    check_true("and the verdict says so",
+               "no vector-like pair can be lifted" in r["verdict"])
+
+    # The obstruction is the same one that kills the Yukawa couplings. Taking
+    # the singlet (c,d) = (b,a) gives exactly the needed charge, so the
+    # condition is a charge-conserving triple with h^1 > 0 throughout --
+    # exactly viable_triples.
+    X = CICY(TETRA)
+    k = np.asarray(MODEL)
+    bad = 0
+    for a in r["tens"]:
+        for b in r["antitens"]:
+            trip = [k[a], -k[b], k[b] - k[a]]
+            if np.any(sum(trip)):
+                bad += 1
+            h1 = [int(np.asarray(X.line_co(list(map(int, t))))[1])
+                  for t in trip]
+            # the pair is liftable exactly when all three are non-zero
+            liftable = all(x > 0 for x in h1)
+            rec = [p for p in r["pairs"] if p["pair"] == (a, b)][0]
+            if liftable != rec["liftable"]:
+                bad += 1
+    check("the triple sums to zero and predicts liftability", bad, 0)
+
+    # And it is systematic, not this model's bad luck.
+    S = BU.scan(CICY(TETRA), rank=5, charge=1, generations=3,
+                symmetry_order=2, limit=60)
+    lift = sum(1 for s in S if Y.mass_terms(TETRA, s)["liftable"] > 0)
+    check("no scanned model has a liftable pair (of %d)" % len(S), lift, 0)
+
+
 def main():
     t0 = time.time()
     test_interface()
@@ -644,6 +692,7 @@ def main():
     test_running()
     test_moduli()
     test_couplings()
+    test_mass_terms()
 
     print("\n" + "=" * 72)
     if FAILURES:
