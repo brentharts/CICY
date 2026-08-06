@@ -548,6 +548,71 @@ def test_moduli():
     check("every hidden bundle has c1 = 0 and fits the budget", bad, 0)
 
 
+def test_couplings():
+    print("\n[9] gauge coupling unification and the number 137")
+    from pyCICY.theories import couplings as C
+    from pyCICY.theories import running as RUN
+    from fractions import Fraction as Fr
+
+    # The classic prediction, whose only theory input is the b_i.
+    a3, _ = C.predict_alpha3(*RUN.beta_coefficients(3, 1))
+    check_true("MSSM predicts alpha_3(M_Z) = %.4f, measured %.4f"
+               % (a3, C.ALPHA3_MZ), abs(a3 - C.ALPHA3_MZ) < 0.005)
+    sm = C.predict_alpha3(Fr(41, 10), Fr(-19, 6), Fr(-7))[0]
+    check_true("the Standard Model spectrum misses badly (%.4f)" % sm,
+               abs(sm - C.ALPHA3_MZ) > 0.03)
+
+    # Unification scale and coupling come out at the textbook values.
+    u = C.unification_point(*RUN.beta_coefficients(3, 1))
+    check_true("M_G = %.2g GeV, near 2e16" % u["m_gut"],
+               1e16 < u["m_gut"] < 4e16)
+    check_true("alpha_G = 1/%.1f, near 1/24" % u["alpha_gut_inv"],
+               22 < u["alpha_gut_inv"] < 27)
+
+    # THE CAVEAT. A complete generation contributes equally to every b_i, so
+    # it cancels from all the differences, and the prediction depends only on
+    # those. The quantity this package computes best is the one that drops out.
+    preds = [C.predict_alpha3(*RUN.beta_coefficients(ng, 1))[0]
+             for ng in (3, 4, 5)]
+    check_true("alpha_3 is identical for 3, 4 and 5 generations",
+               max(preds) - min(preds) < 1e-12)
+    d34 = (RUN.beta_coefficients(3, 1)[0] - RUN.beta_coefficients(3, 1)[1],
+           RUN.beta_coefficients(4, 1)[0] - RUN.beta_coefficients(4, 1)[1])
+    check("because b_1 - b_2 does not depend on n_g", d34[0], d34[1])
+
+    # What it *is* sensitive to is the vector-like sector, which an index
+    # cannot see.
+    two_h = C.predict_alpha3(*RUN.beta_coefficients(3, 2))[0]
+    check_true("a second Higgs pair changes it drastically (%.3f)" % two_h,
+               abs(two_h - a3) > 0.5)
+    exotic = C.predict_alpha3(*RUN.beta_coefficients(3, 1, {"3+3bar": 1}))[0]
+    check_true("as does one vector-like triplet (%.4f)" % exotic,
+               abs(exotic - a3) > 0.04)
+
+    # Electroweak quantities.
+    check_true("sin^2 theta_W = %.4f, measured 0.2312" % C.sin2_theta_w(),
+               abs(C.sin2_theta_w() - 0.2312) < 0.002)
+    check_true("alpha_em^-1(M_Z) = %.2f, measured %.2f"
+               % (C.alpha_em_inverse_mz(), C.ALPHA_EM_INV_MZ),
+               abs(C.alpha_em_inverse_mz() - C.ALPHA_EM_INV_MZ) < 0.5)
+
+    # And 137: reachable only with measured hadronic input.
+    z = C.alpha_em_inverse_zero()
+    check_true("running to zero gives %.2f against 137.036" % z,
+               abs(z - 137.036) < 1.5)
+    check_true("but Delta alpha is an input, not a computation",
+               _raises(ValueError, C.alpha_em_inverse_zero, 127.95, 1.5))
+
+    chain = C.fine_structure_chain()
+    check("five steps to 137", len(chain["steps"]), 5)
+    check("the last one has no value",
+          chain["steps"][-1]["value"], None)
+    check_true("and names the hadronic dispersion relation",
+               "dispersion" in chain["steps"][-1]["reason"])
+    check_true("exactly one step is labelled exact",
+               sum(1 for st in chain["steps"] if st["status"] == "exact") == 1)
+
+
 def main():
     t0 = time.time()
     test_interface()
@@ -558,6 +623,7 @@ def main():
     test_viable_triples()
     test_running()
     test_moduli()
+    test_couplings()
 
     print("\n" + "=" * 72)
     if FAILURES:
