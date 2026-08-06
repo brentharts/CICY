@@ -212,22 +212,31 @@ against the full F-term condition, it agrees to 1.6e-3.)
 That is the gain: sensitivity to the one unknown drops from exponential to a
 *known power*. `α_GUT` moves from "assumed" to "output".
 
-**A correction to the first version of this.** Both condensing factors live in
-the hidden `E_8`, of rank 8, so `rank(SU(N_1) x SU(N_2)) = N_1 + N_2 - 2 <= 8`.
-The groups first reported here as viable — SU(7)×SU(8), SU(6)×SU(7),
-SU(7)×SU(9), SU(10)×SU(13) — are of rank 13, 11, 14 and 21. Arithmetically
-right, physically impossible. `rank_allowed` now enforces it and the table is:
+**A correction, in two stages.** Both condensing factors live in the hidden
+`E_8`, of rank 8. The groups first reported here as viable — SU(7)×SU(8),
+SU(6)×SU(7), SU(7)×SU(9), SU(10)×SU(13) — have rank 13, 11, 14 and 21.
+Arithmetically right, physically impossible.
 
-| hidden group | rank | exponent | R needed for 0.2 GeV |
-| --- | --- | --- | --- |
-| **SU(4)×SU(5)** | **7** | **20/3** | **5.8 × 10²** |
-| SU(3)×SU(4) | 5 | 4 | 4.0 × 10⁴ |
-| SU(4)×SU(6) | 8 | 4 | 4.0 × 10⁴ |
-| SU(3)×SU(7) | 8 | 7/4 | 3.3 × 10¹⁰ |
+Rank counting is *necessary*, and it is also not sufficient. Of the
+maximal-rank subgroups of `E_8` (Borel–de Siebenthal: `D_8`, `A_1E_7`,
+`A_2E_6`, `A_3D_5`, `A_4A_4`, `A_8`), only `A_4A_4 = SU(5)×SU(5)` is a product
+of two SU factors — and its ranks are *equal*, so it gives no racetrack by
+itself. Every racetrack must come from breaking inside it, by a hidden bundle
+of structure group SU(n) leaving SU(5−n). Since the bundle must be non-trivial,
+`n ≥ 2` and the surviving factor has rank at most 3, so **SU(4) can never
+appear**. Only three racetracks are reachable:
 
-The largest exponent available inside `E_8` is `20/3`, and SU(4)×SU(5) is by
-far the most economical — it needs the two condensation scales to differ by a
-few hundred, where the others need many orders of magnitude.
+| hidden group | exponent | R required |
+| --- | --- | --- |
+| **SU(3)×SU(5)** | **5/2** | **2.3 × 10⁷** |
+| SU(2)×SU(3) | 2 | 1.6 × 10⁹ |
+| SU(2)×SU(5) | 10/9 | 3.6 × 10¹⁶ |
+
+So the best available case needs the two gaugino condensation scales to differ
+by **seven orders of magnitude** — a strong requirement on the hidden matter
+content, and the sharpest thing this module has to say about what a working
+heterotic racetrack would need. The `20/3` exponent that rank counting alone
+permits is not available.
 
 **And α_GUT does not depend on the hidden group at all.** Inverting the
 running, `Re S = |b_3| ln(M/Λ) / 8π²`, which involves only the generation
