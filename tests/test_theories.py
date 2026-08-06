@@ -440,20 +440,53 @@ def test_moduli():
     check_true("and Lambda within a factor of a few of 0.2 GeV (%.3f)"
                % r["lambda_qcd"], 0.02 < r["lambda_qcd"] < 2.0)
 
-    # The window is narrow, which is the informative part: most hidden sectors
-    # miss it by many orders of magnitude.
+    # Both factors live in the hidden E_8, of rank eight, so
+    # rank(SU(N1) x SU(N2)) = N1 + N2 - 2 <= 8. An earlier version of this
+    # module omitted the constraint and reported SU(7)xSU(8) and friends as
+    # viable; they are of rank thirteen and do not embed.
+    check_true("SU(7)xSU(8) has rank 13 and is excluded",
+               not MO.rank_allowed(7, 8))
+    check_true("SU(4)xSU(5) has rank 7 and is allowed",
+               MO.rank_allowed(4, 5))
     hits = MO.viable_hidden_groups()
-    check_true("a few hidden groups land in the physical window (%d)"
-               % len(hits), 0 < len(hits) < 20)
-    check_true("and all of them have alpha_GUT near 1/20",
-               all(18 < h["alpha_gut_inv"] < 23 for h in hits))
-    check_true("with adjacent-ish ranks of substantial size",
-               all(h["N2"] - h["N1"] <= 3 and h["N2"] >= 7 for h in hits))
+    check_true("every surviving group is rank-allowed",
+               all(MO.rank_allowed(h["N1"], h["N2"]) for h in hits))
+    check_true("and the window is narrow (%d groups)" % len(hits),
+               0 < len(hits) < 10)
 
-    # A hidden sector that is not adjacent misses badly, which is the contrast.
-    far = MO.qcd_scale_from_racetrack(3, 9, ratio=10.0)
-    check_true("SU(3)xSU(9) misses by orders of magnitude (%.1e)"
-               % far["lambda_qcd"], far["lambda_qcd"] > 1e10)
+    # The largest exponent available inside E_8 is 20/3.
+    best = max((MO.qcd_scale_exponent(n1, n2)
+                for n1 in range(2, 10) for n2 in range(n1 + 1, 10)
+                if MO.rank_allowed(n1, n2)))
+    check("the largest rank-allowed exponent", best, Fr(20, 3))
+    check_true("attained by SU(4)xSU(5)",
+               MO.qcd_scale_exponent(4, 5) == best)
+    check_true("which needs the most modest ratio (%.3g)"
+               % MO.required_ratio(4, 5),
+               MO.required_ratio(4, 5) < MO.required_ratio(3, 4))
+
+    # Inverting the running: where the dilaton must sit is fixed by the
+    # generation count and the observed scale, and does NOT depend on the
+    # hidden group. The hidden group only sets which R lands there.
+    d = MO.dilaton_from_scale()
+    check_true("inverted alpha_GUT is 1/20.2 (1/%.1f)" % (1 / d["alpha_gut"]),
+               19.5 < 1 / d["alpha_gut"] < 21)
+    check_true("and is independent of the hidden group",
+               d["depends_on_hidden_group"] is False)
+    check_true("the same for every rank-allowed group",
+               len({round(1 / MO.racetrack_dilaton(
+                   n1, n2, MO.required_ratio(n1, n2))["alpha_gut"], 1)
+                   for n1 in range(2, 8) for n2 in range(n1 + 1, 8)
+                   if MO.rank_allowed(n1, n2)}) == 1)
+
+    # A line bundle sum cannot supply a racetrack, and says so.
+    hc = MO.hidden_commutant(4)
+    check("SU(4) leaves SO(10)", hc["commutant"], "SO(10)")
+    check("with one non-abelian factor", hc["nonabelian_factors"], 1)
+    check_true("so no racetrack from a line bundle sum",
+               hc["racetrack_possible"] is False)
+    check_true("an untabulated rank is refused",
+               _raises(ValueError, MO.hidden_commutant, 9))
 
     # The anomaly surplus is reported as the hidden-sector budget, not used to
     # enumerate hidden bundles, and says so.
@@ -463,6 +496,24 @@ def test_moduli():
     check_true("the surplus is effective", hc["effective"])
     check_true("and is labelled a budget, not an answer",
                "not implemented" in hc["note"])
+
+    # The scan turns the budget into an enumeration.
+    hs = MO.hidden_scan(CICY(TETRA), V.anomaly()["surplus"], rank=4,
+                        charge=1, limit=30)
+    check_true("the budget admits hidden bundles of rank 4",
+               len(hs["bundles"]) > 0)
+    check("which leave SO(10)", hs["commutant"], "SO(10)")
+    check_true("but still no racetrack", hs["racetrack_possible"] is False)
+    bad = 0
+    d3 = np.asarray(CICY(TETRA).triple_intersection(), dtype=float)
+    for k in hs["bundles"]:
+        k = np.asarray(k)
+        if np.any(k.sum(axis=0)):
+            bad += 1
+        c2 = -0.5 * np.einsum("rst,as,at->r", d3, k, k)
+        if np.any(c2 > np.asarray(V.anomaly()["surplus"]) + 1e-9):
+            bad += 1
+    check("every hidden bundle has c1 = 0 and fits the budget", bad, 0)
 
 
 def main():
