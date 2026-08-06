@@ -225,12 +225,80 @@ def test_line_bundle_model():
                    for x in se.missing_for_physical()[:1]))
 
 
+def test_yukawa_texture():
+    print("\n[5] Yukawa selection rules and texture")
+    from pyCICY.theories import yukawa as Y
+    from pyCICY import bundles as BU
+
+    check("up-type patterns, one per pair", len(Y.up_type_patterns()), 10)
+    check("down-type patterns = 5 x 3, the epsilon structure",
+          len(Y.down_type_patterns()), 15)
+    check_true("down-type is an SU(5) statement",
+               _raises(ValueError, Y.down_type_patterns, 4))
+
+    # Every down-type pattern uses all five indices exactly once, which is
+    # what makes the charges cancel when sum_a L_a = 0.
+    bad = 0
+    for a, bc, de in Y.down_type_patterns():
+        if sorted([a] + list(bc) + list(de)) != [0, 1, 2, 3, 4]:
+            bad += 1
+    check("every down pattern uses all five indices", bad, 0)
+
+    t = Y.texture(TETRA, MODEL)
+    check("all up patterns are charge-allowed",
+          t["summary"]["up"]["charge_allowed"], 10)
+    check("all down patterns are charge-allowed",
+          t["summary"]["down"]["charge_allowed"], 15)
+
+    # The dimensions used must reproduce the spectrum computed elsewhere, or
+    # the texture is being read off the wrong cohomology groups. Three
+    # independent totals, from su5_spectrum, which shares no code with this.
+    X = CICY(TETRA)
+    sp = BU.LineBundleSum(X, MODEL).su5_spectrum()
+    h1 = lambda v: int(np.asarray(X.line_co(list(map(int, v))))[1])  # noqa: E731
+    k = np.asarray(MODEL)
+    import itertools as it
+    check("sum of 10 dimensions = n10",
+          sum(h1(k[a]) for a in range(5)), sp["n10"])
+    check("sum of 5-bar dimensions = n5bar",
+          sum(h1(k[a] + k[b]) for a, b in it.combinations(range(5), 2)),
+          sp["n5bar"])
+    check("sum of 5 dimensions = n5",
+          sum(h1(-(k[a] + k[b])) for a, b in it.combinations(range(5), 2)),
+          sp["n5"])
+
+    # For this model every pattern is a texture zero: charge-allowed but with
+    # a zero-dimensional group somewhere. That is a real and rather damning
+    # statement about the model -- it has no holomorphic Yukawa couplings at
+    # all -- and it is exact.
+    check("no up-type coupling survives", t["summary"]["up"]["present"], 0)
+    check("no down-type coupling survives", t["summary"]["down"]["present"], 0)
+    check("so all 25 patterns are texture zeros",
+          t["summary"]["up"]["texture_zeros"]
+          + t["summary"]["down"]["texture_zeros"], 25)
+    bad = sum(1 for r in t["down"] if min(r["dimensions"]) > 0)
+    check("and each has a vanishing group", bad, 0)
+
+    # Reached through the theory object as well.
+    m = T.LineBundleModel(TETRA, MODEL, action=E.TETRAQUADRIC_Z2(),
+                          wilson=(0, 1))
+    check_true("LineBundleModel exposes the texture",
+               m.yukawa_texture()["summary"] == t["summary"])
+
+    # The texture says nothing about coupling *strengths*, and must not
+    # pretend to: no record carries a value.
+    check_true("no record contains a coupling value",
+               all("value" not in r and "strength" not in r
+                   for r in t["down"]))
+
+
 def main():
     t0 = time.time()
     test_interface()
     test_exact_yukawa()
     test_convergence()
     test_line_bundle_model()
+    test_yukawa_texture()
 
     print("\n" + "=" * 72)
     if FAILURES:
