@@ -195,6 +195,51 @@ a percent — which needs moduli stabilisation, not more topology.
 deliberately returns **no number**: one is exact only in part, and the other
 three are unavailable for three different reasons.
 
+### Stabilising the dilaton turns an exponential into a power law
+
+`theories.moduli` implements the two-condensate racetrack: hidden
+`SU(N_1) x SU(N_2)`, `W = A e^{-aS} + B e^{-bS}` with `a = 8π²/N`, and
+`α_GUT = 1/(4π Re S)`. Substituting the minimum into the QCD scale,
+
+    Λ/M = exp(-8π² Re S / |b_3|) = R^{-p},   p = N_1 N_2 / (|b_3| (N_2 - N_1))
+
+with `R = aA/(-bB)` the ratio of condensation scales. **The double exponential
+collapses to a power law**, and the exponent `p` is an exact rational built
+from three topological integers — the two hidden ranks, and `|b_3| = 9 - 2n_g`
+from the generation count. (The closed form drops the `K_S` term; checked
+against the full F-term condition, it agrees to 1.6e-3.)
+
+That is the gain: sensitivity to the one unknown drops from exponential to a
+*known power*. `α_GUT` moves from "assumed" to "output".
+
+And the window is narrow. Scanning ranks to 13 and four values of `R`, only
+**4 of 528 combinations** give both `Λ ∈ [0.05, 1]` GeV and
+`α_GUT ∈ [1/35, 1/15]`:
+
+| hidden group | R | Λ (GeV) | 1/α_GUT | exponent |
+| --- | --- | --- | --- | --- |
+| SU(6)×SU(7) | 20 | 0.31 | 20.0 | 14 |
+| **SU(7)×SU(8)** | **10** | **0.11** | **20.5** | **56/3** |
+| SU(7)×SU(9) | 50 | 0.72 | 19.6 | 21/2 |
+| SU(10)×SU(13) | 20 | 0.08 | 20.7 | 130/9 |
+
+against an observed `Λ ≈ 0.2` GeV. All four land at `α_GUT ≈ 1/20`; SU(3)×SU(9)
+misses by **sixteen orders of magnitude**. The pattern is that `p` must be
+large, needing `N_1 N_2` large and `N_2 - N_1` small — adjacent groups of
+substantial rank.
+
+This is a **constraint, not a prediction**: `R` is still an input and the
+window was chosen to contain the answer. What it shows is that requiring a
+physical QCD scale genuinely restricts the hidden bundle — and through the
+anomaly condition `c_2(TX) - c_2(V) - c_2(Ṽ) = [W]`, which `bundles.anomaly`
+already computes, that restricts the *visible* bundle too. The two sectors are
+not independent.
+
+Three caveats, none small: the Kähler potential is tree-level and `Re S ≈ 2` is
+strong coupling; the racetrack minimum is supersymmetric with negative vacuum
+energy, and lifting it can move the minimum; and only the dilaton is treated,
+so `M_GUT` is no better determined than before.
+
 **No physical couplings, no masses, no predictions.** Physical couplings need
 harmonic representatives of the cohomology classes as well as a metric, and
 neither this package nor the bridge computes them.
