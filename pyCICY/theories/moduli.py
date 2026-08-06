@@ -84,12 +84,15 @@ Three further caveats, none of them small:
 """
 
 import math
+import time
 from fractions import Fraction as F
 
 __all__ = [
     "condensation_exponent", "racetrack_dilaton", "alpha_gut_from_dilaton",
     "qcd_scale_exponent", "qcd_scale_from_racetrack",
     "hidden_group_constraint", "viable_hidden_groups",
+    "rank_allowed", "dilaton_from_scale", "required_ratio",
+    "hidden_commutant", "hidden_scan", "E8_COMMUTANT",
 ]
 
 
@@ -248,7 +251,7 @@ def hidden_group_constraint(anomaly_surplus):
 
 
 def viable_hidden_groups(lambda_range=(0.05, 1.0), alpha_inv_range=(15., 35.),
-                         ratios=(5., 10., 20., 50.), n_max=13,
+                         ratios=(1e2, 5e2, 1e3, 1e4, 1e5, 1e7), n_max=13,
                          m_gut=5.0e17, n_generations=3, n_higgs_pairs=1):
     r"""
     Which hidden gauge groups give a physical QCD scale.
@@ -286,6 +289,8 @@ def viable_hidden_groups(lambda_range=(0.05, 1.0), alpha_inv_range=(15., 35.),
     ai_lo, ai_hi = alpha_inv_range
     for n1 in range(2, n_max):
         for n2 in range(n1 + 1, n_max + 1):
+            if not rank_allowed(n1, n2):
+                continue
             for r in ratios:
                 try:
                     rec = qcd_scale_from_racetrack(
@@ -301,3 +306,180 @@ def viable_hidden_groups(lambda_range=(0.05, 1.0), alpha_inv_range=(15., 35.),
                                 "alpha_gut_inv": ainv,
                                 "exponent": rec["exponent"]})
     return out
+
+
+# ---------------------------------------------------------------------------
+# the E_8 rank constraint, and what it excludes
+# ---------------------------------------------------------------------------
+
+def rank_allowed(N1, N2, host_rank=8):
+    r"""
+    Whether ``SU(N_1) x SU(N_2)`` fits inside the hidden ``E_8``.
+
+    Both condensing factors live in the hidden ``E_8``, whose rank is eight, so
+
+        rank\bigl(SU(N_1) \times SU(N_2)\bigr) = N_1 + N_2 - 2 \le 8 .
+
+    This is not a detail. An earlier version of :func:`viable_hidden_groups`
+    omitted it and reported ``SU(7) x SU(8)``, ``SU(6) x SU(7)``,
+    ``SU(7) x SU(9)`` and ``SU(10) x SU(13)`` as the groups giving a physical
+    QCD scale --- of rank 13, 11, 14 and 21 respectively, every one of them
+    too large to embed. The numbers were arithmetically right and physically
+    impossible.
+    """
+    return int(N1) + int(N2) - 2 <= int(host_rank)
+
+
+def dilaton_from_scale(lambda_qcd=0.2, m_gut=5.0e17, n_generations=3,
+                       n_higgs_pairs=1, extra=None):
+    r"""
+    Invert the running: the dilaton implied by an observed QCD scale.
+
+    From ``Lambda/M = exp(-8 pi^2 \Re S / |b_3|)``,
+
+        \Re S  =  |b_3| \ln(M / Lambda) / (8 pi^2) ,
+
+    which depends on the generation count, the unification scale and the QCD
+    scale --- and **not on the hidden gauge group at all**. The racetrack fixes
+    the dilaton, but where it has to sit is determined before any hidden sector
+    is chosen; the hidden group only decides which condensation-scale ratio
+    ``R`` lands there.
+
+    With three generations, ``M = 5 \times 10^{17}`` GeV and
+    ``Lambda = 0.2`` GeV this gives ``\Re S = 1.61`` and
+    ``alpha_GUT = 1/20.2``, close to the value usually assumed. That
+    coincidence is the most suggestive number in this module, and it is worth
+    being clear about its logical status: it is an inversion of measured
+    inputs, not a prediction. What is exact in it is ``|b_3| = 9 - 2 n_g``.
+    """
+    from . import running
+
+    _, _, b3 = running.beta_coefficients(n_generations, n_higgs_pairs, extra)
+    if b3 >= 0:
+        raise ValueError("b_3 = %s >= 0: no confinement, nothing to invert"
+                         % b3)
+    s = abs(float(b3)) * math.log(float(m_gut) / float(lambda_qcd)) \
+        / (8.0 * math.pi ** 2)
+    return {"re_s": s, "alpha_gut": alpha_gut_from_dilaton(s), "b3": b3,
+            "depends_on_hidden_group": False,
+            "note": "an inversion of measured inputs; only b_3 is exact"}
+
+
+def required_ratio(N1, N2, lambda_qcd=0.2, m_gut=5.0e17, n_generations=3,
+                   n_higgs_pairs=1, extra=None):
+    """The condensation-scale ratio ``R`` a given hidden group would need.
+
+    Since ``Lambda/M = R^{-p}``, this is ``R = (M/Lambda)^{1/p}``. Larger
+    exponents need smaller and more plausible ratios, so among rank-allowed
+    groups the one with the largest ``p`` is the most economical.
+    """
+    p = float(qcd_scale_exponent(N1, N2, n_generations, n_higgs_pairs, extra))
+    return (float(m_gut) / float(lambda_qcd)) ** (1.0 / p)
+
+
+#: Commutant of ``SU(r)`` in ``E_8``, for the ranks where it is standard.
+E8_COMMUTANT = {2: "E_7", 3: "E_6", 4: "SO(10)", 5: "SU(5)"}
+
+
+def hidden_commutant(rank):
+    r"""
+    What a hidden bundle of structure group ``SU(r)`` leaves unbroken in ``E_8``.
+
+    A hidden bundle built as a **sum of line bundles** has structure group
+    ``S(U(1)^r) \subset SU(r)``, so the unbroken group is
+
+        C\bigl(SU(r)\bigr) \times U(1)^{r-1} ,
+
+    one non-abelian factor and some abelian ones. That is the obstruction to
+    using such a bundle for a racetrack, and it is worth stating plainly:
+
+        **a hidden sector built from a single line bundle sum leaves only one
+        non-abelian factor, and therefore cannot give a two-condensate
+        racetrack.**
+
+    Two condensing factors require the hidden bundle to be *reducible* with two
+    non-abelian structure groups, ``V_1 \oplus V_2`` with
+    ``SU(n) \times SU(m)`` acting on the summands separately, whose commutant
+    can be a product. Enumerating those is a different search from
+    :func:`pyCICY.bundles.scan` and is not implemented here.
+    """
+    r = int(rank)
+    if r in E8_COMMUTANT:
+        return {"commutant": E8_COMMUTANT[r],
+                "with_line_bundles": "%s x U(1)^%d" % (E8_COMMUTANT[r], r - 1),
+                "nonabelian_factors": 1,
+                "racetrack_possible": False,
+                "why": "a line bundle sum gives S(U(1)^r), whose commutant "
+                       "has one non-abelian factor; a racetrack needs two"}
+    raise ValueError(
+        "the commutant of SU(%d) in E_8 is not tabulated here; the standard "
+        "cases are r = 2, 3, 4, 5 giving E_7, E_6, SO(10), SU(5)" % r)
+
+
+def hidden_scan(X, surplus, rank=4, charge=1, limit=200, max_seconds=None):
+    r"""
+    Hidden line bundle sums fitting inside the anomaly budget.
+
+    The Bianchi identity leaves ``c_2(\tilde V) \le`` ``surplus`` componentwise,
+    with the remainder carried by five-branes. This enumerates sums of line
+    bundles of the given rank satisfying that bound and ``c_1 = 0``, and
+    reports the commutant each would leave.
+
+    Parameters
+    ----------
+    X : CICY or configuration matrix
+    surplus : array
+        ``c_2(TX) - c_2(V)``, from :meth:`pyCICY.bundles.Bundle.anomaly`.
+    rank : int
+        Rank of the hidden bundle.
+
+    Returns a dict with the ``bundles`` found, the ``commutant`` they leave,
+    and ``racetrack_possible``, which is ``False`` for every one of them --- see
+    :func:`hidden_commutant`. The scan is still worth running: it says whether
+    the budget admits a hidden bundle of that rank at all, which is the
+    prerequisite for breaking ``E_8`` even partially.
+    """
+    import itertools
+
+    import numpy as np
+
+    from ..bundles import _as_cicy
+
+    XX = _as_cicy(X)
+    d = np.asarray(XX.triple_intersection(), dtype=float)
+    s = np.asarray(surplus, dtype=float)
+    h11 = XX.len
+
+    pool = [np.array(v, dtype=np.int64) for v in
+            itertools.product(range(-charge, charge + 1), repeat=h11)]
+    found = []
+    started = time.time() if max_seconds else None
+    for combo in itertools.combinations_with_replacement(range(len(pool)),
+                                                         rank):
+        if max_seconds and time.time() - started > max_seconds:
+            break
+        k = np.array([pool[i] for i in combo], dtype=np.int64)
+        if np.any(k.sum(axis=0)):
+            continue
+        if not np.any(k):                       # the trivial bundle
+            continue
+        # c_2(V-tilde) = -ch_2, and ch_2_r = (1/2) d_rst sum_a k^s k^t
+        c2 = -0.5 * np.einsum("rst,as,at->r", d, k, k)
+        if np.any(c2 > s + 1e-9):
+            continue
+        found.append(k.tolist())
+        if len(found) >= limit:
+            break
+
+    try:
+        com = hidden_commutant(rank)
+    except ValueError:
+        com = {"commutant": "not tabulated", "racetrack_possible": False}
+    return {"bundles": found, "rank": rank, "surplus": s,
+            "commutant": com.get("commutant"),
+            "racetrack_possible": False,
+            "note": "the budget admits %d hidden bundles of rank %d, but each "
+                    "leaves a single non-abelian factor, so none of them "
+                    "supports a two-condensate racetrack; that needs a "
+                    "reducible hidden bundle, which is not scanned here"
+                    % (len(found), rank)}
