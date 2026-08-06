@@ -62,7 +62,7 @@ import numpy as np
 
 __all__ = [
     "up_type_patterns", "down_type_patterns", "charge_allowed",
-    "texture",
+    "texture", "viable_triples",
 ]
 
 
@@ -200,4 +200,78 @@ def texture(X, charges, kind="both", SpaSM=False):
                                      and not r["present"])}
     out["summary"] = summary
     out["h1"] = {kk: v for kk, v in cache.items()}
+    return out
+
+
+def viable_triples(X, charge=3, require_slope=True, limit=None, SpaSM=False):
+    r"""
+    Charge-conserving triples that could carry a non-vanishing coupling.
+
+    A cheap question asked of the *manifold*, before any model is built. An
+    up-type coupling ``10_a 10_b 5_{ab}`` needs
+
+        h^1(L_a) > 0,  h^1(L_b) > 0,  h^1(L_a^-1 (x) L_b^-1) > 0
+
+    with the three charges summing to zero. If no such triple exists inside a
+    charge box, then no rank-5 model with charges in that box can have an
+    up-type coupling, whatever else it satisfies -- so this is worth running
+    before a scan rather than after.
+
+    With ``require_slope`` each of the three charges must also have a slope
+    that changes sign somewhere in the Kahler cone. That is
+    :func:`pyCICY.bundles.slope_is_definite` inverted, and it is a *necessary*
+    condition for the summand to sit in a poly-stable bundle: a summand whose
+    slope is one-signed can never have vanishing slope, so no bundle
+    containing it is poly-stable. Including it matters. The first triple found
+    without it on the tetraquadric contains ``(0, 0, -2, 0)``, whose slope is
+    definite -- and a search over 9390 models built around that pair found
+    exactly zero poly-stable ones, because the seed itself was disqualified.
+
+    Returns a list of ``(k_a, k_b, k_c)``.
+
+    Note
+    ----
+    The answer depends on the box, and saying "this manifold has no viable
+    triples" without saying which box would be meaningless. Both conditions
+    are necessary and neither is sufficient: a model realising a viable triple
+    still has to close as a rank-5 sum with the right index, anomaly, and
+    *joint* poly-stability, and the per-summand slope test does not imply the
+    joint one.
+    """
+    import itertools as _it
+
+    from ..bundles import _as_cicy, slope_is_definite
+
+    XX = _as_cicy(X)
+    n = XX.len
+    d = np.asarray(XX.triple_intersection(), dtype=float)
+
+    cache = {}
+
+    def h1(v):
+        key = tuple(int(x) for x in v)
+        if key not in cache:
+            cache[key] = int(np.asarray(
+                XX.line_co(list(key)), dtype=int)[1])
+        return cache[key]
+
+    pool = [np.array(v, dtype=np.int64)
+            for v in _it.product(range(-charge, charge + 1), repeat=n)]
+    good = [v for v in pool
+            if (not require_slope or not slope_is_definite(d, v))
+            and h1(v) > 0]
+
+    out = []
+    for i, a in enumerate(good):
+        for b in good[i:]:
+            c = -(a + b)
+            if np.any(np.abs(c) > charge):
+                continue
+            if require_slope and slope_is_definite(d, c):
+                continue
+            if h1(c) == 0:
+                continue
+            out.append((a.tolist(), b.tolist(), c.tolist()))
+            if limit is not None and len(out) >= limit:
+                return out
     return out
