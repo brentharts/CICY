@@ -681,6 +681,69 @@ def test_mass_terms():
     check("no scanned model has a liftable pair (of %d)" % len(S), lift, 0)
 
 
+def test_viable_model():
+    print("\n[11] a model that passes every exact test")
+    from pyCICY.theories import yukawa as Y
+    from pyCICY.theories import running as RUN
+
+    rec = Y.CICY5299
+    X = CICY(rec["configuration"])
+    M = rec["summands"]
+    V = BU.LineBundleSum(X, M)
+
+    check("CICY 5299 h^{1,1}", int(X.h[2]), 3)
+    check("h^{2,1}", int(X.h[1]), 27)
+    check("chi", X.euler_characteristic(), -48)
+
+    # Three generations with no quotient at all: ind(V) = -3 directly, which
+    # the tetraquadric could not reach for parity reasons.
+    check("ind(V)", int(V.index()), -3)
+    check("no quotient needed", rec["symmetry_order"], 1)
+    check_true("index agrees by the Leray route",
+               abs(V.index() - V.index_from_cohomology()) < 1e-9)
+    check("c1 = 0", list(V.c1), [0, 0, 0])
+    check_true("anomaly satisfied", V.anomaly()["ok"])
+
+    # Poly-stable, which is what defeated every earlier candidate.
+    loc = V.stability_locus(tries=60)
+    check_true("poly-stable (residual %.1e)" % loc["residual"], loc["found"])
+    check_true("at an interior point", bool((loc["t"] > 1e-6).all()))
+
+    sp = V.su5_spectrum()
+    check("n10", sp["n10"], 4)
+    check("n10bar", sp["n10bar"], 1)
+    check("three generations", sp["n10"] - sp["n10bar"], 3)
+    check("h^0 = 0", sp["h0"], 0)
+    check("h^3 = 0", sp["h3"], 0)
+    check_true("index consistent with the cohomology", sp["index_consistent"])
+
+    # Yukawa couplings survive -- the first model here for which any do.
+    t = Y.texture(X, M)
+    check("up-type couplings present", t["summary"]["up"]["present"], 6)
+    check("down-type couplings present", t["summary"]["down"]["present"], 1)
+
+    # And its vector-like pair can be lifted, so QCD confines after all.
+    mt = Y.mass_terms(X, M)
+    check("every pair liftable", mt["liftable"], len(mt["pairs"]))
+    check_true("verdict", "every vector-like pair can be lifted"
+               in mt["verdict"])
+    vl = min(sp["n10"], sp["n10bar"])
+    check("one vector-like pair", vl, 1)
+    check_true("which would kill confinement if it stayed light",
+               not RUN.vectorlike_verdict(3, vectorlike_10=vl)["confines"])
+    check_true("but does not, once lifted",
+               RUN.vectorlike_verdict(3, vectorlike_10=0)["confines"])
+
+    # The search rediscovers it rather than being told.
+    found = Y.search_viable_models([rec["configuration"]], charge=1,
+                                   symmetry_orders=(1,), limit=40,
+                                   max_seconds_each=90)
+    check_true("the search finds it (%d models)" % len(found), len(found) > 0)
+    check_true("all with couplings and liftable matter",
+               all(f["up_couplings"] + f["down_couplings"] > 0
+                   and f["all_liftable"] for f in found))
+
+
 def main():
     t0 = time.time()
     test_interface()
@@ -693,6 +756,7 @@ def main():
     test_moduli()
     test_couplings()
     test_mass_terms()
+    test_viable_model()
 
     print("\n" + "=" * 72)
     if FAILURES:
