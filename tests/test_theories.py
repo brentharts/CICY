@@ -497,6 +497,38 @@ def test_moduli():
     check_true("and is labelled a budget, not an answer",
                "not implemented" in hc["note"])
 
+    # Rank counting is necessary. The hidden bundle competes with the
+    # racetrack group for the eight ranks of E_8.
+    check("a rank-2 hidden bundle leaves 7", MO.rank_budget(2), 7)
+    check("a rank-5 one leaves 4", MO.rank_budget(5), 4)
+
+    # But rank counting is not sufficient, and this is where the module
+    # tightened. Of the maximal-rank subgroups of E_8 only A4 x A4 is a
+    # product of two SU factors, and its ranks are equal, so every racetrack
+    # must come from breaking inside it. SU(4) then cannot appear: surviving
+    # as SU(5-n) with n = 1 means a trivial hidden bundle and no breaking.
+    ok45, _ = MO.embeds_in_e8(4, 5)
+    check_true("SU(4)xSU(5) does not embed by these chains, though its rank "
+               "would allow it", not ok45)
+    check_true("SU(3)xSU(5) does", MO.embeds_in_e8(3, 5)[0])
+    check_true("and SU(5)xSU(5) is maximal rank", MO.embeds_in_e8(5, 5)[0])
+
+    reach = MO.reachable_racetracks()
+    check("three racetracks are reachable", len(reach), 3)
+    check_true("all with N <= 5", all(r["N2"] <= 5 for r in reach))
+    check("the largest reachable exponent is 5/2",
+          max(r["exponent"] for r in reach), Fr(5, 2))
+    check_true("attained by SU(3)xSU(5)",
+               reach[0]["N1"] == 3 and reach[0]["N2"] == 5)
+
+    # The conclusion, and it is not encouraging: even the best case needs the
+    # two condensation scales to differ by seven orders of magnitude.
+    best = reach[0]
+    check_true("which still needs R ~ 1e7 (%.2e)" % best["ratio_required"],
+               1e6 < best["ratio_required"] < 1e9)
+    check_true("and alpha_GUT is 1/20.2 regardless",
+               19.5 < best["alpha_gut_inv"] < 21)
+
     # The scan turns the budget into an enumeration.
     hs = MO.hidden_scan(CICY(TETRA), V.anomaly()["surplus"], rank=4,
                         charge=1, limit=30)
