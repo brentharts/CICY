@@ -744,6 +744,62 @@ def test_viable_model():
                    and f["all_liftable"] for f in found))
 
 
+def test_representatives():
+    print("\n[12] cup products, beyond the dimension count")
+    from pyCICY.theories import representatives as RP
+    from pyCICY.theories import yukawa as Y
+
+    conf = Y.CICY5299["configuration"]
+    M = Y.CICY5299["summands"]
+
+    # Ambient cohomology on P^n is non-zero only in degree 0 or n.
+    check("H^0(P^2, O(2)) has dimension 6",
+          RP.ambient_degree_dims(2, 2), {0: 6})
+    check("H^2(P^2, O(-3)) has dimension 1",
+          RP.ambient_degree_dims(2, -3), {2: 1})
+    check("O(-1) and O(-2) have no cohomology",
+          [RP.ambient_degree_dims(2, -1), RP.ambient_degree_dims(2, -2)],
+          [{}, {}])
+
+    # Every class in this model has a unique Koszul origin, which is what
+    # makes its representative explicit.
+    for k in M:
+        o = [r for r in RP.koszul_origin(conf, k) if r["degree_on_X"] == 1]
+        check_true("L = %s has a unique H^1 origin" % k, len(o) <= 1)
+    o1 = [r for r in RP.koszul_origin(conf, [-1, 1, 0])
+          if r["degree_on_X"] == 1]
+    check("H^1 of O(-1,1,0) comes from Koszul index (0,)", o1[0]["S"], (0,))
+    check("with top degree in the first factor", o1[0]["degrees"], (2, 0, 0))
+
+    # The refinement. The texture counts dimensions and says six; the cup
+    # product says five, because two summands of this model are identical so
+    # their Koszul indices coincide and the wedge vanishes.
+    r = RP.refine_texture(conf, M, kind="up")
+    check("the texture reports six up-type couplings",
+          r["texture_present"], 6)
+    check("the cup product keeps five", r["kept"], 5)
+    check("and kills one", r["killed"], 1)
+    check("with none undecided", r["undecided"], 0)
+    dead = [x for x in r["records"] if x["status"] == "vanishes"]
+    check("the casualty is 10_3 10_4 5_34",
+          dead[0]["pattern"], ("10_3", "10_4", "5_34"))
+    check_true("for a repeated Koszul index",
+               "repeated Koszul index" in dead[0]["reason"])
+    check_true("which is exactly because L_3 = L_4", M[3] == M[4])
+
+    # The rules are two, and independent. Charges that do not sum to zero are
+    # refused rather than analysed.
+    check_true("a non-cancelling triple is refused",
+               _raises(ValueError, RP.cup_product_vanishes, conf,
+                       [[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
+    good = RP.cup_product_vanishes(
+        conf, [M[1], M[2], [-(M[1][i] + M[2][i]) for i in range(3)]])
+    check_true("a surviving coupling has disjoint indices",
+               not good["vanishes"])
+    check("and reaches top degree in all three factors",
+          sorted(i for t in good["top_factors"] for i in t), [0, 1, 2])
+
+
 def main():
     t0 = time.time()
     test_interface()
@@ -757,6 +813,7 @@ def main():
     test_couplings()
     test_mass_terms()
     test_viable_model()
+    test_representatives()
 
     print("\n" + "=" * 72)
     if FAILURES:
