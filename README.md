@@ -262,6 +262,92 @@ strong coupling; the racetrack minimum is supersymmetric with negative vacuum
 energy, and lifting it can move the minimum; and only the dilaton is treated,
 so `M_GUT` is no better determined than before.
 
+### The vector-like spectrum, which was the bottleneck
+
+Three separate threads — Yukawa values, the racetrack determinant ratio, and
+gauge coupling unification — all stalled on the same thing: the **vector-like**
+spectrum, which an index cannot see because it is a difference.
+
+`equivariant.cohomology_character` gets it, in the case that matters. The index
+is an alternating sum, so in general it does not determine the individual
+`H^q`. But when the cohomology is **concentrated in one degree** the sum has
+only one term and
+
+    ch H^q(X, L) = (-1)^q · ind_Γ(L)
+
+exactly. And concentration is the common case, not a lucky one: **2288 of the
+2401** charge vectors in `[-3,3]^4` on the tetraquadric are concentrated, and
+so are all five summands of the model. Bundles spread over degrees are
+refused rather than guessed at.
+
+That gives `H^1(V)` and `H^2(V)` separately as Γ-modules, hence the full
+quotient spectrum:
+
+    n10 = 12,  n10bar = 9  downstairs
+    -> 3 chiral generations (agreeing with the index)
+    -> **9 vector-like 10 + 10bar pairs**
+
+both totals cross-checked against `su5_spectrum` (24 and 18 upstairs).
+
+**And the consequence is severe.** A complete `10 + 10bar` contributes 3 to
+every `b_i`, so `b_3 = -9 + 2n_g + 3N_10`. With three generations a *single*
+light pair takes `b_3` from −3 to 0 and **QCD stops confining**. This model has
+nine, giving `b_3 = +24`. `vectorlike_verdict` returns *"dead unless the
+vector-like matter is massive"* and reports that three generations tolerate
+**zero** light pairs.
+
+Note what does *not* change: complete multiplets cancel from the differences,
+so the α₃ prediction stays at 0.1170 while confinement is destroyed. A model
+can pass the unification test and still have no proton.
+
+Whether the vector-like matter is heavy is a question about superpotential mass
+terms — Yukawa couplings of exactly the kind `theories.yukawa` handles, with an
+exact vanishing pattern and values needing cohomology representatives. So "is
+this model alive?" reduces to the same missing computation as everything else.
+
+### The number 137, and what unification actually predicts
+
+`theories.couplings` addresses `α⁻¹(0) = 137.036`. The first thing to say is
+what kind of number it is: **not a fundamental constant**, but a low-energy,
+scheme-dependent value of a running coupling. Getting from the short-distance
+theory to it requires `Δα`, whose hadronic part is extracted from measured
+`e⁺e⁻ → hadrons` data by a dispersion relation because the momenta are
+non-perturbative. No compactification supplies that. Any derivation of 137.036
+from pure geometry is a derivation of something else.
+
+What unification *does* predict is real. Eliminating `α_G` and `M_G` from the
+three one-loop equations leaves one relation among the measured couplings,
+whose only theory input is the `b_i`:
+
+| spectrum | α₃(M_Z) |
+| --- | --- |
+| MSSM, `b = (33/5, 1, −3)` | **0.1170** |
+| Standard Model, `b = (41/10, −19/6, −7)` | 0.0712 |
+| *measured* | *0.1181* |
+
+within 1% at one loop, against 40% for the non-supersymmetric spectrum. The
+same inputs give `M_G = 2×10¹⁶` GeV, `α_G = 1/24.3`, `sin²θ_W = 0.2311`
+(measured 0.2312) and `α_em⁻¹(M_Z) = 127.90` (measured 127.95).
+
+**But the caveat cuts against the obvious hope.** A complete generation
+contributes `2n_g` to *every* `b_i`, so it cancels from all the differences —
+and the prediction depends only on those. So
+
+> **the unification prediction is independent of the number of generations.**
+
+Three, four and five generations give *identical* α₃, verified in the tests.
+The quantity this package computes most reliably — the chiral generation
+count, an index — is exactly the one that drops out. What the prediction is
+sensitive to is the **incomplete** multiplets: a second Higgs pair moves α₃
+from 0.117 to 0.786, one vector-like colour triplet to 0.067.
+
+Those are vector-like, so they live in precisely the sector an index cannot
+see — the same sector `breaking.chiral_spectrum` leaves undetermined. Gauge
+coupling unification is sensitive to the part of the spectrum this package
+cannot compute and insensitive to the part it can. `fine_structure_chain()`
+lays out all five steps with one labelled exact, three predicted, and the last
+carrying no value at all.
+
 **No physical couplings, no masses, no predictions.** Physical couplings need
 harmonic representatives of the cohomology classes as well as a metric, and
 neither this package nor the bridge computes them.
