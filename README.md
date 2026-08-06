@@ -1,12 +1,23 @@
-# pyCICY-X: The heterotic pipeline:
-## from a configuration matrix to a spectrum
-### Exact Calabi–Yau topology, a complete heterotic model-building pipeline, and the spectral analogies that connect them.
----
+# pyCICY-X
+
+## exact methods for string compactifications, from a configuration matrix to a verdict
+
+### Calabi–Yau topology, heterotic model building, gauge couplings and moduli — and a sharp account of where exactness ends
 
 A pure-Python toolkit: `numpy`, `scipy`, `sympy`. No SageMath, no Mathematica,
 no GPU, no training runs. Everything is exact integer or rational arithmetic
 where the mathematics allows it, and every number that can be reached by two
 independent routes is computed both ways and checked.
+
+The package began as a library for the topology of complete intersection
+Calabi–Yau threefolds. It now runs the whole exact chain: from a configuration
+matrix, through a poly-stable bundle and a freely acting quotient, to a
+Standard Model spectrum, its Yukawa texture, its vector-like content, the
+one-loop gauge couplings, the dilaton, and a verdict on whether the model is
+alive. Every step of that chain is exact arithmetic. Where the chain stops —
+at the Ricci-flat metric, at cohomology representatives, at moduli
+stabilisation — it stops explicitly, with an exception rather than an
+estimate.
 
 ## Papers and figures
 
