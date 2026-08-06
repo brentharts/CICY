@@ -375,6 +375,26 @@ def test_running():
     check_true("a 30%% change in alpha spans >6 orders of magnitude (%.0e)"
                % (hi / lo), hi / lo > 1e6)
 
+    # Vector-like matter, now computable, and its consequence.
+    check("a 10+10bar pair shifts every b by 3",
+          RUN.beta_with_vectorlike(3, 1, vectorlike_10=1)[2], Fr(0))
+    check_true("so a single light pair destroys asymptotic freedom",
+               not RUN.vectorlike_verdict(3, vectorlike_10=1)["confines"])
+    check("three generations tolerate none",
+          RUN.vectorlike_verdict(3)["max_light_10_pairs"], 0)
+
+    # Complete multiplets cancel from the differences, so the unification
+    # prediction is untouched even as confinement is destroyed.
+    from pyCICY.theories import couplings as CO
+    b_bare = RUN.beta_coefficients(3, 1)
+    b_vl = RUN.beta_with_vectorlike(3, 1, vectorlike_10=9)
+    check("differences are unchanged by complete multiplets",
+          b_vl[0] - b_vl[1], b_bare[0] - b_bare[1])
+    check_true("hence the same alpha_3 prediction",
+               abs(CO.predict_alpha3(*b_vl)[0]
+                   - CO.predict_alpha3(*b_bare)[0]) < 1e-12)
+    check_true("but b_3 has flipped sign (%s)" % b_vl[2], b_vl[2] > 0)
+
     # The chain returns no number, deliberately.
     c = RUN.mass_ratio_chain()
     check("four factors in m_p/m_e", len(c["factors"]), 4)

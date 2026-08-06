@@ -497,6 +497,69 @@ def test_matrix_group_action():
                        [(idp, [[0, 1]] * 4, [0], [0])], 5, max_order=1))
 
 
+def test_cohomology_characters():
+    print("\n[2g] the individual cohomology groups, when concentrated")
+    from pyCICY import CICY as _C
+    from pyCICY import bundles as BU
+
+    A = E.TETRAQUADRIC_Z2()
+    X = _C(TETRA_CONF)
+
+    # The index is an alternating sum, so in general it does not determine the
+    # individual groups. It does when the cohomology sits in one degree, and
+    # that is the common case rather than a lucky one.
+    conc = tot = 0
+    for v in itertools.product(range(-3, 4), repeat=4):
+        h = np.asarray(X.line_co(list(v)))
+        tot += 1
+        if sum(1 for q in range(4) if h[q] > 0) <= 1:
+            conc += 1
+    check_true("most line bundles are concentrated (%d of %d)" % (conc, tot),
+               conc > 0.9 * tot)
+
+    # Every summand of the scan model is concentrated, and the character of
+    # the single non-zero group is (-1)^q times the index character.
+    chars, degs, ok = E.bundle_cohomology_characters(A, TETRA_MODEL)
+    check_true("all five summands are concentrated", ok)
+    bad = 0
+    for k, c, q in zip(TETRA_MODEL, chars, degs):
+        h = np.asarray(X.line_co(list(k)))
+        if q is None:
+            if h.sum() != 0:
+                bad += 1
+            continue
+        if sum(c) != int(h[q]):
+            bad += 1
+        if c != [((-1) ** q) * x for x in A.euler(k)]:
+            bad += 1
+    check("each character sums to h^q and equals (-1)^q ind", bad, 0)
+
+    # This is what was missing: H^1 and H^2 separately as Gamma-modules, hence
+    # the vector-like content downstairs and not merely the chiral part.
+    h1 = [sum(c[i] for c, q in zip(chars, degs) if q == 1) for i in range(2)]
+    h2 = [sum(c[i] for c, q in zip(chars, degs) if q == 2) for i in range(2)]
+    sp = BU.LineBundleSum(X, TETRA_MODEL).su5_spectrum()
+    check("H^1(V) totals to n10", sum(h1), sp["n10"])
+    check("H^2(V) totals to n10bar", sum(h2), sp["n10bar"])
+    check("downstairs n10", h1[0], 12)
+    check("downstairs n10bar", h2[0], 9)
+    check("so three generations, agreeing with the index", h1[0] - h2[0], 3)
+    check("and nine vector-like 10+10bar pairs", min(h1[0], h2[0]), 9)
+
+    # A bundle whose cohomology is spread over degrees must be refused.
+    spread = None
+    for v in itertools.product(range(-3, 4), repeat=4):
+        h = np.asarray(X.line_co(list(v)))
+        if sum(1 for q in range(4) if h[q] > 0) > 1:
+            spread = list(v)
+            break
+    if spread is not None:
+        check_true("a non-concentrated bundle is refused (%s)" % spread,
+                   _raises(E.cohomology_character, A, spread))
+    else:
+        print("  (no non-concentrated bundle in the box; check skipped)")
+
+
 def test_structures():
     print("\n[3] equivariant structures")
     A = E.TETRAQUADRIC_Z2()
@@ -590,6 +653,7 @@ def main():
     test_polynomial_permutations()
     test_abelian_polynomial_permutations()
     test_matrix_group_action()
+    test_cohomology_characters()
     test_structures()
     test_bridge()
 
