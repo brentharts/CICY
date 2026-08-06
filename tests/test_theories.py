@@ -21,6 +21,7 @@ Run with:  python3 tests/test_theories.py
        or: python3 run_tests.py
 """
 
+import math
 import os
 import sys
 import time
@@ -392,6 +393,78 @@ def test_running():
           RUN.MSSM_BETAS)
 
 
+def test_moduli():
+    print("\n[8] stabilising the dilaton")
+    from pyCICY.theories import moduli as MO
+    from fractions import Fraction as Fr
+
+    check("condensation exponent for SU(N) is 8 pi^2/N",
+          abs(MO.condensation_exponent(8) - 8 * math.pi ** 2 / 8) < 1e-12,
+          True)
+    check_true("a single condensate is refused: no racetrack",
+               _raises(ValueError, MO.racetrack_dilaton, 7, 7))
+
+    # The closed form for the minimum drops the K_S term. It should be a good
+    # approximation, and if it is not the closed-form exponent below is not
+    # the right one either.
+    d = MO.racetrack_dilaton(7, 8, ratio=10.0)
+    e = MO.racetrack_dilaton(7, 8, ratio=10.0, exact=True)
+    rel = abs(d["re_s"] - e["re_s"]) / d["re_s"]
+    check_true("closed form agrees with the full F-term to %.1e" % rel,
+               rel < 5e-3)
+
+    # The point of the module: the double exponential becomes a power law,
+    # with the exponent an exact rational in three topological integers.
+    check("exponent for SU(7)xSU(8), three generations",
+          MO.qcd_scale_exponent(7, 8), Fr(56, 3))
+    check("and it is N1 N2 / (|b3| (N2 - N1))",
+          MO.qcd_scale_exponent(6, 8), Fr(6 * 8, 3 * 2))
+    check_true("it is exact, not a float",
+               isinstance(MO.qcd_scale_exponent(5, 10), Fr))
+    check_true("and diverges as N2 -> N1, the runaway",
+               _raises(ValueError, MO.qcd_scale_exponent, 7, 7))
+    check_true("no confinement means no scale to set",
+               _raises(ValueError, MO.qcd_scale_exponent, 7, 8,
+                       n_generations=5))
+
+    # The generation count enters the exponent, so the visible sector and the
+    # hidden sector are not independent.
+    check_true("four generations change the exponent",
+               MO.qcd_scale_exponent(7, 8, n_generations=4)
+               != MO.qcd_scale_exponent(7, 8, n_generations=3))
+
+    # alpha_GUT is now an output rather than an input.
+    r = MO.qcd_scale_from_racetrack(7, 8, ratio=10.0)
+    check_true("SU(7)xSU(8), R=10 gives alpha_GUT near 1/20 (1/%.1f)"
+               % (1 / r["alpha_gut"]), 18 < 1 / r["alpha_gut"] < 23)
+    check_true("and Lambda within a factor of a few of 0.2 GeV (%.3f)"
+               % r["lambda_qcd"], 0.02 < r["lambda_qcd"] < 2.0)
+
+    # The window is narrow, which is the informative part: most hidden sectors
+    # miss it by many orders of magnitude.
+    hits = MO.viable_hidden_groups()
+    check_true("a few hidden groups land in the physical window (%d)"
+               % len(hits), 0 < len(hits) < 20)
+    check_true("and all of them have alpha_GUT near 1/20",
+               all(18 < h["alpha_gut_inv"] < 23 for h in hits))
+    check_true("with adjacent-ish ranks of substantial size",
+               all(h["N2"] - h["N1"] <= 3 and h["N2"] >= 7 for h in hits))
+
+    # A hidden sector that is not adjacent misses badly, which is the contrast.
+    far = MO.qcd_scale_from_racetrack(3, 9, ratio=10.0)
+    check_true("SU(3)xSU(9) misses by orders of magnitude (%.1e)"
+               % far["lambda_qcd"], far["lambda_qcd"] > 1e10)
+
+    # The anomaly surplus is reported as the hidden-sector budget, not used to
+    # enumerate hidden bundles, and says so.
+    from pyCICY import bundles as BU
+    V = BU.LineBundleSum(CICY(TETRA), MODEL)
+    hc = MO.hidden_group_constraint(V.anomaly()["surplus"])
+    check_true("the surplus is effective", hc["effective"])
+    check_true("and is labelled a budget, not an answer",
+               "not implemented" in hc["note"])
+
+
 def main():
     t0 = time.time()
     test_interface()
@@ -401,6 +474,7 @@ def main():
     test_yukawa_texture()
     test_viable_triples()
     test_running()
+    test_moduli()
 
     print("\n" + "=" * 72)
     if FAILURES:
