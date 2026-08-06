@@ -23,6 +23,7 @@ Run with:  python3 tests/test_export.py
 """
 
 import itertools
+import math
 import os
 import sys
 import time
@@ -394,6 +395,58 @@ def test_quotient_conditions():
                not X_.quotient_report(TETRA, notCY)["ok"])
 
 
+QUINTIC = [[4, 5]]
+
+
+def test_second_manifold():
+    print("\n[4d] a second manifold and a different group order")
+
+    # Everything above is the tetraquadric with one Z_2. The machinery is
+    # meant to be general, and "meant to be" is not a test. The quintic with
+    # the classic free Z_5, x_i -> zeta^i x_i, differs in every way that could
+    # matter: one ambient factor instead of four, five coordinates instead of
+    # eight, h^{1,1} = 1, and |Gamma| = 5.
+    A5 = E.CyclicAction(QUINTIC, 5, [[0, 1, 2, 3, 4]], [0])
+
+    check("monomials of the quintic", X_.monomials(QUINTIC, 0).shape,
+          (math.comb(9, 4), 5))
+    inv, _ = X_.invariant_monomials(QUINTIC, 0, A5)
+    check("Z_5-invariant monomials", inv.shape, (26, 5))
+
+    # The Fermat monomials x_i^5 must all survive: their charge is 5 w_i,
+    # which vanishes mod 5 for every i. If they did not, the invariant family
+    # would not contain the Fermat quintic and something would be wrong.
+    fermat = sorted(tuple(r) for r in inv if max(r) == 5)
+    check("all five Fermat monomials are invariant", len(fermat), 5)
+
+    rep = X_.quotient_report(QUINTIC, A5)
+    check("omega character", rep["omega_character"], 0)
+    check_true("so the quotient is Calabi-Yau", rep["preserves_omega"])
+    check_true("and the action is free", rep["looks_free"])
+    check_true("the report passes overall", rep["ok"])
+
+    G = X_.group_matrices(A5)
+    check("five group matrices", len(G), 5)
+    check_true("the generator has order five",
+               np.allclose(np.linalg.matrix_power(G[1], 5), np.eye(5))
+               and not np.allclose(G[1], np.eye(5)))
+
+    m, c = X_.defining_polynomials(QUINTIC, action=A5, seed=1)
+    check("the invariant quintic has 26 monomials", len(m[0]), 26)
+    d = X_.to_cymetric(QUINTIC, action=A5, seed=1)
+    check("cymetric ambient for the quintic", list(d["ambient"]), [4])
+    (_, cy, _, amb), _ = X_.to_cymyc(QUINTIC, action=A5, seed=1)
+    check("cy_dim", cy, 3)
+
+    # h^{1,1} = 1, so there is a single Kahler modulus and no room for a
+    # non-trivial poly-stable line bundle sum: the slope of O(k) is
+    # k * d_111 * t^2, which vanishes only for k = 0. kmoduli_from_stability
+    # must therefore refuse rather than return the trivial ray.
+    check_true("a rank 5 sum on the quintic has no stability point",
+               _raises(X_.kmoduli_from_stability, QUINTIC,
+                       [[1], [1], [-1], [-1], [0]]))
+
+
 def test_integration():
     print("\n[5] integration with cymetric / cymyc")
     A = E.TETRAQUADRIC_Z2()
@@ -577,6 +630,48 @@ def test_integration():
                        _raises(symmetrised_phi, raw,
                                eargs["group_matrices"], ncoords))
 
+            # And all of it again on a different manifold with a different
+            # group order, since one example is an example and not a test.
+            A5 = E.CyclicAction(QUINTIC, 5, [[0, 1, 2, 3, 4]], [0])
+            qargs = X_.to_cymetric(QUINTIC, action=A5, seed=1,
+                                   include_group=True)
+            pq = EquivariantCICYPointGenerator(**qargs, verbose=3)
+            wq5 = pq.generate_point_weights(80)
+            zq = wq5["point"]
+            check("120 -> |Gamma| times as many rows", len(zq), 5 * 80)
+            mq, cq = qargs["monomials"][0], qargs["coefficients"][0]
+            onq = float(np.max(np.abs(evalp(zq, mq, cq))))
+            check_true("quintic points lie on X (%.1e)" % onq, onq < 1e-6)
+            gq = qargs["group_matrices"][1]
+            imq = pq._rescale_to_patch(zq @ gq.T)
+            dq = float(np.min(np.abs(imq[:, None, :] - zq[None, :, :]).max(-1),
+                              axis=1).max())
+            check_true("and the set is Gamma-closed (%.1e)" % dq, dq < 1e-8)
+            nq = len(zq) // 5
+            wdev = max(float(np.abs(wq5["weight"][:nq]
+                                    - wq5["weight"][k * nq:(k + 1) * nq]).max())
+                       for k in range(1, 5))
+            check_true("weights equal across a five-element orbit (%.1e)"
+                       % wdev, wdev < 1e-9)
+
+            mlp5 = eqx.nn.MLP(in_size=10, out_size=1, width_size=16, depth=2,
+                              activation=jax.nn.gelu,
+                              key=jax.random.PRNGKey(0))
+            raw5 = lambda x: mlp5(x)[0]                          # noqa: E731
+            sym5 = symmetrised_phi(raw5, qargs["group_matrices"], 5,
+                                   ambient=qargs["ambient"])
+            gzq = pq._rescale_to_patch(zq @ gq.T)
+
+            def _dev5(fn):
+                a = np.array(jax.vmap(fn)(_feat(zq)))
+                b = np.array(jax.vmap(fn)(_feat(gzq)))
+                return float(np.mean(np.abs(a - b)) / np.mean(np.abs(a)))
+
+            check_true("raw potential is not Z_5-invariant (%.1e)"
+                       % _dev5(raw5), _dev5(raw5) > 1e-3)
+            check_true("the symmetrised one is (%.1e)" % _dev5(sym5),
+                       _dev5(sym5) < 1e-5)
+
     try:
         from cymyc import alg_geo
         import jax.numpy as jnp
@@ -607,6 +702,7 @@ def main():
     test_formats()
     test_kmoduli()
     test_quotient_conditions()
+    test_second_manifold()
     test_integration()
 
     print("\n" + "=" * 72)
