@@ -228,6 +228,21 @@ class LineBundleModel(Theory):
         from . import yukawa
         return yukawa.texture(self.X, self.summands, kind=kind, SpaSM=SpaSM)
 
+    def beta_coefficients(self, n_higgs_pairs=1, extra=None):
+        """One-loop coefficients from this model's exact generation count.
+
+        The generation count comes from the equivariant index and is exact;
+        ``n_higgs_pairs`` does not, because the Higgs is vector-like and lives
+        in the sector an index cannot see. See
+        :mod:`pyCICY.theories.running`.
+        """
+        from . import running
+        ng = self.spectrum().get("generations")
+        if ng is None:
+            raise ValueError("this model has no determined generation count; "
+                             "supply a group action")
+        return running.beta_coefficients(ng, n_higgs_pairs, extra)
+
     def missing_for_physical(self):
         return ["explicit cohomology representatives, to evaluate the "
                 "holomorphic cup product at all (not required for the "
