@@ -148,6 +148,25 @@ result about it, obtained exactly. The dimensions used are cross-checked
 against `su5_spectrum` — 24 tens, 54 five-bars, 48 fives — code that shares
 nothing with the texture computation.
 
+Nor is it that model's bad luck: **3011 scanned models across two manifolds,
+zero surviving couplings.** So `yukawa.viable_triples` asks the question of the
+*manifold* instead, before any model is built. An up-type coupling needs three
+charges summing to zero with `h^1 > 0` for each, and — since a summand whose
+slope is one-signed can never sit in a poly-stable bundle — a non-definite
+slope for each. If no such triple exists in a charge box, no model in that box
+can have a coupling, whatever else it satisfies.
+
+That filter earns its place. The first triple found *without* the slope
+condition contains `(0,0,-2,0)`, whose slope is definite; a search over 9390
+models built around it produced exactly **zero** poly-stable ones, because the
+seed was disqualified from the start. With both conditions, viable triples do
+exist on the tetraquadric at charge 2, and on CICY 7833 at charge 5 but not at
+charge 4 — a reminder that the answer is a statement about the box as much as
+the manifold. Both conditions are necessary and neither is sufficient: a model
+realising a viable triple must still close with the right index, anomaly and
+*joint* poly-stability, and the per-summand slope test does not imply the
+joint one.
+
 **But no physical couplings, no masses, no predictions.** Physical couplings need
 harmonic representatives of the cohomology classes as well as a metric, and
 neither this package nor the bridge computes them.
