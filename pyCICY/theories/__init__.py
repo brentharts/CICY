@@ -19,6 +19,7 @@ here too. They are not implemented.
 
 from .base import Theory, NeedsMetric, registry, register, get
 from .heterotic import StandardEmbedding, LineBundleModel
+from . import yukawa
 
 __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
-           "StandardEmbedding", "LineBundleModel"]
+           "StandardEmbedding", "LineBundleModel", "yukawa"]

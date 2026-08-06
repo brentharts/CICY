@@ -217,6 +217,17 @@ class LineBundleModel(Theory):
             "not a fundamental obstruction; contrast physical_yukawa(), which "
             "is obstructed.")
 
+    def yukawa_texture(self, kind="both", SpaSM=False):
+        """The pattern of allowed and forbidden couplings. Exact.
+
+        Delegates to :func:`pyCICY.theories.yukawa.texture`. This is what can
+        be said about the couplings without representatives: which are allowed
+        by the charges, which are additionally killed by a vanishing
+        cohomology group, and which survive. Not the values.
+        """
+        from . import yukawa
+        return yukawa.texture(self.X, self.summands, kind=kind, SpaSM=SpaSM)
+
     def missing_for_physical(self):
         return ["explicit cohomology representatives, to evaluate the "
                 "holomorphic cup product at all (not required for the "
