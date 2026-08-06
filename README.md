@@ -212,28 +212,41 @@ against the full F-term condition, it agrees to 1.6e-3.)
 That is the gain: sensitivity to the one unknown drops from exponential to a
 *known power*. `α_GUT` moves from "assumed" to "output".
 
-And the window is narrow. Scanning ranks to 13 and four values of `R`, only
-**4 of 528 combinations** give both `Λ ∈ [0.05, 1]` GeV and
-`α_GUT ∈ [1/35, 1/15]`:
+**A correction to the first version of this.** Both condensing factors live in
+the hidden `E_8`, of rank 8, so `rank(SU(N_1) x SU(N_2)) = N_1 + N_2 - 2 <= 8`.
+The groups first reported here as viable — SU(7)×SU(8), SU(6)×SU(7),
+SU(7)×SU(9), SU(10)×SU(13) — are of rank 13, 11, 14 and 21. Arithmetically
+right, physically impossible. `rank_allowed` now enforces it and the table is:
 
-| hidden group | R | Λ (GeV) | 1/α_GUT | exponent |
-| --- | --- | --- | --- | --- |
-| SU(6)×SU(7) | 20 | 0.31 | 20.0 | 14 |
-| **SU(7)×SU(8)** | **10** | **0.11** | **20.5** | **56/3** |
-| SU(7)×SU(9) | 50 | 0.72 | 19.6 | 21/2 |
-| SU(10)×SU(13) | 20 | 0.08 | 20.7 | 130/9 |
+| hidden group | rank | exponent | R needed for 0.2 GeV |
+| --- | --- | --- | --- |
+| **SU(4)×SU(5)** | **7** | **20/3** | **5.8 × 10²** |
+| SU(3)×SU(4) | 5 | 4 | 4.0 × 10⁴ |
+| SU(4)×SU(6) | 8 | 4 | 4.0 × 10⁴ |
+| SU(3)×SU(7) | 8 | 7/4 | 3.3 × 10¹⁰ |
 
-against an observed `Λ ≈ 0.2` GeV. All four land at `α_GUT ≈ 1/20`; SU(3)×SU(9)
-misses by **sixteen orders of magnitude**. The pattern is that `p` must be
-large, needing `N_1 N_2` large and `N_2 - N_1` small — adjacent groups of
-substantial rank.
+The largest exponent available inside `E_8` is `20/3`, and SU(4)×SU(5) is by
+far the most economical — it needs the two condensation scales to differ by a
+few hundred, where the others need many orders of magnitude.
 
-This is a **constraint, not a prediction**: `R` is still an input and the
-window was chosen to contain the answer. What it shows is that requiring a
-physical QCD scale genuinely restricts the hidden bundle — and through the
-anomaly condition `c_2(TX) - c_2(V) - c_2(Ṽ) = [W]`, which `bundles.anomaly`
-already computes, that restricts the *visible* bundle too. The two sectors are
-not independent.
+**And α_GUT does not depend on the hidden group at all.** Inverting the
+running, `Re S = |b_3| ln(M/Λ) / 8π²`, which involves only the generation
+count, the unification scale and the QCD scale. With `n_g = 3`,
+`M = 5×10¹⁷` GeV and `Λ = 0.2` GeV this gives `Re S = 1.61` and
+**α_GUT = 1/20.2** — close to the value usually assumed, and the same for
+every rank-allowed group. The hidden sector only decides which `R` lands
+there. `dilaton_from_scale` computes it, and its docstring is explicit that
+this is an inversion of measured inputs, not a prediction; what is exact in it
+is `|b_3| = 9 − 2n_g`.
+
+**A line bundle sum cannot supply a racetrack.** A hidden bundle built as a
+sum of line bundles has structure group `S(U(1)^r)`, leaving
+`C(SU(r)) × U(1)^{r−1}` — *one* non-abelian factor. Two condensates need a
+*reducible* hidden bundle `V_1 ⊕ V_2` with two non-abelian structure groups,
+which is a different search. `hidden_scan` enumerates hidden line bundle sums
+fitting the anomaly budget (the tetraquadric model's surplus `(2,8,2,44)`
+admits many at rank 4, leaving SO(10)) and reports `racetrack_possible: False`
+for all of them, with the reason.
 
 Three caveats, none small: the Kähler potential is tree-level and `Re S ≈ 2` is
 strong coupling; the racetrack minimum is supersymmetric with negative vacuum
