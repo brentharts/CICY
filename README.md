@@ -167,7 +167,35 @@ realising a viable triple must still close with the right index, anomaly and
 *joint* poly-stability, and the per-summand slope test does not imply the
 joint one.
 
-**But no physical couplings, no masses, no predictions.** Physical couplings need
+**And one factor of the proton-to-electron mass ratio is exact.** Worth writing
+the chain out, because it inverts the naive picture:
+
+    m_p/m_e  ~  (M_GUT/v) · exp(-2π / (|b_3| α_GUT)) / y_e
+
+The proton mass is not a Yukawa coupling — it is almost all QCD binding energy,
+set by where the strong coupling diverges, which depends on the one-loop
+coefficient `b_3 = -9 + 2 n_g`. And `n_g` comes from an index, exactly. So
+`theories.running` computes `b_3` from the spectrum, and with it the sharpest
+statement the topology makes about hadrons: **whether QCD confines at all is
+decided by the generation count.** `n_g ≤ 4` gives `b_3 < 0` and a proton;
+`n_g ≥ 5` gives `b_3 ≥ 0`, no confinement, and `lambda_qcd` refuses to return a
+scale rather than inventing one.
+
+But the exactness buys less than it appears, and `sensitivity()` quantifies why:
+
+    d ln Λ_QCD / d ln α_GUT  =  2π / (|b_3| α_GUT)  ≈  52
+
+A **1% error in α_GUT moves the proton mass by 52%**; α_GUT from 1/25 to 1/18
+spans Λ from 9e-6 GeV to 21 GeV, seven orders of magnitude across a 30% change
+in the input. The exactly-known integer sits in an *exponent multiplied by a
+modulus*. Knowing it perfectly buys nothing until α_GUT is known to a tenth of
+a percent — which needs moduli stabilisation, not more topology.
+
+`mass_ratio_chain()` returns the four factors with each labelled, and
+deliberately returns **no number**: one is exact only in part, and the other
+three are unavailable for three different reasons.
+
+**No physical couplings, no masses, no predictions.** Physical couplings need
 harmonic representatives of the cohomology classes as well as a metric, and
 neither this package nor the bridge computes them.
 `phenomenology.MassRatioNotComputable` is still an exception rather than a
