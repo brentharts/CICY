@@ -55,12 +55,14 @@ forms, the split web over the published list of 7890 threefolds.
 
 **String constructions (`theories/`)**
 A subpackage where different compactifications live, sharing the exact
-machinery underneath and each declaring what it can compute. Four so far:
+machinery underneath and each declaring what it can compute. Five so far:
 `StandardEmbedding` (V = TX, E₆), `LineBundleModel` (SU(5) and the Standard
 Model), `FTheory6D` (elliptic threefold over a surface, six-dimensional
-N=(1,0), spectrum exact from anomaly cancellation) and `FTheory4D` (elliptic
-fourfold, D3 tadpole exact, spectrum flux-dependent). Type IIA and IIB
-orientifolds and M-theory would go here; they are not implemented.
+N=(1,0), spectrum exact from anomaly cancellation), `FTheory4D` (elliptic
+fourfold, D3 tadpole exact, spectrum flux-dependent) and `Orientifold` (a
+holomorphic involution of a CICY, equivariant Hodge numbers computed two
+independent ways). Type IIA orientifolds and M-theory would go here; they are
+not implemented.
 
 **The metric bridge (`export`)**
 Hands verified models to the numerical-metric packages. Generates a defining
@@ -1757,6 +1759,131 @@ python3 examples/ftheory_6d.py --base dP3 --gauge 'su(5)' --divisor 0,1,0,0
 python3 examples/ftheory_6d.py --only clusters
 make ftheory
 make ftheory-fibrations
+```
+
+## Type IIB orientifolds
+
+`pyCICY.theories.orientifold` is the construction that reaches back into the
+CICY geometry most directly. An orientifold quotients Type IIB by
+`Omega_p (-1)^{F_L} sigma` with `sigma` a holomorphic involution of X, and
+everything in the four-dimensional closed string sector follows from how
+`sigma` splits the cohomology.
+
+```python
+from pyCICY.theories import orientifold as O
+
+s = O.SignInvolution([[4, 5]], [[4]])       # the quintic, one coordinate flipped
+s.omega_sign()                              # -1, so O3 and O7 planes
+s.fixed_euler()                             # 56: a quintic surface plus a point
+s.hodge_split()['h21']                      # (38, 63)
+```
+
+### The split, computed twice
+
+The module gets the equivariant Hodge numbers two ways that share no code.
+
+The first is the topological Lefschetz fixed point theorem. For a holomorphic
+involution of a Calabi-Yau threefold,
+
+```
+chi(Fix sigma) = 2 + 2 (h11_+ - h11_-) - 2 s - 2 (h21_+ - h21_-)
+```
+
+with `s` the sign on `Omega`. On a favourable CICY a coordinate sign flip
+fixes every ambient hyperplane class, so `h^{1,1}` is entirely invariant and
+`chi(Fix)` determines the rest. The fixed locus is a complete intersection in
+a product of projective spaces and almost never Calabi-Yau, so `CICY` cannot
+be used on it; `complete_intersection_euler` does it from Chern classes.
+
+The second is a count of monomials: the deformations of a hypersurface are its
+monomials modulo the ambient reparametrisations, and the involution grades
+both.
+
+The subtlety they agree *through* is worth naming, because getting it wrong
+leaves both routes self-consistent and both wrong.
+`H^{2,1} = H^1(T_X) ⊗ H^{3,0}`, and the monomials grade `H^1(T_X)`, not
+`H^{2,1}`. When `sigma* Omega = -Omega` the two gradings are opposite, so the
+invariant deformations are the *anti*-invariant part of `H^{2,1}`. On the
+quintic with one flip that is the difference between (38, 63) and (63, 38),
+and the fixed point theorem is what says which.
+
+A second consistency check comes free. The dimensions of the fixed components
+are computed by intersecting polynomials with coordinate subspaces, and the
+`Omega` sign by counting flipped coordinates and polynomial signs. That even
+complex codimension goes with the minus sign is a theorem, so `consistent()`
+is a test rather than a definition.
+
+### The involutions that change the manifold
+
+Some flip patterns cannot be imposed on a generic X at all, and this took two
+attempts to get right — the first version silently returned numbers for a
+different manifold.
+
+If every defining polynomial vanishes identically on a coordinate subspace,
+that subspace lies inside X. On the quintic, flipping three coordinates makes
+every invariant monomial vanish on the plane they span, so X contains a plane
+— and a quintic containing a plane is a Noether–Lefschetz jump with
+`h^{1,1} = 2`, not 1. Flipping four makes every invariant monomial divisible
+by the fifth coordinate, so the polynomial factorises and X is not
+irreducible. `degeneracies()` reports both, and both routes refuse rather than
+splitting Hodge numbers that belong to something else.
+
+Flipping a coordinate set and flipping its complement are the *same* map on
+projective space, and give opposite values of `sum_i minus_i`. What puts them
+back together is that they also give opposite polynomial signs `eps_a`, so
+`omega_sign` has to include them; without that the answer would depend on how
+the same involution was written down. The tests check the two descriptions
+agree on the sign, the fixed locus, the split and the O-plane content.
+
+### Sen's limit
+
+`SenLimit` connects this to `theories.ftheory`. F-theory over a base B
+degenerates at weak coupling to Type IIB on the double cover of B branched
+over a curve in `|-2K_B|`, the O7-plane. Three things fall out and all three
+are checked:
+
+- **The cover is always a K3.** `chi = 2 chi(B) - chi(O7) = 2(3+T) + 2(9-T) =
+  24`, the tensor multiplet count cancelling because `K² = 9 - T`. The branch
+  genus does vary with the base — 10 on P², 2 on dP₈ — but the cover does not.
+- **The D7 tadpole closes for every base at once.** The Whitney brane sits in
+  `|-8K|`, and with its image that is `-16K = 8[O7]`. Both sides are multiples
+  of the same canonical class.
+- **The brane rules reproduce Kodaira.** This is the sharpest check in the
+  module.
+
+| configuration | Chan–Paton counting | fibre type | Kodaira table |
+| --- | --- | --- | --- |
+| n branes, off the O7 | u(n) | I_n | su(n) |
+| 4 branes, on the O7 | so(8) | I_0* | so(8) |
+| n branes, on the O7 | so(2n) | I_{n−4}* | so(2n) |
+
+The shift by four is the content: it takes four D7-branes to cancel an
+O7-plane's charge locally. One side is open string bookkeeping, the other is
+the vanishing order of a discriminant, and neither knows about the other.
+
+A third route to the Euler characteristic came along with it.
+`ftheory.weierstrass_euler` gives `chi = -60 K_B²` from Chern classes, against
+`2(h^{1,1} - h^{2,1})` from the anomaly-derived spectrum. They agree on every
+base where the generic Weierstrass model is smooth, and differ exactly where
+it is not — F₁₂ gives −960 against −480, the difference being the resolution
+of the e₈ fibre.
+
+### What is not here
+
+The gauge group. It is a choice of D7-brane divisor classes subject to
+`sum_a N_a ([D_a] + [D_a']) = 8 [O7]`, not a consequence of the involution, so
+`d7_tadpole()` states the condition rather than solving it. The D3 tadpole's
+decomposition needs flux and raises `NeedsMetric`; the total charge is exact
+on the F-theory side as `chi(X_4)/24`. Yukawa couplings here *exist* — four
+dimensions admits a superpotential — and are simply not computed, which is a
+`NotImplementedError` and deliberately not the `NoSuchTheory` that
+`FTheory6D` raises.
+
+```console
+python3 examples/orientifold.py
+python3 examples/orientifold.py --conf '[[2,3],[2,3]]'
+python3 examples/orientifold.py --only sen --scan
+make orientifold
 ```
 
 ## Chirality across domains
