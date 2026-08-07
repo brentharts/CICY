@@ -38,8 +38,8 @@
 \newcommand{\CY}{Calabi--Yau}
 \newcommand{\PP}{\mathbb{P}}
 
-\title{Supplementary material: figures for the \emph{Extended} \pkg{pyCICY} package}
-\author{B.S. Hartshorn \orcidlink{0009-0004-2853-655X}}
+\title{Supplementary material: figures for the \pkg{pyCICY-X} package}
+\author{B.S. Hartshorn \orcidlink{0009-0004-2853-655X} \small \url{https://github.com/brentharts/CICY}}
 
 \begin{document}
 \maketitle
@@ -136,7 +136,7 @@ Figure 1-A: \small Hodge plot by splitting depth: The generated web in the conve
 \section{Favourable and unfavourable descriptions}
 
 \begin{minipage}[c]{0.55\textwidth}
-The same points, separated by whether the configuration matrix
+Figure 3-A: The same points, separated by whether the configuration matrix
   gives a favourable description, that is whether the second cohomology of
   the threefold descends from the ambient product of projective spaces.
   Favourability is a property of the description rather than of the manifold,
@@ -251,7 +251,7 @@ centrally symmetric and is spectrally symmetric.
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.9\textwidth]{fig_chirality}
-  \caption{One mirror operation over knots, reflexive polygons and \CY{}
+  \caption{ \footnotesize One mirror operation over knots, reflexive polygons and \CY{}
   threefolds. Horizontally the combination the mirror negates, vertically the
   one it preserves; filled markers are the objects, hollow their mirrors.}
   \label{fig:chirality}
@@ -330,7 +330,9 @@ quantized A-polynomial is not the mirror curve of any local \CY{}.
 \FloatBarrier
 \section{The quintic cross-section}
 
-\begin{minipage}[c]{0.5\textwidth}
+\begin{minipage}[c]{0.7\textwidth}
+Figure 7:
+\newline
 The classical Fermat cross-section of the quintic, the degree-five
   hypersurface in $\PP^4$ with configuration $[[4,5]]$, labelled with its
   Hodge numbers. The surface is the projection to three real dimensions of the
@@ -338,9 +340,9 @@ The classical Fermat cross-section of the quintic, the degree-five
   arithmetic.
 \end{minipage}
 \hfill
-\begin{minipage}[c]{0.5\textwidth}
+\begin{minipage}[c]{0.3\textwidth}
 \centering
-  \includegraphics[width=0.4\textwidth]{quintic_surface.png}
+  \includegraphics[width=0.9\textwidth]{quintic_surface.png}
   \label{fig:quintic}
 \end{minipage}
 
@@ -351,18 +353,14 @@ The classical Fermat cross-section of the quintic, the degree-five
 \section{Hyperbolic lattices}
 
 \begin{minipage}[c]{0.4\textwidth}
+Figure 8: 
+\newline 
+\tiny
 Left: a patch of the $\{8,8\}$ tessellation in the Poincar\'e disk,
   with bonds drawn as true geodesics and colour recording the ring index.
   Right: the boundary fraction against flake depth, with the limit
   $(p-2)/(p-1)$ dashed.
-\end{minipage}
-\begin{minipage}[c]{0.55\textwidth}
-  \centering
-  \includegraphics[width=0.9\textwidth]{fig_hyperbolic}
-  \label{fig:hyperbolic}
-\end{minipage}
 
-\footnotesize
 The marked points in the left panel are cell centres, which for the
 $\{4g,4g\}$ family form the Bravais lattice of a genus-$g$ surface. Bonds are
 circular arcs meeting the disk boundary at right angles, not chords.
@@ -375,6 +373,14 @@ from above. A finite patch is therefore never a good approximation to the bulk,
 which is the quantitative reason hyperbolic band theory requires periodic
 boundary conditions and automorphic functions \cite{MR2022} rather than a
 large-flake extrapolation.
+\end{minipage}
+\begin{minipage}[c]{0.55\textwidth}
+  \centering
+  \includegraphics[width=0.9\textwidth]{fig_hyperbolic}
+  \label{fig:hyperbolic}
+\end{minipage}
+
+\footnotesize
 
 For the $\{4g,4g\}$ tessellations the package constructs the $4g$ side-pairing
 translations, verifies that they pair into inverses and satisfy the relator
@@ -392,6 +398,8 @@ near the identity.
 \section{Node counts along split edges}
 
 \begin{minipage}[c]{0.4\textwidth}
+Figure 9:
+\newline
 Distribution of the node count $N$ over the edges of the web. Each
   edge is a conifold transition, and $N$ is the number of nodes acquired at
   the singular point of the transition.
@@ -399,7 +407,7 @@ Distribution of the node count $N$ over the edges of the web. Each
 \hfill
 \begin{minipage}[c]{0.55\textwidth}
 \centering
-  \includegraphics[width=0.7\textwidth]{node_counts}
+  \includegraphics[width=0.8\textwidth]{node_counts}
   \label{fig:nodes}
 \end{minipage}
 
@@ -407,6 +415,8 @@ Distribution of the node count $N$ over the edges of the web. Each
 \FloatBarrier
 \section{Gopakumar--Vafa invariants}
 \begin{minipage}[c]{0.4\textwidth}
+Figure 10:
+\newline
 Genus-zero Gopakumar--Vafa invariants of the five one-parameter
   complete intersection models, plotted on a logarithmic scale against the
   degree. The quintic entries reproduce the classical values
@@ -416,7 +426,7 @@ Genus-zero Gopakumar--Vafa invariants of the five one-parameter
 \hfill
 \begin{minipage}[c]{0.5\textwidth}
 \centering
-  \includegraphics[width=0.7\textwidth]{gv_invariants}
+  \includegraphics[width=0.8\textwidth]{gv_invariants}
   \label{fig:gv}
 \end{minipage}
 
@@ -424,6 +434,8 @@ Genus-zero Gopakumar--Vafa invariants of the five one-parameter
 \FloatBarrier
 \section{Growth of the web}
 \begin{minipage}[c]{0.5\textwidth}
+Figure 11:
+\newline
 Growth of the web with splitting depth, counted both in
   configurations reached and in distinct Hodge pairs realised. The number of
   configurations grows far faster than the number of distinct topological
