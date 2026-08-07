@@ -606,6 +606,53 @@ def figure_hyperbolic(outdir, genus=2, maxdepth=5):
     return _save(fig, outdir, "fig_hyperbolic.pdf")
 
 
+# ------------------------------------------------------------ fig:heterotic
+def figure_heterotic(outdir):
+    """The heterotic pipeline: texture, search funnel, unification, racetrack.
+
+    Four panels covering what the exact methods decide. The Yukawa texture of
+    the CICY 5299 model, with the cup-product refinement that kills a coupling
+    the dimensions call present; the search funnel, whose shape is the
+    argument that topological conditions alone are weak; one-loop unification
+    for a supersymmetric and a non-supersymmetric spectrum; and the
+    condensation-scale ratio each reachable racetrack demands.
+    """
+    import matplotlib.pyplot as plt
+    from pyCICY.theories import yukawa as _Y
+
+    conf = _Y.CICY5299["configuration"]
+    summands = _Y.CICY5299["summands"]
+
+    fig, axes = plt.subplots(2, 2, figsize=(11.0, 7.4))
+    viz.plot_yukawa_texture(conf, summands, ax=axes[0][0], kind="up")
+    viz.plot_search_funnel(ax=axes[0][1])
+    viz.plot_unification(ax=axes[1][0])
+    viz.plot_racetrack(ax=axes[1][1])
+    fig.tight_layout()
+    return _save(fig, outdir, "fig_heterotic.pdf")
+
+
+# ---------------------------------------------------------- fig:equivariant
+def figure_equivariant(outdir):
+    """Index characters of a free and a non-free action.
+
+    A freely acting group has vanishing Lefschetz numbers, so its index
+    character is a multiple of the regular representation and the bars are
+    flat. The flatness is why the choice of equivariant structure does not
+    affect the chiral spectrum.
+    """
+    import matplotlib.pyplot as plt
+    from pyCICY import equivariant as _E
+
+    fig, axes = plt.subplots(1, 2, figsize=(10.0, 3.2))
+    viz.plot_equivariant_character(ax=axes[0])
+    viz.plot_equivariant_character(
+        action=_E.CyclicAction([[1, 2]] * 4, 3, [[0, 1]] * 4, [0]),
+        charges=[[1, 1, 1, 1], [-2, -2, -1, 2]], ax=axes[1])
+    fig.tight_layout()
+    return _save(fig, outdir, "fig_equivariant.pdf")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.strip().split("\n")[0])
     ap.add_argument("--outdir", default=None)
@@ -632,6 +679,8 @@ def main(argv=None):
                                              stats["edges"]))
 
     print("generating figures into %s" % outdir)
+    figure_heterotic(outdir)
+    figure_equivariant(outdir)
     figure_hodge(web, outdir)
     figure_favourable(web, outdir)
     figure_nodes(web, outdir)
