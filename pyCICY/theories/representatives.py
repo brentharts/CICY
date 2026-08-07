@@ -126,11 +126,26 @@ def koszul_origin(conf, k):
     return out
 
 
-def _unique_origin(conf, k, degree=1):
-    """The single origin of ``H^degree(X, O(k))``, or ``None``."""
+def _unique_origin(conf, k, degree=1, verify=True):
+    """
+    The single origin of ``H^degree(X, O(k))``, or ``None``.
+
+    Uniqueness within a degree is necessary but not sufficient: the Koszul
+    spectral sequence can still have differentials that cut the term down
+    before it reaches ``H^*(X)``. When ``verify``, the term's dimension is
+    checked against :meth:`CICY.line_co` and a disagreement returns ``None``,
+    because in that case the term is not the cohomology and its Koszul label is
+    not a label for a class.
+    """
     recs = [r for r in koszul_origin(conf, k) if r["degree_on_X"] == degree]
     if len(recs) != 1:
         return None
+    if verify:
+        from ..pyCICY import CICY
+        conf_l = np.asarray(conf, dtype=int).tolist()
+        h = CICY(conf_l).line_co(list(np.asarray(k, dtype=int)))
+        if int(h[int(degree)]) != int(recs[0]["dimension"]):
+            return None
     return recs[0]
 
 
@@ -170,9 +185,25 @@ def cup_product_vanishes(conf, charges, degree=1):
 
     origins = [_unique_origin(conf, c, degree) for c in charges]
     if any(o is None for o in origins):
+        # Two quite different failures hide behind a `None`, and calling both
+        # "a mixture" misdescribes one of them: no contributing term at all
+        # means the group is zero, which is an exact absence, not an ambiguity.
+        counts = [len([r for r in koszul_origin(conf, c)
+                       if r["degree_on_X"] == degree]) for c in charges]
+        i = next(j for j, o in enumerate(origins) if o is None)
+        if counts[i] == 1:
+            raise ValueError(
+                "class %d has a unique Koszul term whose dimension disagrees "
+                "with h^%d(X, O(k)), so the spectral sequence differentials "
+                "act and the term is not a representative" % (i, degree))
+        if counts[i] == 0:
+            raise ValueError(
+                "class %d lies in a zero-dimensional group (no Koszul term "
+                "contributes in degree %d), so there is no coupling rather "
+                "than an undecided one" % (i, degree))
         raise ValueError(
-            "at least one class does not have a unique Koszul origin, so its "
-            "representative is a mixture and this analysis does not apply")
+            "class %d receives %d Koszul contributions, so its representative "
+            "is a mixture and this analysis does not apply" % (i, counts[i]))
 
     idx = [a for o in origins for a in o["S"]]
     if len(set(idx)) != len(idx):
