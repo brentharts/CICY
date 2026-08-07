@@ -422,6 +422,53 @@ that "a mixture", which is not just imprecise but backwards, since an absence is
 a result and a mixture is an open question. **Differentials** and **mixed** are
 the two genuine declines.
 
+### Computing the differentials, not just detecting them
+
+The guard above declines 123 of the 343 charges in the box. `theories.differentials`
+computes them.
+
+The first Koszul differential is contraction with the defining polynomials, so
+on cohomology it is *multiplication by a polynomial*,
+`H^q(A, O(k - d_S)) -> H^q(A, O(k - d_S + d_a))`. In the monomial basis that is
+an explicit matrix — exponents add, and the result is kept only if it is still a
+basis element of the target, the same truncation rule the cup product uses. So
+`E_2 = ker d_1 / im d_1` is linear algebra, and the classes come out as kernel
+vectors modulo image: still Čech representatives, now combinations rather than
+single terms.
+
+**Every charge in the `[-3,3]` box degenerates at `E_2`, and `E_2` reproduces
+`line_co` exactly on all 343.** The split that was `30` explicit and `123`
+declined is now `343` explicit. The dimensions are checked against `line_co`
+every time — agreement means the sequence degenerated *and* the ranks were the
+right ones, both at once, and disagreement is still a decline, one page further
+along.
+
+Where both modules apply they agree: the five CICY 5299 couplings come out
+`-1, +1, +1, -1, -1` from either, signs included, by machinery with nothing in
+common. Beyond that reach there are 1260 charge-cancelling triples in the box
+with all three groups non-empty that `cocycles` cannot touch; a representative
+one, `(-3,1,0) (0,-3,1) (3,2,-1)`, returns a `3 x 3 x 15` tensor with 99
+non-zero entries.
+
+Two honest costs, both structural rather than incidental:
+
+- **The ranks are generic.** `d_1` depends on the polynomials themselves and
+  not only on their multidegrees — which is exactly why tabulating the `E_1`
+  page could never substitute for computing. The module takes generic equations
+  over `F_p` from `smoothness.random_equations`, so a non-generic `X` with
+  larger cohomology would not be seen. Stability across seeds is evidence of
+  genericity, not a proof of it.
+- **It is arithmetic over `F_p`.** A rank could drop for a prime dividing some
+  minor, so the tests run several primes and compare. The verdict on the triple
+  above is the same over `p = 10007, 32003, 1000003`.
+
+One thing is verified rather than assumed. A class is a kernel vector *modulo*
+the image, so a coupling is only meaningful if adding an image vector leaves it
+unchanged. `coupling` adds each image generator and re-multiplies, and reports
+`well_defined`. A failure there would mean the product does not descend to
+cohomology and the number means nothing — so it is a test of the construction,
+not a formality.
+
 ### Handing CICY 5299 to a metric package — and where it stops
 
 The export works: three defining polynomials of 18 monomials each, kmoduli at
@@ -555,18 +602,16 @@ Next, in order of what would change what this package can claim:
    pullback conventions matched to cymetric's data.
 2. **A converged metric.** Long GPU runs, until the Monge-Ampère and Ricci
    residuals are small enough to mean something.
-3. **Cohomology representatives.** *Done, within a stated scope* — see below.
-   `theories.cocycles` writes each class down as a Čech monomial and returns
-   the holomorphic coupling as an exact integer, so on CICY 5299 the five
-   surviving up-type couplings are no longer a boolean but `-1, +1, +1, -1,
-   -1`. What that buys is ratios and relative signs; the model-wide
-   normalisation is a choice of generator and is not fixed. The scope is
-   classes with a *verified* single Koszul origin, which on that manifold is
-   30 of the 343 charges in a box — the rest mix, or have differentials.
-   Extending it past that needs the spectral sequence resolved, not just
-   tabulated. Physical couplings additionally need the metric, and masses
-   additionally need moduli stabilisation. That chain is the remaining
-   distance between this toolkit and a prediction.
+3. **Cohomology representatives.** *Done.* `theories.cocycles` handles classes
+   that are single Koszul terms; `theories.differentials` computes the
+   spectral sequence for the rest. On CICY 5299 every charge in a `[-3,3]` box
+   — all 343 — now has an explicit basis, verified against `line_co`. What
+   remains genuinely open is narrower than it was: the ranks are **generic**,
+   computed over `F_p` with random defining polynomials, so a non-generic `X`
+   could have larger cohomology and this would not see it. Physical couplings
+   additionally need the metric, and masses additionally need moduli
+   stabilisation. That chain is the remaining distance between this toolkit
+   and a prediction.
 
 
 ---
