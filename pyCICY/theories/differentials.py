@@ -70,7 +70,8 @@ from ..smoothness import coordinate_layout, random_equations
 
 __all__ = [
     "koszul_blocks", "differential_matrix", "e2_dimensions",
-    "degeneration_report", "cohomology_basis",
+    "degeneration_report", "cohomology_basis", "coupling", "model_couplings",
+    "equations_from_export", "genericity_report",
 ]
 
 
@@ -454,7 +455,7 @@ def _check_well_defined(conf, charges, bases, degree, p, seeds, eq, product, ten
     return changed == 0
 
 
-def model_couplings(conf, summands, p=32003, seeds=(0, 1)):
+def model_couplings(conf, summands, p=32003, seeds=(0, 1), equations=None):
     r"""
     Every up-type coupling of a line bundle model, with no degeneracy assumed.
 
@@ -464,7 +465,7 @@ def model_couplings(conf, summands, p=32003, seeds=(0, 1)):
     """
     conf = np.asarray(conf, dtype=int)
     k = np.asarray(summands, dtype=int)
-    eq = random_equations(conf, p, seed=seeds[0])
+    eq = equations if equations is not None else random_equations(conf, p, seed=seeds[0])
 
     records = []
     for a, b in itertools.combinations(range(len(k)), 2):
@@ -487,6 +488,121 @@ def model_couplings(conf, summands, p=32003, seeds=(0, 1)):
             "p": p,
             "note": "values are exact in F_%d up to one model-wide "
                     "normalisation, and carry no Kahler factor" % p}
+
+
+def _sqrt_minus_one(p):
+    """A square root of ``-1`` in ``F_p``, which needs ``p = 1 mod 4``."""
+    if p % 4 != 1:
+        raise ValueError(
+            "p must be 1 mod 4 so that F_p contains a square root of -1 and "
+            "the Gaussian-integer coefficients reduce exactly; %d is not"
+            % p)
+    for a in range(2, p):
+        r = pow(a, (p - 1) // 4, p)
+        if (r * r) % p == p - 1:
+            return r
+    raise ValueError("no square root of -1 found mod %d" % p)
+
+
+def equations_from_export(X, action=None, seed=0, p=32009, check_smooth=False,
+                          **kw):
+    r"""
+    The *actual* defining polynomials of an exported ``X``, reduced to ``F_p``.
+
+    :func:`e2_dimensions` defaults to :func:`smoothness.random_equations`, which
+    answers a question about a generic member of the family. This answers it
+    about the particular ``X`` that :func:`pyCICY.export.defining_polynomials`
+    hands to a metric package --- and, when ``action`` is given, about an ``X``
+    constrained to be invariant under a freely acting group, which is a
+    genuinely non-generic condition and the one place the generic answer might
+    fail to apply.
+
+    The coefficients are Gaussian integers, and the reduction ``a + b i -> a +
+    b i_p`` is exact for ``p = 1 mod 4`` --- the same convention, and for the
+    same reason, as :func:`pyCICY.export.is_smooth_over_Fp`. Reducing floats
+    instead would silently test a sparser polynomial.
+
+    Returns a list of ``{exponent tuple: coefficient}`` dicts, the format
+    :func:`differential_matrix` consumes.
+    """
+    from ..export import defining_polynomials
+
+    i_p = _sqrt_minus_one(p)
+    mons, coeffs = defining_polynomials(X, action=action, seed=seed,
+                                        check_smooth=check_smooth,
+                                        integer_coefficients=True, **kw)
+    equations = []
+    for m, c in zip(mons, coeffs):
+        terms = {}
+        for expo, co in zip(np.asarray(m, dtype=int), np.asarray(c)):
+            re = int(round(float(np.real(co))))
+            im = int(round(float(np.imag(co))))
+            if abs(float(np.real(co)) - re) > 1e-9 or abs(float(np.imag(co)) - im) > 1e-9:
+                raise ValueError(
+                    "coefficient %s is not a Gaussian integer, so its "
+                    "reduction mod %d would not be exact" % (co, p))
+            v = (re + im * i_p) % p
+            if v:
+                terms[tuple(int(x) for x in expo)] = int(v)
+        if not terms:
+            raise ValueError("a defining polynomial reduced to zero mod %d, "
+                             "so this prime is a bad choice here" % p)
+        equations.append(terms)
+    return equations
+
+
+def genericity_report(X, charges, action=None, seed=0, p=32009,
+                      random_seeds=(0, 1)):
+    r"""
+    Whether the specific ``X`` has the generic cohomology.
+
+    Compares three answers for each charge: the ``E_2`` page built from the
+    exported polynomials, the ``E_2`` page built from random ones, and
+    :meth:`CICY.line_co`. Agreement is the evidence that the genericity
+    assumption behind :func:`e2_dimensions` is safe for this particular
+    variety; a disagreement is a real finding about it, and the charge where it
+    happens is reported rather than averaged away.
+
+    ``action`` restricts to invariant polynomials, which is the case worth
+    testing hardest --- invariance is a codimension condition, and there is no
+    a priori reason a generic invariant ``X`` has generic cohomology.
+    """
+    from ..pyCICY import CICY
+
+    conf = np.asarray(_conf_of(X), dtype=int)
+    eq = equations_from_export(X, action=action, seed=seed, p=p)
+    Xc = CICY(conf.tolist())
+
+    rows = []
+    agree = disagree = 0
+    for k in charges:
+        k = list(np.asarray(k, dtype=int))
+        spec = e2_dimensions(conf, k, p=p, equations=eq)["predicted"]
+        gen = e2_dimensions(conf, k, p=p, seeds=random_seeds)["predicted"]
+        h = Xc.line_co(k)
+        true = {m: int(h[m]) for m in range(len(h)) if int(h[m])}
+        spec = {m: d for m, d in spec.items() if d}
+        gen = {m: d for m, d in gen.items() if d}
+        ok = (spec == true) and (gen == true)
+        rows.append({"charge": list(map(int, k)), "specific": spec,
+                     "generic": gen, "line_co": true, "agrees": ok})
+        if ok:
+            agree += 1
+        else:
+            disagree += 1
+    return {"rows": rows, "agree": agree, "disagree": disagree, "p": p,
+            "action": None if action is None else type(action).__name__,
+            "note": "agreement means this X has the generic cohomology at "
+                    "these charges; it is evidence about the charges tested "
+                    "and not a theorem about all of them"}
+
+
+def _conf_of(X):
+    """The configuration matrix of a :class:`CICY` or an array-like."""
+    conf = getattr(X, "M", None)
+    if conf is None:
+        conf = getattr(X, "conf", X)
+    return np.asarray(conf, dtype=int)
 
 
 def _kernel_mod_p(M, p):
