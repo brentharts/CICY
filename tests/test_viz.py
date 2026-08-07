@@ -279,6 +279,57 @@ try:
 except ValueError:
     check_true("curve-only records are rejected", True)
 
+# ------------------------------------------------- heterotic model building
+from pyCICY.theories import yukawa as _Y
+from pyCICY.theories import representatives as _RP
+from pyCICY import equivariant as _E
+
+_conf = _Y.CICY5299["configuration"]
+_M = _Y.CICY5299["summands"]
+
+# The texture plot must agree with the computation it draws, or it is
+# decoration rather than a figure. Both counts are checked against the modules.
+_t = _Y.texture(_conf, _M)
+_ref = _RP.refine_texture(_conf, _M, kind="up")
+plt.close("all")
+ax = cy.plot_yukawa_texture(_conf, _M, kind="up")
+check_true("up-type title reports the cup-product refined count (%d, not %d)"
+           % (_ref["kept"], _t["summary"]["up"]["present"]),
+           "%d of" % _ref["kept"] in ax.get_title())
+plt.close("all")
+ax = cy.plot_yukawa_texture(_conf, _M, kind="down")
+check_true("down-type title matches the texture (%d)"
+           % _t["summary"]["down"]["present"],
+           "%d of" % _t["summary"]["down"]["present"] in ax.get_title())
+plt.close("all")
+
+for _name, _fn in (("search funnel", cy.plot_search_funnel),
+                   ("unification", cy.plot_unification),
+                   ("racetrack", cy.plot_racetrack),
+                   ("equivariant character", cy.plot_equivariant_character)):
+    plt.close("all")
+    try:
+        check_true("%s renders" % _name, _fn() is not None)
+    except Exception as _e:                                      # noqa: BLE001
+        check_true("%s renders (%r)" % (_name, _e), False)
+plt.close("all")
+
+# The character plot claims equidistribution; check the claim, not the picture.
+ax = cy.plot_equivariant_character()
+check_true("a free action is labelled equidistributed",
+           "equidistributed" in ax.get_title())
+plt.close("all")
+ax = cy.plot_equivariant_character(
+    action=_E.CyclicAction([[1, 2]] * 4, 3, [[0, 1]] * 4, [0]),
+    charges=[[1, 1, 1, 1]])
+check_true("and a non-free one is not", "uneven" in ax.get_title())
+plt.close("all")
+
+# The unification plot draws six lines: three couplings, two spectra.
+ax = cy.plot_unification()
+check_true("unification plot draws both spectra", len(ax.lines) == 6)
+plt.close("all")
+
 # --------------------------------------------------------------------------
 print("\n" + "=" * 72)
 if FAILURES:
