@@ -38,6 +38,11 @@ the package computes:
     plot_hyperbolic_flake             a {p,q} tiling in the Poincare disk
     plot_apolynomial                  Newton polygon of a knot A-polynomial
     plot_colored_jones                colored Jones coefficients by colour
+    plot_yukawa_texture               allowed, forbidden and vanishing couplings
+    plot_search_funnel                narrowing to a viable model
+    plot_unification                  one-loop running of the gauge couplings
+    plot_racetrack                    condensation ratios the racetracks need
+    plot_equivariant_character        index characters, free versus not
 
 The last is the unifying one. Every chirality record carries an *asymmetry*,
 the combination of its invariant pair that negates under the mirror
@@ -71,6 +76,8 @@ __all__ = [
     "plot_butterfly", "plot_butterfly_grid",
     "plot_jones", "plot_braid", "plot_chirality", "plot_chirality_grid",
     "plot_hyperbolic_flake", "plot_apolynomial", "plot_colored_jones",
+    "plot_yukawa_texture", "plot_search_funnel", "plot_unification",
+    "plot_racetrack", "plot_equivariant_character",
 ]
 
 DEFAULT_ANGLE = 0.4
@@ -1029,4 +1036,240 @@ def plot_colored_jones(s, t, nmax=6, ax=None, title=None):
     ax.set_title(title if title is not None
                  else r"$J_N(T(%d,%d))$, span growing quadratically in $N$"
                       % (s, t), fontsize=10)
+    return ax
+
+
+# ------------------------------------------------- heterotic model building
+
+def plot_yukawa_texture(conf, summands, ax=None, kind="down", title=None,
+                        refine=True):
+    """The Yukawa texture as a grid of allowed, forbidden and vanishing.
+
+    Three outcomes, and the distinction between them is the content:
+
+    * **charge-forbidden** -- the line bundles do not cancel, so the cup
+      product does not land in ``H^3(O_X)``. Symmetry.
+    * **texture zero** -- charge-allowed but some cohomology group is
+      zero-dimensional, so there is no field to couple. Geometry.
+    * **present** -- survives both, and with ``refine`` also survives the
+      cup-product rules of :mod:`pyCICY.theories.representatives`, which can
+      kill a coupling the dimensions call present.
+
+    Drawing them together makes the point that a table of numbers does not:
+    almost everything is a texture zero, and the survivors are sparse.
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import ListedColormap
+    from .theories import yukawa as _y
+
+    if ax is None:
+        ax = plt.figure(figsize=(6.0, 3.4)).add_subplot(111)
+    t = _y.texture(conf, summands, kind=kind)
+    recs = t[kind]
+
+    killed = set()
+    if refine and kind == "up":
+        from .theories import representatives as _rp
+        try:
+            rr = _rp.refine_texture(conf, summands, kind="up")
+            killed = {r["pattern"] for r in rr["records"]
+                      if r["status"] == "vanishes"}
+        except Exception:                                        # noqa: BLE001
+            killed = set()
+
+    codes, labels = [], []
+    for r in recs:
+        if not r["charge_allowed"]:
+            codes.append(0)
+        elif not r["present"]:
+            codes.append(1)
+        elif r["pattern"] in killed:
+            codes.append(2)
+        else:
+            codes.append(3)
+        labels.append(" ".join(r["pattern"]))
+
+    cmap = ListedColormap(["0.92", "tab:red", "tab:orange", "tab:green"])
+    arr = np.array(codes)[None, :]
+    # a short strip, not a tall block: the row carries no information and a
+    # square-ish cell reads as a grid of outcomes rather than a heat map
+    ax.imshow(arr, cmap=cmap, vmin=0, vmax=3, aspect=0.6)
+    ax.set_yticks([])
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, rotation=90, fontsize=6)
+    glyph = {0: "-", 1: "0", 2: "v", 3: "*"}
+    for i, c in enumerate(codes):
+        ax.text(i, 0, glyph[c], ha="center", va="center", fontsize=7,
+                color="0.4" if c == 0 else "w")
+
+    # only show legend entries that actually occur, so the key describes the
+    # picture rather than the general scheme
+    scheme = [("charge-forbidden", "0.92", 0), ("texture zero", "tab:red", 1),
+              ("cup product vanishes", "tab:orange", 2),
+              ("present", "tab:green", 3)]
+    used = [(lab, col) for lab, col, code in scheme if code in set(codes)]
+    handles = [plt.Rectangle((0, 0), 1, 1, color=col) for _, col in used]
+    ax.legend(handles, [lab for lab, _ in used],
+              frameon=False, fontsize=7, ncol=min(len(used), 3),
+              loc="lower center", bbox_to_anchor=(0.5, 1.02))
+    n_present = sum(1 for c in codes if c == 3)
+    if title is None:
+        title = "%s-type Yukawa texture: %d of %d survive" % (
+            kind, n_present, len(codes))
+    ax.set_title(title, fontsize=9, pad=22)
+    return ax
+
+
+def plot_search_funnel(counts=None, ax=None, title=None):
+    """The search for a viable model, stage by stage, on a log scale.
+
+    Two phases, and they count different things, so the plot separates them
+    rather than running them into one misleading series. The first counts
+    *manifolds*: how many favourable threefolds admit a viable triple at all.
+    The second counts *models* on one surviving manifold: how many rank-five
+    sums pass each condition.
+
+    The shape is the argument. Within each phase the drop is severe, and the
+    binding constraint is not the topology --- the index and anomaly admit
+    enormous families --- but joint poly-stability.
+    """
+    import matplotlib.pyplot as plt
+
+    if counts is None:
+        counts = [("favourable CY3\n($\\leq$3 factors)", 111, "manifolds"),
+                  ("admits a\nviable triple", 36, "manifolds"),
+                  ("$c_1{=}0$, index,\nanomaly", 1500, "models"),
+                  ("jointly\npoly-stable", 4, "models"),
+                  ("a coupling\nsurvives", 4, "models"),
+                  ("vector-like\nliftable", 4, "models")]
+    if ax is None:
+        ax = plt.figure(figsize=(6.8, 3.4)).add_subplot(111)
+    names = [c[0] for c in counts]
+    vals = [max(c[1], 0.5) for c in counts]
+    phase = [c[2] for c in counts]
+    colors = ["tab:blue" if p == "manifolds" else "tab:orange"
+              for p in phase]
+    colors[-1] = "tab:green"
+    ax.bar(range(len(vals)), vals, color=colors)
+    ax.set_yscale("log")
+    ax.set_xticks(range(len(names)))
+    ax.set_xticklabels(names, fontsize=7)
+    for i, c in enumerate(counts):
+        ax.text(i, max(c[1], 0.5) * 1.25, str(c[1]), ha="center", fontsize=8)
+
+    # the phases count different objects, so mark the boundary
+    split = next((i for i, p in enumerate(phase) if p == "models"), None)
+    if split:
+        ax.axvline(split - 0.5, color="0.5", lw=0.9, ls=":")
+        ax.text(split / 2.0 - 0.5, ax.get_ylim()[1] * 0.45, "manifolds",
+                ha="center", fontsize=7, color="tab:blue")
+        ax.text((split + len(vals) - 1) / 2.0, ax.get_ylim()[1] * 0.45,
+                "models on one manifold", ha="center", fontsize=7,
+                color="tab:orange")
+    ax.set_ylabel("count (log)", fontsize=8)
+    ax.grid(True, axis="y", color="0.93", lw=0.5)
+    ax.set_title(title or "Narrowing to a viable model", fontsize=9)
+    return ax
+
+
+def plot_unification(betas=None, ax=None, title=None, mz=91.1876,
+                     a1_inv=59.0, a2_inv=29.57, a3=0.1181):
+    """One-loop running of the three gauge couplings.
+
+    The three lines meet at a point only for the right spectrum, and whether
+    they do is decided by the one-loop coefficients, which come from the
+    chiral spectrum. Drawing the supersymmetric and non-supersymmetric cases
+    together shows the discriminator directly: one meets, the other misses by
+    a wide margin.
+    """
+    import matplotlib.pyplot as plt
+    from fractions import Fraction as _F
+    from .theories import running as _r
+
+    if ax is None:
+        ax = plt.figure(figsize=(5.4, 3.6)).add_subplot(111)
+    sets = betas or [("MSSM", _r.beta_coefficients(3, 1), "-"),
+                     ("Standard Model",
+                      (_F(41, 10), _F(-19, 6), _F(-7)), "--")]
+    t = np.linspace(0, 40, 200)          # t = ln(mu/M_Z)
+    colors = ["tab:blue", "tab:orange", "tab:green"]
+    for name, b, ls in sets:
+        starts = [a1_inv, a2_inv, 1.0 / a3]
+        for i, (bi, s0) in enumerate(zip(b, starts)):
+            ax.plot(t, s0 - float(bi) * t / (2 * np.pi), ls=ls,
+                    color=colors[i], lw=1.3,
+                    label=(r"$\alpha_%d^{-1}$ (%s)" % (i + 1, name)))
+    ax.set_xlabel(r"$\ln(\mu/M_Z)$", fontsize=8)
+    ax.set_ylabel(r"$\alpha_i^{-1}$", fontsize=8)
+    ax.set_ylim(0, 65)
+    ax.grid(True, color="0.93", lw=0.5)
+    ax.legend(frameon=False, fontsize=6, ncol=2)
+    ax.set_title(title or "Gauge coupling unification", fontsize=9)
+    return ax
+
+
+def plot_racetrack(ax=None, title=None, lambda_qcd=0.2, m_gut=5.0e17):
+    """Condensation-scale ratio required by each reachable racetrack.
+
+    Only three ``SU(N_1) x SU(N_2)`` embed in the hidden ``E_8`` by the
+    standard chains, and the ratio each needs spans nine orders of magnitude.
+    The plot makes the cost of the reachable options visible at a glance.
+    """
+    import matplotlib.pyplot as plt
+    from .theories import moduli as _m
+
+    if ax is None:
+        ax = plt.figure(figsize=(5.0, 3.0)).add_subplot(111)
+    reach = _m.reachable_racetracks(lambda_qcd=lambda_qcd, m_gut=m_gut)
+    names = ["SU(%d)x SU(%d)\n$p=%s$" % (r["N1"], r["N2"], r["exponent"])
+             for r in reach]
+    vals = [r["ratio_required"] for r in reach]
+    ax.bar(range(len(vals)), vals, color="tab:purple")
+    ax.set_yscale("log")
+    ax.set_xticks(range(len(names)))
+    ax.set_xticklabels(names, fontsize=7)
+    for i, v in enumerate(vals):
+        ax.text(i, v * 1.4, "%.1e" % v, ha="center", fontsize=7)
+    ax.set_ylabel("condensation ratio $R$ required", fontsize=8)
+    ax.grid(True, axis="y", color="0.93", lw=0.5)
+    ax.set_title(title or
+                 r"Reachable racetracks ($\alpha_{\rm GUT}\approx 1/20$ for all)",
+                 fontsize=9)
+    return ax
+
+
+def plot_equivariant_character(action=None, charges=None, ax=None, title=None):
+    """Index characters of a group action, showing equidistribution.
+
+    For a freely acting group every Lefschetz number vanishes, so the
+    character is a multiple of the regular representation --- a flat bar
+    chart. A non-free action is visibly uneven. The flatness is the whole
+    reason the equivariant structure does not affect the chiral spectrum.
+    """
+    import matplotlib.pyplot as plt
+    from . import equivariant as _e
+
+    if ax is None:
+        ax = plt.figure(figsize=(5.4, 3.0)).add_subplot(111)
+    if action is None:
+        action = _e.TETRAQUADRIC_Z2()
+    if charges is None:
+        charges = [[1, 1, 1, 1], [-2, -2, -1, 2], [2, 2, 1, -2]]
+    width = 0.8 / len(charges)
+    n = action.n
+    for j, k in enumerate(charges):
+        ch = action.euler(list(k))
+        ax.bar(np.arange(n) + j * width - 0.4, ch, width=width,
+               label="$k=%s$" % (list(k),))
+    ax.axhline(0, color="0.6", lw=0.8)
+    ax.set_xticks(range(n))
+    ax.set_xlabel(r"$\Gamma$-charge", fontsize=8)
+    ax.set_ylabel("index multiplicity", fontsize=8)
+    ax.legend(frameon=False, fontsize=6)
+    ax.grid(True, axis="y", color="0.93", lw=0.5)
+    free = all(_e.is_regular_multiple(action.euler(list(k)))[0]
+               for k in charges)
+    ax.set_title(title or ("Equivariant index characters -- %s"
+                           % ("equidistributed (free action)" if free
+                              else "uneven (not free)")), fontsize=9)
     return ax
