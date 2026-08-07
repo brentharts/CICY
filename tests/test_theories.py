@@ -744,6 +744,100 @@ def test_viable_model():
                    and f["all_liftable"] for f in found))
 
 
+def test_cocycles():
+    print("\n[13] explicit representatives, and a number")
+    import itertools
+    from pyCICY import CICY
+    from pyCICY.theories import cocycles as CO
+    from pyCICY.theories import representatives as RP
+    from pyCICY.theories import yukawa as Y
+
+    conf = Y.CICY5299["configuration"]
+    M = Y.CICY5299["summands"]
+
+    # The monomial basis must reproduce the dimension count that the rest of
+    # the package already trusts -- otherwise it is a different object.
+    mismatches = 0
+    for n in range(1, 5):
+        for m in range(-12, 8):
+            deg, mons = CO.cech_basis(n, m)
+            ref = RP.ambient_degree_dims(n, m)
+            want_deg = next(iter(ref)) if ref else None
+            want_dim = next(iter(ref.values())) if ref else 0
+            if deg != want_deg or len(mons) != want_dim:
+                mismatches += 1
+            for mon in mons:
+                if sum(mon) != m:
+                    mismatches += 1
+    check("the monomial basis matches ambient_degree_dims on 80 cases",
+          mismatches, 0)
+    check("H^2(P^2, O(-3)) is spanned by 1/(x_0 x_1 x_2)",
+          CO.cech_basis(2, -3)[1], [(-1, -1, -1)])
+    check("which is the Serre-duality generator",
+          CO.top_generator([2]), ((-1, -1, -1),))
+
+    # The Koszul wedge, including the sign that carries relative phases.
+    check("e_0 ^ e_1 ^ e_2 is the top term", CO.koszul_sign([(0,), (1,), (2,)], 3), 1)
+    check("swapping two indices flips the sign",
+          CO.koszul_sign([(0,), (2,), (1,)], 3), -1)
+    check("a repeated index gives zero", CO.koszul_sign([(1,), (1,), (1,)], 3), 0)
+    check("and so does failing to exhaust the polynomials",
+          CO.koszul_sign([(0,), (1,)], 3), 0)
+
+    # A unique Koszul term is not yet a representative: the differentials can
+    # cut it down. Every claim of an explicit class must survive line_co.
+    X = CICY(conf)
+    status = {}
+    unverified = 0
+    for k in itertools.product(range(-3, 4), repeat=3):
+        o = CO.class_origin(conf, list(k), 1)
+        status[o["status"]] = status.get(o["status"], 0) + 1
+        if o["status"] == "unique" and o["dimension"] != int(X.line_co(list(k))[1]):
+            unverified += 1
+    check_true("some charges have a unique E_1 term that the differentials "
+               "cut down", status.get("differentials", 0) > 0)
+    check("every explicit class agrees with line_co", unverified, 0)
+
+    # The couplings themselves, on the model this package carries.
+    r = CO.model_couplings(conf, M)
+    check("five up-type couplings are present", r["present"], 5)
+    check("five vanish", r["vanishing"], 5)
+    check("and none is left undecided", r["undecided"], 0)
+    check("every surviving coupling has magnitude one",
+          sorted(set(abs(v) for v in r["values"].values())), [1])
+    check("10_3 10_4 5_34 is the one killed by a repeated index",
+          [rec["value"] for rec in r["records"]
+           if rec["pattern"] == ("10_3", "10_4", "5_34")], [0])
+
+    # The vanishing predicate must agree with the module that computes it from
+    # dimensions and Koszul labels alone, wherever that one is willing to speak.
+    agree = declined = 0
+    k = np.asarray(M, dtype=int)
+    for a, b in itertools.combinations(range(len(k)), 2):
+        trio = [k[a], k[b], -(k[a] + k[b])]
+        try:
+            old = RP.cup_product_vanishes(conf, trio)["vanishes"]
+        except ValueError:
+            declined += 1
+            continue
+        if old == CO.coupling(conf, trio)["vanishes"]:
+            agree += 1
+    check("agrees with cup_product_vanishes on every decided pattern", agree, 6)
+    check_true("and decides the ones it declined", declined == 4)
+
+    # An absent group is an exact absence, not an open question.
+    res = CO.coupling(conf, [k[0], k[1], -(k[0] + k[1])])
+    check_true("a zero-dimensional group makes the coupling absent",
+               res["vanishes"] and "zero-dimensional" in res["reason"])
+
+    # And the charges must still cancel.
+    try:
+        CO.coupling(conf, [k[0], k[1], k[2]])
+        check_true("a non-cancelling triple is refused", False)
+    except ValueError:
+        check_true("a non-cancelling triple is refused", True)
+
+
 def test_representatives():
     print("\n[12] cup products, beyond the dimension count")
     from pyCICY.theories import representatives as RP
@@ -814,6 +908,7 @@ def main():
     test_mass_terms()
     test_viable_model()
     test_representatives()
+    test_cocycles()
 
     print("\n" + "=" * 72)
     if FAILURES:
