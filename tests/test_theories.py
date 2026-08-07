@@ -72,12 +72,18 @@ MODEL = [[-2, -2, -1, 2], [-2, 1, 0, 0], [1, -2, 1, 0],
 
 def test_interface():
     print("\n[1] the interface")
-    check("two theories registered", sorted(T.registry),
-          ["heterotic-line-bundle", "heterotic-standard-embedding"])
+    check("four theories registered", sorted(T.registry),
+          ["f-theory-4d", "f-theory-6d", "heterotic-line-bundle",
+           "heterotic-standard-embedding"])
     check_true("get() finds one",
                T.get("heterotic-standard-embedding") is T.StandardEmbedding)
     check_true("and refuses an unknown key",
                _raises(KeyError, T.get, "type-iia"))
+    # The F-theory constructions are tested in tests/test_ftheory.py; here we
+    # only check they registered, since the registry is shared state and a
+    # theory that fails to register is invisible rather than broken.
+    check_true("including the F-theory ones",
+               T.get("f-theory-6d") is T.FTheory6D)
 
     se = T.StandardEmbedding(QUINTIC)
     check("gauge group", se.gauge_group(), "E_6")
