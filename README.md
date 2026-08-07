@@ -55,10 +55,12 @@ forms, the split web over the published list of 7890 threefolds.
 
 **String constructions (`theories/`)**
 A subpackage where different compactifications live, sharing the exact
-machinery underneath and each declaring what it can compute. Two so far:
-`StandardEmbedding` (V = TX, E₆) and `LineBundleModel` (SU(5) and the Standard
-Model). Type IIA, IIB orientifolds, F-theory would go here; they are not
-implemented.
+machinery underneath and each declaring what it can compute. Four so far:
+`StandardEmbedding` (V = TX, E₆), `LineBundleModel` (SU(5) and the Standard
+Model), `FTheory6D` (elliptic threefold over a surface, six-dimensional
+N=(1,0), spectrum exact from anomaly cancellation) and `FTheory4D` (elliptic
+fourfold, D3 tadpole exact, spectrum flux-dependent). Type IIA and IIB
+orientifolds and M-theory would go here; they are not implemented.
 
 **The metric bridge (`export`)**
 Hands verified models to the numerical-metric packages. Generates a defining
@@ -1623,6 +1625,139 @@ Every search takes an explicit charge box, a result `limit` and an optional
 `max_seconds`, and warns when it returns a truncation rather than a complete
 answer. That is deliberate: a truncated list and an exhaustive one are
 different objects and should not be presented alike.
+
+## F-theory in six dimensions
+
+`pyCICY.theories.ftheory` is the other end of the package's range from the
+heterotic modules, and it is there because six-dimensional F-theory is a case
+where the physics is *overdetermined*. Anomaly cancellation in 6d N=(1,0) is
+not a check applied after the spectrum is known; it is strong enough to
+produce the spectrum from the divisor classes. Everything the module computes
+is integer or rational arithmetic on the intersection form of a surface — no
+cohomology, no metric, no approximation.
+
+```python
+from pyCICY.theories import ftheory as FT
+
+m = FT.FTheory6D("F12")
+m.gauge_group()            # 'e8'
+m.spectrum()               # T=1, V=248, H=492, gravitational anomaly 0
+m.hodge_numbers()          # (11, 491)
+m.check_anomalies()['ok']  # True
+```
+
+### What is derived rather than tabulated
+
+Kodaira's classification of singular fibres and Morrison–Taylor's list of
+non-Higgsable clusters are quoted; they have to be. The matter content is not.
+`matter_content` solves the Kumar–Morrison–Taylor conditions
+
+```
+lam ( A_adj - sum_R x_R A_R )   =  6 K . D
+lam^2 ( sum_R x_R C_R - C_adj ) =  3 D . D
+B_adj                           =  sum_R x_R B_R
+```
+
+in exact rational arithmetic, and the standard results come out of the linear
+algebra: 2N fundamentals for `su(N)` on a −2 curve, N+8 fundamentals and one
+antisymmetric on a −1 curve, 16 and two on a 0 curve. On a −7 curve `e7` gets
+`Fraction(1, 2)` of a **56** — a half-hypermultiplet, which is exact rather
+than a rounding artefact because the 56 is pseudo-real.
+
+The non-Higgsable clusters are derived too. Set every multiplicity to zero and
+the first two conditions become two independent formulas for the
+self-intersection, `D.D = -2 - lam A_adj/6` and `D.D = -lam² C_adj/3`. They
+are different functions of the group theory, they agree for six algebras, and
+they agree at an integer for those same six:
+
+| algebra | `su(3)` | `so(8)` | `f4` | `e6` | `e7` | `e8` |
+| --- | --- | --- | --- | --- | --- | --- |
+| `D.D` | −3 | −4 | −5 | −6 | −8 | −12 |
+
+which is exactly the tabulated matter-free list, at exactly the tabulated
+self-intersections. `matter_free_algebras()` produces the table without
+consulting it. `g2` and `su(2)` fail the integrality and so are forced to
+carry matter, which is also correct.
+
+### Two routes to the same number
+
+The complex structure moduli of the generic Weierstrass model are a
+Riemann–Roch count on the base: the coefficients `f ∈ H⁰(-4K)` and
+`g ∈ H⁰(-6K)`, less the automorphisms and the rescaling
+`(f,g) → (t⁴f, t⁶g)`. The gravitational anomaly `H - V + 29T = 273` is a
+one-loop condition in six dimensions and says the answer must be `272 - 29T`.
+The two computations have nothing to do with each other, and they agree on
+every base:
+
+| base | K² | T | χ(T_B) | h⁰(−4K) | h⁰(−6K) | moduli | 272−29T |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| P² | 9 | 0 | 8 | 91 | 190 | 272 | 272 |
+| F₀, F₁, F₂ | 8 | 1 | 6 | 81 | 169 | 243 | 243 |
+| dP₃ | 6 | 3 | 2 | 61 | 127 | 185 | 185 |
+| dP₈ | 1 | 8 | −8 | 11 | 22 | 40 | 40 |
+
+F₂ is the delicate row. Its automorphism group is one dimension larger than
+F₀'s, which alone would undercount by one; the compensation is that F₂
+deforms to F₀, so `h¹(T_B) = 1`. Using `χ(T_B)` rather than `h⁰(T_B)` is what
+holds the column at 243.
+
+The end of the range is the sharpest check. F₁₂ gives `(h¹¹, h²¹) = (11, 491)`
+with `e8` on the −12 section; on the heterotic side the dual is E₈×E₈ on K3
+with instanton numbers `(24, 0)`, so the second E₈ is untouched and must be
+unbroken. Two derivations, one answer. F₉, F₁₀ and F₁₁ are refused as bases
+rather than given a spectrum: their sections carry points where the
+Weierstrass model is non-minimal, so they are not bases until those are blown
+up, and on the heterotic side those are exactly the cases with 3, 2 and 1
+instantons — too few to fit, with the small instanton transition standing in
+for the blowup.
+
+### A third category
+
+The package already separated quantities that are **exact** from quantities
+that **need the Ricci-flat metric**. Six dimensions forces a third: N=(1,0)
+supersymmetry forbids a superpotential, so there are no Yukawa couplings at
+all. Returning zero would be numerically right and conceptually wrong, and
+raising `NeedsMetric` would blame the metric for an absence it has nothing to
+do with, so there is a separate `NoSuchTheory`.
+
+| | reason | exception |
+| --- | --- | --- |
+| `FTheory6D.holomorphic_yukawa` | forbidden by supersymmetry | `NoSuchTheory` |
+| `LineBundleModel.holomorphic_yukawa` | needs cohomology representatives | `NotImplementedError` |
+| `LineBundleModel.physical_yukawa` | needs the metric | `NeedsMetric` |
+
+All three subclass `NotImplementedError`, so a caller that catches broadly
+still works; a caller that wants to know *why* can tell them apart.
+
+### Fibrations of the CICY list
+
+`obvious_fibrations` implements the block criterion of Anderson, Gao, Gray and
+Lee: reorder the configuration matrix into `[[F, 0], [C, B]]`, and if the top
+block has dimension one it is a Calabi-Yau one-fold and the manifold fibres in
+elliptic curves over the bottom block. Swept over the published list:
+
+```console
+python3 examples/ftheory_fibrations.py     # 7837 of 7890, in about 7 seconds
+```
+
+which is the published count, from the definition rather than from their
+tables.
+
+Being fibred is not the same as being an F-theory background, and the example
+is built around the gap. An obvious fibration is a *genus-one* fibration: the
+fibres are elliptic curves but nothing marks a point on them, and without a
+section there is no Weierstrass form. The (3,3) hypersurface in P²×P² fibres
+over P² in plane cubics and has `(2, 83)`; the Weierstrass model over the same
+base has `(2, 272)`. Same base, same fibre type, different manifolds — and the
+Weierstrass one is not a CICY at all, since its fibre lives in P^{2,3,1}.
+
+```console
+python3 examples/ftheory_6d.py
+python3 examples/ftheory_6d.py --base dP3 --gauge 'su(5)' --divisor 0,1,0,0
+python3 examples/ftheory_6d.py --only clusters
+make ftheory
+make ftheory-fibrations
+```
 
 ## Chirality across domains
 

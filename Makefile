@@ -36,6 +36,7 @@ CHARGE ?= 1
 ORDER ?= 2
 BUDGET ?= 20
 MAX_CONFIGS ?= 1200
+FIB_LIMIT   ?= 7890
 
 # The figure script writes these; facts.json carries the scalars quoted in
 # the prose so the text and the plots cannot drift apart.
@@ -53,7 +54,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper figures test survey toric-survey knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
+.PHONY: all paper figures test survey toric-survey ftheory ftheory-fibrations knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
 
 all: paper
 
@@ -115,6 +116,17 @@ survey:
 # spectra of the 2d lattice models they quantize to (arXiv:1701.01561).
 toric-survey:
 	$(PYTHON) examples/toric_survey.py --flux $(FLUX)
+
+# Six-dimensional F-theory: the non-Higgsable clusters derived from anomaly
+# cancellation, the Hirzebruch and del Pezzo bases end to end, and the three
+# ways a number can be unavailable.
+ftheory:
+	$(PYTHON) examples/ftheory_6d.py
+
+# How much of the CICY list fibres in elliptic curves, by the block criterion
+# of Anderson, Gao, Gray and Lee. Needs `make data`.
+ftheory-fibrations:
+	$(PYTHON) examples/ftheory_fibrations.py --limit $(FIB_LIMIT)
 
 # Chirality of K15n81556 and the failure of additivity of the unknotting
 # number (arXiv:2506.24088, arXiv:2507.14265). SEARCH=N also runs the
