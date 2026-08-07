@@ -744,6 +744,80 @@ def test_viable_model():
                    and f["all_liftable"] for f in found))
 
 
+def test_genericity():
+    print("\n[15] the genericity assumption, checked on a specific X")
+    import itertools
+    from pyCICY import CICY, equivariant as EQ
+    from pyCICY.theories import cocycles as CO
+    from pyCICY.theories import differentials as DF
+    from pyCICY.theories import yukawa as Y
+    from pyCICY.smoothness import monomials as smon
+
+    conf = Y.CICY5299["configuration"]
+    M = Y.CICY5299["summands"]
+    X = CICY(conf)
+
+    # The exported polynomial reduces exactly, which is the whole point of the
+    # coefficients being Gaussian integers.
+    eq = DF.equations_from_export(X, seed=5, p=32009)
+    check("three equations, of eighteen monomials each",
+          [len(e) for e in eq], [18, 18, 18])
+    try:
+        DF.equations_from_export(X, seed=5, p=32003)
+        check_true("a prime that is 3 mod 4 is refused", False)
+    except ValueError:
+        check_true("a prime that is 3 mod 4 is refused", True)
+
+    # The particular X handed to a metric package has the generic cohomology.
+    rep = DF.genericity_report(
+        X, [[-3, 1, 0], [1, 1, -3], [2, -1, 1], [-1, 1, 0], [0, 0, 0]], seed=5)
+    check("the exported X agrees with generic and with line_co",
+          rep["disagree"], 0)
+
+    # Gamma-invariance halves the monomial support without moving a dimension.
+    T = [[1, 2], [1, 2], [1, 2], [1, 2]]
+    XT = CICY(T)
+    A = EQ.TETRAQUADRIC_Z2()
+    inv = DF.equations_from_export(XT, action=A, seed=0, p=32009)
+    unc = DF.equations_from_export(XT, action=None, seed=0, p=32009)
+    check_true("invariance cuts the tetraquadric support roughly in half",
+               len(inv[0]) < len(unc[0]))
+    # One charge set, used for both the claim and its control, so that the
+    # two are actually comparable.
+    box = [[-2, -2, -2, 2], [-2, -2, 2, -2], [-2, 2, -2, -2], [2, -2, -2, -2],
+           [-1, 1, 0, 0], [0, 0, 0, 0], [1, 1, -2, 0], [-2, 1, 1, 0]]
+
+    def _mismatches(equations):
+        n = 0
+        for k in box:
+            h = XT.line_co(k)
+            true = {m: int(h[m]) for m in range(len(h)) if int(h[m])}
+            got = {m: d for m, d in
+                   DF.e2_dimensions(np.array(T), k, p=32009,
+                                    equations=equations)["predicted"].items() if d}
+            if got != true:
+                n += 1
+        return n
+
+    check("an invariant X still has generic cohomology", _mismatches(inv), 0)
+    check("as does the unconstrained one", _mismatches(unc), 0)
+
+    # A negative control, without which the two lines above prove nothing: the
+    # method must be able to see a non-generic polynomial when there is one.
+    mons = smon(T, [2, 2, 2, 2])
+    check_true("while a degenerate polynomial is caught on the same charges",
+               _mismatches([{mons[0]: 1}]) > 0)
+
+    # And the couplings themselves agree on the exported X.
+    a = CO.model_couplings(conf, M)
+    d = DF.model_couplings(conf, M, p=32009, equations=eq)
+    check("the exported X gives the same five couplings", d["present"],
+          a["present"])
+    check("and the same five absences", d["vanishing"], a["vanishing"])
+    check_true("all well-defined modulo coboundaries",
+               all(r.get("well_defined") for r in d["records"]))
+
+
 def test_differentials():
     print("\n[14] computing the differentials, not just detecting them")
     import itertools
@@ -987,6 +1061,7 @@ def main():
     test_representatives()
     test_cocycles()
     test_differentials()
+    test_genericity()
 
     print("\n" + "=" * 72)
     if FAILURES:
