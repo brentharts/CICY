@@ -452,12 +452,10 @@ non-zero entries.
 
 Two honest costs, both structural rather than incidental:
 
-- **The ranks are generic.** `d_1` depends on the polynomials themselves and
-  not only on their multidegrees — which is exactly why tabulating the `E_1`
-  page could never substitute for computing. The module takes generic equations
-  over `F_p` from `smoothness.random_equations`, so a non-generic `X` with
-  larger cohomology would not be seen. Stability across seeds is evidence of
-  genericity, not a proof of it.
+- **The ranks are generic by default** — though this is now checkable rather
+  than assumed; see the next section. `d_1` depends on the polynomials
+  themselves and not only on their multidegrees, which is exactly why
+  tabulating the `E_1` page could never substitute for computing.
 - **It is arithmetic over `F_p`.** A rank could drop for a prime dividing some
   minor, so the tests run several primes and compare. The verdict on the triple
   above is the same over `p = 10007, 32003, 1000003`.
@@ -468,6 +466,48 @@ unchanged. `coupling` adds each image generator and re-multiplies, and reports
 `well_defined`. A failure there would mean the product does not descend to
 cohomology and the number means nothing — so it is a test of the construction,
 not a formality.
+
+### Is the specific X generic? A question that can be answered
+
+The differentials above are computed from *random* polynomials over `F_p`, so
+they give the cohomology of a generic member of the family. The `X` that
+actually gets handed to a metric package is not a random member: it has fixed
+Gaussian-integer coefficients, and when a quotient is wanted it is further
+constrained to be Γ-invariant, which is a codimension condition with no a
+priori reason to preserve cohomology.
+
+`differentials.equations_from_export` closes that gap by reducing the *actual*
+exported polynomial to `F_p`. The reduction `a + b i -> a + b i_p` is exact for
+`p ≡ 1 mod 4` — the same convention, and for the same reason, as
+`export.is_smooth_over_Fp`, which learned it the hard way: rounding a float
+coefficient throws the imaginary part away and tests a much sparser polynomial
+than the one exported. A prime that is `3 mod 4` is refused rather than
+silently approximated.
+
+The answer, on everything tested:
+
+- **CICY 5299 as exported: 343 of 343 charges** in the `[-3,3]` box match
+  `line_co`, on two independent coefficient seeds.
+- **The tetraquadric constrained to be Z₂-invariant: no mismatch** on the
+  charges tested. Invariance cuts the monomial support of the quartic from 81
+  terms to 41 — halving the family — and moves no dimension at all.
+- The five CICY 5299 couplings come out identically from random polynomials,
+  from the exported ones, and from the single-term method: same values, same
+  signs, all well-defined.
+
+That last set of zeros would be worthless without a control, so there is one.
+Fed a deliberately degenerate quartic — a single monomial — the same machinery
+reports mismatches on the same charge set, inflating `h²` from 24 to 26 and
+inventing an `h³` that is not there. The method can see non-genericity when it
+is present, which is what makes its silence on the real polynomials
+informative.
+
+What this does *not* establish is a theorem. It is a finite check on finitely
+many charges for two manifolds, and `genericity_report` says so rather than
+generalising: agreement is evidence about the charges tested. But the
+assumption has moved from load-bearing and invisible to tested and reported,
+which is the difference that matters when the answer feeds a metric package
+that cannot complain.
 
 ### Handing CICY 5299 to a metric package — and where it stops
 
@@ -606,9 +646,10 @@ Next, in order of what would change what this package can claim:
    that are single Koszul terms; `theories.differentials` computes the
    spectral sequence for the rest. On CICY 5299 every charge in a `[-3,3]` box
    — all 343 — now has an explicit basis, verified against `line_co`. What
-   remains genuinely open is narrower than it was: the ranks are **generic**,
-   computed over `F_p` with random defining polynomials, so a non-generic `X`
-   could have larger cohomology and this would not see it. Physical couplings
+   remains genuinely open is narrower again: the genericity assumption is now
+   *testable* rather than load-bearing, and passes on every `X` this package
+   actually exports, but a test on finitely many charges is not a theorem.
+   Physical couplings
    additionally need the metric, and masses additionally need moduli
    stabilisation. That chain is the remaining distance between this toolkit
    and a prediction.
