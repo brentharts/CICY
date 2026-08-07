@@ -72,9 +72,12 @@ MODEL = [[-2, -2, -1, 2], [-2, 1, 0, 0], [1, -2, 1, 0],
 
 def test_interface():
     print("\n[1] the interface")
-    check("four theories registered", sorted(T.registry),
-          ["f-theory-4d", "f-theory-6d", "heterotic-line-bundle",
-           "heterotic-standard-embedding"])
+    # The heterotic constructions this suite is about. Membership rather than
+    # an exact list, since the registry is shared with every other
+    # construction in the subpackage and pinning it makes this fail on
+    # unrelated additions.
+    for key in ("heterotic-standard-embedding", "heterotic-line-bundle"):
+        check_true("%s registered" % key, key in T.registry)
     check_true("get() finds one",
                T.get("heterotic-standard-embedding") is T.StandardEmbedding)
     check_true("and refuses an unknown key",
@@ -82,8 +85,10 @@ def test_interface():
     # The F-theory constructions are tested in tests/test_ftheory.py; here we
     # only check they registered, since the registry is shared state and a
     # theory that fails to register is invisible rather than broken.
-    check_true("including the F-theory ones",
+    check_true("the F-theory construction registered too",
                T.get("f-theory-6d") is T.FTheory6D)
+    check_true("and the orientifold",
+               T.get("type-iib-orientifold") is T.Orientifold)
 
     se = T.StandardEmbedding(QUINTIC)
     check("gauge group", se.gauge_group(), "E_6")

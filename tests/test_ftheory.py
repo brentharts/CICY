@@ -509,11 +509,18 @@ def test_absent_couplings():
                "none exist in six dimensions" in d)
 
     # The registry picked up both new theories.
-    check("four theories registered", sorted(T.registry),
-          ["f-theory-4d", "f-theory-6d", "heterotic-line-bundle",
-           "heterotic-standard-embedding"])
+    # Membership rather than an exact list: the registry is shared state that
+    # every construction adds to, so pinning it here would make this suite
+    # fail whenever an unrelated theory is added, which is noise rather than
+    # a regression. What matters is that these two registered.
+    check_true("the six-dimensional theory registered",
+               "f-theory-6d" in T.registry)
+    check_true("and the four-dimensional one",
+               "f-theory-4d" in T.registry)
     check_true("get() finds the six-dimensional one",
                T.get("f-theory-6d") is FT.FTheory6D)
+    check_true("and the four-dimensional one",
+               T.get("f-theory-4d") is FT.FTheory4D)
 
 
 def test_fibrations():
