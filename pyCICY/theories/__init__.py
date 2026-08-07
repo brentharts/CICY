@@ -18,6 +18,9 @@ Currently implemented:
     f-theory-4d                    elliptic fourfold, four dimensional N=1,
                                    D3 tadpole exact and spectrum flux
                                    dependent
+    type-iib-orientifold           a holomorphic involution of X, O3/O7 or
+                                   O5/O9, equivariant Hodge numbers and the
+                                   closed string spectrum exact
 
 The Yukawa side is layered by how much of the class each step needs: `yukawa`
 decides the texture from dimensions, `representatives` labels the Koszul origin
@@ -33,20 +36,28 @@ superpotential, so an F-theory compactification to six dimensions has no
 Yukawa couplings at all, and :exc:`~pyCICY.theories.ftheory.NoSuchTheory` says
 that rather than returning zero or blaming the metric.
 
-Type IIA and IIB orientifolds and M-theory compactifications would go here
-too. They are not implemented.
+`orientifold` reaches the same physics from the other side, and the two meet:
+:class:`~pyCICY.theories.orientifold.SenLimit` takes an F-theory base to its
+weak coupling limit, where the D7-brane rules of the orientifold have to
+reproduce the Kodaira fibre types of the fibration. They do.
+
+Type IIA orientifolds and M-theory compactifications would go here too. They
+are not implemented.
 """
 
 from .base import Theory, NeedsMetric, registry, register, get
 from .heterotic import StandardEmbedding, LineBundleModel
 from .ftheory import Base, FTheory6D, FTheory4D, NoSuchTheory
+from .orientifold import Orientifold, SignInvolution, SenLimit
 from . import yukawa
 from . import representatives
 from . import cocycles
 from . import differentials
 from . import ftheory
+from . import orientifold
 
 __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "StandardEmbedding", "LineBundleModel", "yukawa",
            "representatives", "cocycles", "differentials",
-           "Base", "FTheory6D", "FTheory4D", "NoSuchTheory", "ftheory"]
+           "Base", "FTheory6D", "FTheory4D", "NoSuchTheory", "ftheory",
+           "Orientifold", "SignInvolution", "SenLimit", "orientifold"]

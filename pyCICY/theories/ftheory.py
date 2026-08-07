@@ -97,6 +97,7 @@ from .base import NeedsMetric, Theory, register
 __all__ = ["Base", "FTheory6D", "FTheory4D", "NoSuchTheory",
            "kodaira_type", "KODAIRA", "NON_HIGGSABLE",
            "algebra_data", "matter_content", "check_anomalies",
+           "weierstrass_euler",
            "matter_free_algebras", "weierstrass_moduli",
            "obvious_fibrations", "is_obviously_fibred"]
 
@@ -880,6 +881,29 @@ class Base(object):
     def __repr__(self):
         return "<Base %s, h^{1,1}=%d, K^2=%d, T=%d>" % (
             self.name, self.h11, self.K2, self.T)
+
+
+def weierstrass_euler(base):
+    r"""chi of the smooth Weierstrass threefold over ``base``, which is -60 K^2.
+
+    An independent route to the Euler characteristic: not through the Hodge
+    numbers, and not through the anomaly, but from the Chern classes of the
+    elliptic fibration. For a smooth Weierstrass model over a surface B,
+
+        chi(X) = -60 int_B c_1(B)^2 = -60 K_B^2 .
+
+    On P^2 that is -540 and on any Hirzebruch surface -480, which is what
+    :meth:`FTheory6D.euler_characteristic` gives from the spectrum.
+
+    The agreement holds exactly where the generic model is smooth. Once the
+    base forces a gauge algebra -- F_n for n >= 3 -- the Weierstrass model is
+    singular and the smooth Calabi-Yau is its resolution, which has different
+    Chern classes and a different Euler characteristic. F_12 gives -960 from
+    the spectrum against -480 here, and the difference is the resolution of
+    the e8 fibre. So this function is a check on the smooth cases and a
+    statement about the singular ones, not a shortcut for either.
+    """
+    return -60 * base.K2
 
 
 def weierstrass_moduli(base):
