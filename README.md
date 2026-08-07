@@ -378,6 +378,50 @@ what is returned is whether it vanishes, which is the part carrying the
 physics. Classes without a unique Koszul origin are reported as **undecided**
 rather than assumed non-zero.
 
+### From a boolean to an integer, and a guard that was missing
+
+`theories.representatives` returns whether a coupling vanishes. On a product of
+projective spaces the classes are explicit enough to multiply, so
+`theories.cocycles` returns the number instead.
+
+The basis is monomial. On `P^n`, `H^0(O(m))` is spanned by the degree-`m`
+monomials and `H^n(O(m))` by the Laurent monomials with *every* exponent `≤ -1`
+— the Čech classes of the top cover, `C(-m-1, n)` of them, which is exactly the
+dimension `ambient_degree_dims` already counted. Multiplication is
+multiplication of monomials, and Serre duality picks out `1/(x_0 ... x_n)`, so a
+triple product that reaches the top is the coefficient of that generator. The
+Koszul side contributes the sign of the permutation sorting `S_1, S_2, S_3`.
+
+On CICY 5299 the five surviving up-type couplings come out as
+
+    10_1 10_2 5_12 = -1     10_2 10_3 5_23 = -1
+    10_1 10_3 5_13 = +1     10_2 10_4 5_24 = -1
+    10_1 10_4 5_14 = +1     10_3 10_4 5_34 =  0
+
+all of magnitude one, the zero being the type II vanishing from `L_3 = L_4`.
+Two things are *not* claimed. Rescaling any basis vector rescales every coupling
+it appears in, so an individual entry means nothing and the ratios and relative
+signs mean everything. And there is no Kähler factor anywhere: these are
+holomorphic couplings, and the physical ones still need the metric.
+
+Writing the representatives down also exposed a hole in the rule above them.
+**A unique Koszul term is not yet a representative.** `koszul_origin` tabulates
+the `E_1` page; uniqueness *within* a degree does not mean the spectral sequence
+has degenerated there, and a differential from an adjacent degree can cut the
+term down before it reaches `H^*(X)`. Checking every charge in a `[-3,3]` box
+against `CICY.line_co` — an engine that shares nothing with this one — **66 of
+the 96 unique-looking terms had the wrong dimension.** Both modules now verify
+against `line_co` and decline when it disagrees, which is why the box splits
+`190` empty, `66` differentials, `57` mixed, `30` explicit. The CICY 5299
+couplings are unchanged: they were always in the sound `30`. The bug was latent
+precisely because the one worked example never triggered it.
+
+Three failure modes are now distinguished where there used to be one message.
+An **empty** group means the coupling is exactly absent — the old code called
+that "a mixture", which is not just imprecise but backwards, since an absence is
+a result and a mixture is an open question. **Differentials** and **mixed** are
+the two genuine declines.
+
 ### Handing CICY 5299 to a metric package — and where it stops
 
 The export works: three defining polynomials of 18 monomials each, kmoduli at
@@ -511,12 +555,18 @@ Next, in order of what would change what this package can claim:
    pullback conventions matched to cymetric's data.
 2. **A converged metric.** Long GPU runs, until the Monge-Ampère and Ricci
    residuals are small enough to mean something.
-3. **Cohomology representatives.** The *pattern* of line-bundle Yukawa
-   couplings is already exact — see below — but the non-zero *values* need
-   explicit representatives, which this package does not construct. That is a
-   missing feature, not an obstruction. Physical couplings additionally need
-   the metric, and masses additionally need moduli stabilisation. That chain
-   is the remaining distance between this toolkit and a prediction.
+3. **Cohomology representatives.** *Done, within a stated scope* — see below.
+   `theories.cocycles` writes each class down as a Čech monomial and returns
+   the holomorphic coupling as an exact integer, so on CICY 5299 the five
+   surviving up-type couplings are no longer a boolean but `-1, +1, +1, -1,
+   -1`. What that buys is ratios and relative signs; the model-wide
+   normalisation is a choice of generator and is not fixed. The scope is
+   classes with a *verified* single Koszul origin, which on that manifold is
+   30 of the 343 charges in a box — the rest mix, or have differentials.
+   Extending it past that needs the spectral sequence resolved, not just
+   tabulated. Physical couplings additionally need the metric, and masses
+   additionally need moduli stabilisation. That chain is the remaining
+   distance between this toolkit and a prediction.
 
 
 ---
