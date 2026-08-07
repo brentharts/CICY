@@ -75,9 +75,24 @@ class Theory(object):
 
     def __init__(self, X, name=None):
         from ..pyCICY import CICY
-        self.X = X if isinstance(X, CICY) else CICY(
-            np.asarray(X, dtype=int).tolist())
+        if X is None:
+            # Not every construction compactifies on a CICY. The generic
+            # F-theory background is a hypersurface in a weighted projective
+            # bundle, which is not a complete intersection in a product of
+            # projective spaces; the physics is still computed from the same
+            # interface, so the geometry is allowed to be absent and named by
+            # geometry() instead.
+            self.X = None
+        else:
+            self.X = X if isinstance(X, CICY) else CICY(
+                np.asarray(X, dtype=int).tolist())
         self.name = name or self.__class__.__name__
+
+    def geometry(self):
+        """A label for the compactification geometry, used by :meth:`describe`."""
+        if self.X is None:
+            return "a geometry that is not a CICY"
+        return self.X.M.tolist()
 
     # -- what the construction gives --------------------------------------
 
@@ -145,7 +160,7 @@ class Theory(object):
 
     def describe(self):
         """A summary separating what is exact from what is not."""
-        lines = ["%s on %s" % (self.name, self.X.M.tolist()),
+        lines = ["%s on %s" % (self.name, self.geometry()),
                  "  gauge group      %s" % self.gauge_group()]
         try:
             for k, v in sorted(self.spectrum().items()):

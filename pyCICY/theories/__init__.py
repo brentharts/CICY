@@ -12,6 +12,12 @@ Currently implemented:
     heterotic-standard-embedding   V = TX, E_6, Yukawa couplings exact
     heterotic-line-bundle          V a sum of line bundles, SU(5) and the
                                    Standard Model, spectrum exact
+    f-theory-6d                    elliptic threefold over a surface, six
+                                   dimensional (1,0), spectrum exact from
+                                   anomaly cancellation
+    f-theory-4d                    elliptic fourfold, four dimensional N=1,
+                                   D3 tadpole exact and spectrum flux
+                                   dependent
 
 The Yukawa side is layered by how much of the class each step needs: `yukawa`
 decides the texture from dimensions, `representatives` labels the Koszul origin
@@ -20,17 +26,27 @@ monomial and returns the integer, and `differentials` computes the spectral
 sequence for the classes that are not single monomials. None of the four needs
 a metric, and none of the four gives a physical coupling.
 
-Type IIA and IIB orientifolds, F-theory and M-theory compactifications would go
-here too. They are not implemented.
+`ftheory` adds a third category to the two the interface was built around.
+Beside quantities that are exact and quantities that need a metric there are
+quantities that do not exist: six-dimensional (1,0) supersymmetry forbids a
+superpotential, so an F-theory compactification to six dimensions has no
+Yukawa couplings at all, and :exc:`~pyCICY.theories.ftheory.NoSuchTheory` says
+that rather than returning zero or blaming the metric.
+
+Type IIA and IIB orientifolds and M-theory compactifications would go here
+too. They are not implemented.
 """
 
 from .base import Theory, NeedsMetric, registry, register, get
 from .heterotic import StandardEmbedding, LineBundleModel
+from .ftheory import Base, FTheory6D, FTheory4D, NoSuchTheory
 from . import yukawa
 from . import representatives
 from . import cocycles
 from . import differentials
+from . import ftheory
 
 __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "StandardEmbedding", "LineBundleModel", "yukawa",
-           "representatives", "cocycles", "differentials"]
+           "representatives", "cocycles", "differentials",
+           "Base", "FTheory6D", "FTheory4D", "NoSuchTheory", "ftheory"]
