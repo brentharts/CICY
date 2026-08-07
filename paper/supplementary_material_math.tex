@@ -1,0 +1,1811 @@
+% supplementary_material.tex
+%
+% Build with:  make paper       (from the repository root)
+% or:          python3 paper/make_figures.py && pdflatex supplementary_material.tex (x2)
+%
+% Every figure in this document is regenerated from the pyCICY source by
+% paper/make_figures.py. The numbers quoted in the text are written to
+% figures/facts.json by that same script, so the prose and the plots cannot
+% drift apart silently.
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink,capitalize]{cleveref}
+\usepackage{framed}
+\usepackage{hyperref}
+\usepackage{orcidlink}
+
+
+\graphicspath{{figures/}}
+
+% Numbers computed by paper/make_figures.py. Defined here as a fallback so
+% the document still typesets if the figures have not been generated yet;
+% the \input below overrides them with the real values.
+\newcommand{\FactDepth}{?}\newcommand{\FactConfigs}{?}
+\newcommand{\FactEdges}{?}\newcommand{\FactEffective}{?}
+\newcommand{\FactIneffective}{?}\newcommand{\FactHodgePairs}{?}
+\newcommand{\FactFavourable}{?}\newcommand{\FactQuinticNodes}{?}
+\newcommand{\FactValidationPairs}{?}\newcommand{\FactValidationAgree}{?}
+\newcommand{\FactHminOne}{?}\newcommand{\FactHmaxOne}{?}
+\newcommand{\FactHminTwo}{?}\newcommand{\FactHmaxTwo}{?}
+\newcommand{\FactCold}{?}\newcommand{\FactWarm}{?}
+\newcommand{\FactChTwoConfigs}{?}\newcommand{\FactChTwoCoeffs}{?}
+\newcommand{\FactChTwoDisagree}{?}\newcommand{\FactChTwoEdges}{?}
+\newcommand{\FactChTwoIneffective}{?}\newcommand{\FactChTwoIneffNonzero}{?}
+\newcommand{\FactGVModels}{?}\newcommand{\FactGVMaxDegree}{?}
+\newcommand{\FactGVQuinticOne}{?}\newcommand{\FactGVQuinticTwo}{?}
+\newcommand{\FactGVQuinticThree}{?}
+\newcommand{\FactGenCicys}{?}\newcommand{\FactGenCandidates}{?}
+\newcommand{\FactGenWithSymmetry}{?}\newcommand{\FactGenRecords}{?}
+\newcommand{\FactGenHits}{?}\newcommand{\FactGenMinEuler}{?}
+\newcommand{\FactGenList}{?}
+\newcommand{\FactAddChecked}{?}\newcommand{\FactAddMultiple}{?}
+\newcommand{\FactAddMismatch}{?}\newcommand{\FactAddSpread}{?}
+\makeatletter
+\@ifundefined{input@path}{}{}
+\makeatother
+\IfFileExists{figures/facts.tex}{\input{figures/facts.tex}}{}
+
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\cO}{\mathcal{O}}
+\newcommand{\ch}{\operatorname{ch}}
+\newcommand{\XD}{X_D}
+\newcommand{\XR}{X_R}
+
+\theoremstyle{definition}
+\newtheorem{remark}{Remark}
+
+\title{\vspace{-1cm}\textbf{What a Configuration Matrix Determines,\\
+and What It Does Not:\\[2pt]
+\large Exact Methods for Heterotic Compactifications on CICYs}}
+\author{B.S. Hartshorn \orcidlink{0009-0004-2853-655X} \small \url{https://github.com/brentharts/CICY}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The organizing question is which quantities in a heterotic compactification
+are determined by the configuration matrix alone. A surprising number are, and
+they are exact --- integers or integer series, computed symbolically and
+cross-checked by independent routes. The node count of a conifold transition,
+the second Chern character across it, the index of a line bundle sum, the
+character-valued index of a discrete group action, the branching of an
+$SU(5)$ Wilson line, the Yukawa coupling of the standard embedding together
+with its worldsheet instanton corrections, and the entire pattern of allowed
+and forbidden couplings of a line bundle model: all of these follow from the
+degrees. An equal number are not, and the boundary is sharp rather than gradual. The
+holomorphic Yukawa couplings of a line bundle model are quasi-topological but
+need explicit cohomology representatives; the physical couplings need the
+Ricci-flat metric; the masses need moduli stabilisation as well. For a freely acting $\Gamma$ the
+equivariant index is a multiple of the regular representation, so the choice
+of equivariant structure --- $n^r$ of them --- does not affect the chiral
+spectrum at all. The ambiguity is confined to the vector-like sector, which an
+index cannot see in any case.
+\end{abstract}
+
+\medskip
+
+% =====================================================================
+\section{Configuration matrices, normal forms and equivalence}
+\label{sec:cipro}
+
+A \emph{complete intersection Calabi--Yau manifold} (CICY) is specified by a configuration matrix
+%
+\begin{equation}
+X \;=\;
+\begin{bmatrix}
+\PP^{n_1} & q^1_1 & \cdots & q^1_K\\
+\vdots    & \vdots&        & \vdots\\
+\PP^{n_m} & q^m_1 & \cdots & q^m_K
+\end{bmatrix},
+\qquad q^r_a \in \mathbb{Z}_{\ge 0},
+\label{eq:conf}
+\end{equation}
+%
+the zero locus of $K$ multi-homogeneous polynomials in
+$\mathcal{A}=\PP^{n_1}\times\cdots\times\PP^{n_m}$. The threefold condition
+and the vanishing of the first Chern class read
+%
+\begin{equation}
+\sum_{r=1}^{m} n_r - K = 3,
+\qquad
+\sum_{a=1}^{K} q^r_a = n_r + 1 \quad \text{for each } r .
+\label{eq:cy}
+\end{equation}
+
+Different matrices can describe the same variety. The simplest redundancy is
+a relabelling: permuting the projective factors permutes the rows of
+\cref{eq:conf}, and permuting the defining polynomials permutes its columns.
+\texttt{pyCICY} canonicalises under this action, mirroring the
+\texttt{CINormal} and \texttt{CIEquiv} functionality of
+\texttt{CIPro}~\cite{Anderson2026}. Naively the orbit has $m!\,K!$ elements,
+which is impractical at the sizes occurring in the list (up to $12\times 15$).
+Instead, rows and columns are partitioned by iterated signature refinement:
+each row is labelled by its dimension together with the multiset of
+(degree, column label) pairs it contains, and dually for columns, until the
+labelling is stable. Only permutations \emph{within} a class can be
+symmetries, so the search reduces to a product of factorials of class sizes,
+which is small in practice. An explicit budget is enforced rather than
+allowing an unbounded run.
+
+\begin{remark}
+The canonical representative chosen by \texttt{pyCICY} is its own. It
+identifies the same equivalences as \texttt{CIPro} but does not necessarily
+select the same matrix from an orbit; only the induced equivalence relation
+is claimed to agree.
+\end{remark}
+
+% =====================================================================
+\section{Splits and conifold transitions}
+\label{sec:transitions}
+
+\subsection{The split construction}
+
+A $\PP^1$ split replaces one defining polynomial by two whose degrees sum to
+the original, at the cost of one extra $\PP^1$ factor~\cite{Candelas1988}.
+Writing the split column as $q$ and choosing a partition
+$q = a + b$ row by row,
+%
+\begin{equation}
+\begin{bmatrix} \PP^{n_r} & q^r & \cdots \end{bmatrix}
+\;\longmapsto\;
+\begin{bmatrix}
+\PP^{1}   & 1   & 1   & 0\cdots\\
+\PP^{n_r} & a^r & b^r & \cdots
+\end{bmatrix} .
+\label{eq:split}
+\end{equation}
+%
+Both conditions in \cref{eq:cy} are preserved: the row sums are unchanged
+because $a^r + b^r = q^r$, the new row sums to $2 = n+1$, and the ambient
+dimension and the number of equations each increase by one. For the quintic
+this produces
+%
+\begin{equation}
+\XD=\begin{bmatrix}\PP^4 & 5\end{bmatrix}
+\;\longleftrightarrow\;
+\begin{bmatrix}\PP^1 & 1 & 1\\ \PP^4 & 1 & 4\end{bmatrix}=\XR ,
+\label{eq:quinticsplit}
+\end{equation}
+%
+which is equation (1.11) of~\cite{Anderson2025}. The package reproduces
+\cref{eq:quinticsplit} exactly, and contracting $\XR$ returns
+$\begin{bmatrix}\PP^4 & 5\end{bmatrix}$.
+
+\subsection{Topology across the transition}
+
+Geometrically the two sides of \cref{eq:split} are joined through a nodal
+variety $X_0$: $\XD$ is a deformation of $X_0$ and $\XR$ a small resolution.
+Following Anderson and Gray (2025) ~\cite{Anderson2025},
+%
+\begin{align}
+h^{1,1}(\XR) &= h^{1,1}(\XD) + 1, \label{eq:h11}\\
+\chi(\XR)    &= \chi(\XD) + 2N,   \label{eq:chi}
+\end{align}
+%
+with $N$ the number of nodes of $X_0$. \Cref{eq:chi} is used to
+\emph{measure} $N$, since $\chi$ follows from the triple intersection numbers
+and Chern classes that \texttt{pyCICY} already computes, while \cref{eq:h11}
+is reported as a check rather than assumed.
+
+\subsection{An independent route to \texorpdfstring{$N$}{N}}
+\label{sec:nodesexpected}
+
+There is a second way to obtain $N$ that uses no cohomology whatever. In the
+$\PP^1$-split presentation the two defining equations of $\XR$ are
+$x_0 f_1 + x_1 f_2$ and $x_0 g_1 + x_1 g_2$, and the nodes of $X_0$ are the
+points where all four of $f_1,f_2,g_1,g_2$ vanish together with the remaining
+defining equations. Those four polynomials have multidegrees $a,a,b,b$, so
+%
+\begin{equation}
+N \;=\;
+\int_{\mathcal{A}}
+\;(a\!\cdot\!J)^2 \,(b\!\cdot\!J)^2
+\prod_{c \neq \text{split}} (q_c\!\cdot\!J),
+\qquad a\!\cdot\!J \equiv \sum_r a^r J_r ,
+\label{eq:nodesint}
+\end{equation}
+%
+the intersection number in the ambient space, evaluated by extracting the
+coefficient of $\prod_r J_r^{n_r}$ subject to $J_r^{n_r+1}=0$. The count of
+classes in \cref{eq:nodesint} is $4 + (K-1) = K+3$, which equals
+$\dim\mathcal{A}=\sum_r n_r$ precisely when \cref{eq:cy} holds, so the result
+is a number and not a class. For the split of \cref{eq:quinticsplit},
+$a=1$ and $b=4$ in $\PP^4$ give $1\cdot1\cdot4\cdot4=16$, and the partition
+$(2,3)$ gives $2\cdot2\cdot3\cdot3=36$.
+
+\cref{eq:nodesint} is a coefficient
+extraction over a truncated polynomial ring, whereas \cref{eq:chi} runs
+through Bott--Borel--Weil, the Koszul resolution and the Leray spectral
+sequence. An error in either would show up as a point off the diagonal.
+
+For the transition of \cref{eq:quinticsplit} both routes give $N=\FactQuinticNodes$, Anderson 2025 ~\cite{Anderson2025}.
+
+\subsection{The second Chern character across the transition}
+\label{sec:chtwo}
+
+The relation quoted as \cref{eq:ch2} in \cref{sec:aside} can be checked
+directly. From the Euler sequence for the ambient space and the adjunction
+sequence for the complete intersection,
+%
+\begin{equation}
+\ch(T\mathcal{A}) = \sum_r \Bigl[(n_r+1)\,e^{J_r} - 1\Bigr],
+\qquad
+\ch(TX) = \ch(T\mathcal{A})\big|_X - \sum_a \ch\bigl(\cO(q_a)\bigr),
+\label{eq:chadj}
+\end{equation}
+%
+whose degree-two part is
+%
+\begin{equation}
+\ch_2(TX) \;=\; \tfrac{1}{2}\Bigl[\;
+\sum_r (n_r+1)\,J_r^{\,2}
+\;-\;\sum_a (q_a\!\cdot\!J)^2 \;\Bigr],
+\qquad J_r^{\,n_r+1} = 0 .
+\label{eq:chtwo}
+\end{equation}
+
+To compare the two sides of a transition their classes must live in one
+ambient space. Following Anderson and Gray (2025) eq.~(1.29) of~\cite{Anderson2025}, the deformation
+is re-embedded in the ambient space of the resolution by cutting the new
+$\PP^1$ down to a point,
+%
+\begin{equation}
+\begin{bmatrix}\PP^4 & 5\end{bmatrix}
+\;\longmapsto\;
+\begin{bmatrix}\PP^1 & 1 & 0\\ \PP^4 & 0 & 5\end{bmatrix},
+\label{eq:reembed}
+\end{equation}
+%
+which describes $\{\text{pt}\}\times X_D \cong X_D$. \Cref{eq:chtwo} then
+gives, for the split of \cref{eq:quinticsplit},
+%
+\begin{equation}
+\ch_2(T\XD) = -10 D_2^2,
+\qquad
+\ch_2(T\XR) = -5D_1D_2 - 6D_2^2,
+\qquad
+\bigl[\PP^1_s\bigr] = -5D_1D_2 + 4D_2^2 ,
+\label{eq:ch124}
+\end{equation}
+%
+reproducing eq.~(1.24) of~\cite{Anderson2025} term by term. The bridging
+curves of \cref{eq:bridging} come out as $[C_D] = 4D_2^2$ and
+$[C_R] = 5D_1D_2$, also as quoted there.
+
+\begin{remark}[What is and is not being tested]
+\label{rem:identity}
+Writing $q = a + b$ and $[C_D] = (a\!\cdot\!J)(b\!\cdot\!J)$,
+$[C_R] = J_0\,(q\!\cdot\!J)$, one finds
+%
+\begin{equation}
+\ch_2(T\XR) - \ch_2(T\XD)
+= (a\!\cdot\!J)(b\!\cdot\!J) - J_0\,(q\!\cdot\!J)
+= [C_D] - [C_R]
+\label{eq:identity}
+\end{equation}
+%
+term by term, directly from \cref{eq:chtwo}. \Cref{eq:identity} is therefore
+an \emph{algebraic identity}, not an independent check: it cannot fail once
+\cref{eq:chtwo} and the re-embedding are adopted. It is still evaluated, as a
+guard against an implementation error in the class arithmetic, but it is not
+evidence that \cref{eq:chtwo} is right. The substantive check is different:
+for a Calabi--Yau, $c_1=0$ gives $\ch_2 = -c_2$, and \texttt{pyCICY}
+computes $c_2^{rs}$ by an unrelated route~\cite{Larfors2019}, ~\cite{SuppFigures}.
+\end{remark}
+
+The companion supplement~\cite{SuppFigures} reports both (Figure~1). The right-hand panel records a point that is
+easy to get wrong: a nonzero exceptional class does not imply that the
+transition does anything. For an ineffective split the nodal locus is empty,
+$N=0$ by \cref{eq:nodesint}, and yet $[\PP^1_s]$ computed from
+\cref{eq:identity} is a perfectly good nonzero class. The two quantities
+answer different questions, and only the intersection number answers
+``how many nodes''.
+
+% =====================================================================
+\section{The split web}
+\label{sec:web}
+
+\subsection{Construction}
+
+The classification of~\cite{Candelas1988} was built by splitting: starting
+from the configurations with a single defining equation and applying
+\cref{eq:split} repeatedly, discarding duplicates~\cite{Candelas1988,Green1987, Green1989}. For $K=1$ the threefold
+condition in \cref{eq:cy} forces $\sum_r n_r = 4$ and then the Calabi--Yau
+condition fixes the single column to $q^r = n_r+1$, so there are exactly five
+seeds:
+%
+\begin{equation}
+\begin{bmatrix}\PP^4 & 5\end{bmatrix},\quad
+\begin{bmatrix}\PP^3 & 4\\ \PP^1 & 2\end{bmatrix},\quad
+\begin{bmatrix}\PP^2 & 3\\ \PP^2 & 3\end{bmatrix},\quad
+\begin{bmatrix}\PP^2 & 3\\ \PP^1 & 2\\ \PP^1 & 2\end{bmatrix},\quad
+\begin{bmatrix}\PP^1 & 2\\ \PP^1 & 2\\ \PP^1 & 2\\ \PP^1 & 2\end{bmatrix}.
+\label{eq:seeds}
+\end{equation}
+%
+Breadth-first splitting from \cref{eq:seeds}, reducing every configuration to
+the normal form of \cref{sec:cipro} before recording it, reaches $\FactConfigs$
+configurations at depth $\FactDepth$, joined by $\FactEdges$ split edges, of
+which $\FactEffective$ are effective and $\FactIneffective$ have $N=0$.
+
+\subsection{Ineffective splits}
+
+Splits with $N=0$ are the \emph{ineffective} splits of~\cite{Candelas1988}:
+the would-be nodal locus is empty, no topology changes, and the two
+configurations describe isomorphic geometries. The example of section~5.2
+of~\cite{Anderson2025},
+%
+\begin{equation}
+\begin{bmatrix}\PP^1 & 2\\ \PP^3 & 4\end{bmatrix}
+\;\longleftrightarrow\;
+\begin{bmatrix}\PP^1 & 1 & 1\\ \PP^1 & 1 & 1\\ \PP^3 & 4 & 0\end{bmatrix},
+\label{eq:ineffective}
+\end{equation}
+%
+is reproduced: $h^{1,1}$, $h^{2,1}$ and $\chi$ are all unchanged, and
+\cref{eq:nodesint} returns $N=0$. Note that \cref{eq:h11} must therefore
+\emph{not} be imposed unconditionally; the expected shift in $h^{1,1}$ is $1$
+for an effective transition and $0$ for an ineffective one. The two
+descriptions in \cref{eq:ineffective} differ in favourability, the right-hand
+side being unfavourable, which is precisely the mechanism by which
+ineffective splitting is used in the literature to move between favourable
+and unfavourable presentations of one manifold.
+
+\subsection{The survey}
+
+%% figure moved to the companion supplement \cite{SuppFigures}
+
+
+The companion supplement~\cite{SuppFigures} presents the survey (Figures 1-A and 3-A).
+All configurations generated satisfy \cref{eq:cy}, have no degenerate rows or
+columns, and have $\chi \le 0$, as every CICY threefold must; the same web
+underlies~\cite{AndersonGaoGrayLee2017,AndersonFibrations2018}. The observed
+ranges $h^{1,1}\in[\FactHminOne,\FactHmaxOne]$ and
+$h^{2,1}\in[\FactHminTwo,\FactHmaxTwo]$ sit inside the published $[0,19]$ and
+$[0,101]$.
+
+\Cref{tab:landmarks} lists manifolds that can be checked against the
+literature. The Schoen manifold is worth singling out: it is not something
+the construction was aimed at, but arises as the split bicubic
+$\left[\begin{smallmatrix}\PP^1 & 1 & 1\\ \PP^2 & 0 & 3\\
+\PP^2 & 3 & 0\end{smallmatrix}\right]$, and comes out with
+$h^{1,1}=h^{2,1}=19$ and $\chi=0$, its known values.
+
+\begin{table}[t]
+\centering
+\begin{tabular}{llrrr}
+\toprule
+Manifold & Configuration & $h^{1,1}$ & $h^{2,1}$ & $\chi$ \\
+\midrule
+Quintic          & $[\PP^4\,|\,5]$                       & 1  & 101 & $-200$\\
+Split quintic    & \cref{eq:quinticsplit}                & 2  & 86  & $-168$\\
+Bicubic          & $[\PP^2\,|\,3;\ \PP^2\,|\,3]$          & 2  & 83  & $-162$\\
+Tetraquadric     & $[\PP^1\,|\,2]^{\times 4}$             & 4  & 68  & $-128$\\
+Schoen           & split bicubic                          & 19 & 19  & $0$\\
+\bottomrule
+\end{tabular}
+\caption{Landmark manifolds appearing in the generated web, with the values
+\texttt{pyCICY} computes. All five agree with the literature. The first four
+are used as regression tests; the fifth was not targeted and emerged from the
+splitting construction of \cref{sec:web}.}
+\label{tab:landmarks}
+\end{table}
+
+% =====================================================================
+\section{Chern polynomials, Hilbert series and enumerative invariants}
+\label{sec:enumerative}
+
+The quantities of this section are self-contained, in that each can be
+checked against a published value without reference to anything else in this
+document. They correspond to section~1 of~\cite{Anderson2026}.
+
+\subsection{Chern polynomial}
+
+The tangent sequence $0 \to TX \to T\mathcal{A}|_X \to \mathcal{E}|_X \to 0$
+with $\mathcal{E} = \bigoplus_a \cO_{\mathcal{A}}(q_a)$ gives
+%
+\begin{equation}
+c(TX) \;=\; \frac{c(T\mathcal{A})}{c(\mathcal{E})}
+\;=\; \frac{\prod_i (1+J_i)^{n_i+1}}{\prod_a (1 + q_a\!\cdot\!J)} ,
+\label{eq:cpoly}
+\end{equation}
+%
+truncated by $J_i^{n_i+1}=0$. For the $dP_2$ surface of~\cite{Anderson2026}
+this returns $1 + J_1 + J_2 + 2J_1J_2 + J_3 + 2J_1J_3 + J_2J_3$, as
+published. For the quintic it gives $c(TX) = 1 + 10J^2 - 40J^3$, so that
+%
+\begin{equation}
+\chi \;=\; \int_X c_3(TX) \;=\; \int_{\mathcal{A}} c_3(TX)\,\prod_a
+(q_a\!\cdot\!J) \;=\; -40 \times 5 \;=\; -200 .
+\label{eq:eulerc3}
+\end{equation}
+%
+\Cref{eq:eulerc3} is a route to $\chi$ independent of the triple intersection
+numbers \texttt{pyCICY} normally uses, and the two agree on every
+configuration of the web. The degree-two part of \cref{eq:cpoly} likewise
+reproduces $-\ch_2$ from \cref{eq:chtwo}, which ties this section back to
+\cref{sec:chtwo}.
+
+\subsection{Hilbert series}
+
+The Koszul resolution of $\cO_X$ by the defining equations gives the
+multigraded Hilbert series of the coordinate ring as
+%
+\begin{equation}
+H(t) \;=\;
+\frac{\prod_a \bigl(1 - t^{q_a}\bigr)}{\prod_i (1-t_i)^{n_i+1}},
+\qquad t^{q_a} = \prod_i t_i^{\,q^i_a} .
+\label{eq:hilbert}
+\end{equation}
+%
+For CICY $7821$, the configuration
+$\left[\begin{smallmatrix}\PP^2 & 1&1&1\\ \PP^4 & 2&2&1\end{smallmatrix}
+\right]$ of~\cite{Anderson2026}, \cref{eq:hilbert} gives
+%
+\begin{equation}
+H(t) \;=\; \frac{(1-t_1t_2)(1-t_1t_2^2)^2}{(1-t_1)^3(1-t_2)^5},
+\label{eq:hs7821}
+\end{equation}
+%
+character for character the published expression. The same manifold has
+$h^{1,1}=2$, $h^{2,1}=58$ and $\chi=-112$ in~\cite{Anderson2026}, and
+\texttt{pyCICY} returns those values, so the configuration is anchored on
+both sides.
+
+\subsection{Gopakumar--Vafa invariants}
+\label{sec:gv}
+\label{sec:gv}
+
+Genus-zero GV invariants are implemented for the \emph{one-parameter} models
+only: the $\FactGVModels$ Calabi--Yau threefolds that are complete
+intersections in a single projective space,
+%
+\begin{equation}
+\PP^4[5],\quad \PP^5[3,3],\quad \PP^5[2,4],\quad \PP^6[2,2,3],\quad
+\PP^7[2,2,2,2] .
+\label{eq:oneparam}
+\end{equation}
+%
+These are exactly the CICYs with a single K\"ahler parameter, which is what
+makes the mirror map a one-variable problem. With degrees $d_a$ in $\PP^N$,
+write $\kappa = \prod_a d_a$ and $\mu = \prod_a d_a^{d_a}$. The fundamental
+period is
+%
+\begin{equation}
+w_0(z) \;=\; \sum_{k\ge 0}
+\frac{\prod_a (d_a k)!}{(k!)^{N+1}}\, z^k ,
+\label{eq:period}
+\end{equation}
+%
+and the logarithmic solution supplies the mirror map $t = \log z +
+\sigma/w_0$, whose coefficients involve
+$\sum_a d_a H_{d_a k} - (N+1) H_k$ with $H$ the harmonic numbers. The
+Euler--Mascheroni constants cancel from that bracket precisely because
+$\sum_a d_a = N+1$, which is the Calabi--Yau condition \cref{eq:cy}. The
+Yukawa coupling
+%
+\begin{equation}
+K_{ttt} \;=\; \kappa \, + \sum_{d \ge 1} n_d\, \frac{d^3 q^d}{1-q^d},
+\qquad q = e^{t},
+\label{eq:yukawa}
+\end{equation}
+%
+then yields the invariants $n_d$. The method is that
+of Hosono, et al. (1994) ~\cite{HKTY1994}; \texttt{CIPro} obtains its GV invariants from
+code by A.~Klemm based on the same references, and what is described here is
+an independent implementation restricted to \cref{eq:oneparam}, not a port.
+
+All five reproduce the tabulated instanton numbers to degree
+$\FactGVMaxDegree$, the quintic beginning $\FactGVQuinticOne$,
+$\FactGVQuinticTwo$, $\FactGVQuinticThree$; integrality is itself the check, since \cref{eq:yukawa}
+has no reason to yield integers unless the mirror map and Yukawa coupling are
+both right, and it is enforced rather than assumed. Multi-parameter
+models require the full multivariable mirror map and are refused with an
+explicit error rather than silently mishandled; see \cref{sec:limits}.
+
+% =====================================================================
+\section{From topology to generations}
+\label{sec:generations}
+
+\subsection{What the configuration matrix determines}
+
+For the heterotic string with the standard embedding $V = TX$ the gauge group
+is $E_6$ and the charged spectrum is counted by Hodge numbers: $n(\mathbf{27})
+= h^{2,1}$, $n(\overline{\mathbf{27}}) = h^{1,1}$, so the net number of chiral
+generations is
+%
+\begin{equation}
+n_{\rm gen} \;=\; h^{2,1} - h^{1,1} \;=\; -\tfrac{1}{2}\chi(X) ,
+\label{eq:gen}
+\end{equation}
+%
+the index of the Dirac operator twisted by $V$. On a quotient by a freely
+acting $\Gamma$ this divides,
+%
+\begin{equation}
+n_{\rm gen}\bigl(X/\Gamma\bigr) \;=\; \frac{|\chi(X)|}{2|\Gamma|} ,
+\label{eq:genquot}
+\end{equation}
+%
+so three generations requires $|\chi| = 6|\Gamma|$.
+
+Across the published list the smallest non-zero $|\chi|$ is
+$\FactGenMinEuler$, and $|\chi| = 6$ never occurs. A three-generation
+standard-embedding model therefore \emph{always} requires a non-trivial free
+quotient --- which is convenient, since the quotient is also what supplies the
+Wilson lines needed to break $E_6$ towards the Standard Model group.
+
+\subsection{What it does not determine}
+\label{sec:notdetermined}
+
+Masses and couplings are not functions of the configuration matrix, and no
+amount of computation on it will produce them. Physical Yukawa couplings are
+holomorphic couplings divided by the K\"ahler normalisation of the fields;
+that normalisation requires the Ricci-flat metric, for which no closed form is
+known on any compact Calabi--Yau threefold. The overall scale requires the
+supersymmetry breaking mechanism, the gauge coupling requires the dilaton
+vacuum expectation value, and all of these require the moduli to be
+stabilised, which is unsolved across the landscape.
+
+\subsection{Narrowing by the actual symmetries}
+\label{sec:narrowing}
+
+\Cref{eq:genquot} says which $|\Gamma|$ \emph{would} be needed; it does not
+say that a freely acting group of that order exists. That is the content
+of~\cite{Braun2010}, whose classification ships with the Mathematica version
+of the CICY list and records each symmetry by its \textsc{Gap} SmallGroup
+identifier. Hodge numbers for the resulting quotients were computed
+in~\cite{ConstantinGrayLukas2017,CandelasConstantinMishra2016}, and the
+classification has since been extended to the favourable
+list~\cite{GrayWang2022}. Reading it gives $\FactGenWithSymmetry$ configurations carrying
+symmetry data and $\FactGenRecords$ records in total, matching the counts
+quoted for that classification in~\cite{Braun2010,LukasMishra2020}.
+
+%% figure moved to the companion supplement \cite{SuppFigures}
+
+
+The companion supplement~\cite{SuppFigures} shows the effect (Figure 3). Of the $\FactGenCandidates$
+configurations admitted by \cref{eq:genquot}, exactly $\FactGenHits$ carry a
+recorded group of the required order, namely CICYs $\FactGenList$. The first
+of these is
+%
+\begin{equation}
+X \;=\;
+\begin{bmatrix}\PP^3 & 3 & 0 & 1\\ \PP^3 & 0 & 3 & 1\end{bmatrix},
+\qquad h^{1,1} = 14, \quad h^{2,1} = 23, \quad \chi = -18,
+\label{eq:tianyau}
+\end{equation}
+%
+with a freely acting $\mathbb{Z}_3$, so that $\chi(X/\mathbb{Z}_3) = -6$ and
+$n_{\rm gen} = 3$. \Cref{eq:tianyau} is the Tian--Yau
+manifold~\cite{TianYau1987,CandelasIII}, the first three-generation
+Calabi--Yau constructed. It was not put into the search but came out of it,
+exercising the list parse, the \textsc{Gap} extraction and \cref{eq:gen} together.
+
+\begin{remark}[The record flag, and why it does not change the count]
+\label{rem:flag}
+Each symmetry record carries a leading boolean which splits them $1199$ to
+$496$. Restricting to the records where it is true would leave only the
+Tian--Yau manifold of \cref{eq:tianyau} rather than $\FactGenHits$
+configurations, so it matters what it means.
+
+It is \emph{not} freeness. The literature is explicit that all
+$\FactGenRecords$ symmetries in this classification are freely acting: of the
+$7890$ CICY threefolds, $\FactGenWithSymmetry$ exhibit known discrete
+symmetries, and those $\FactGenWithSymmetry$ configuration matrices carry
+$\FactGenRecords$ symmetries between them, giving $\FactGenRecords$ quotient
+manifolds~\cite{Braun2010,ConstantinGrayLukas2017,AndersonFibrations2018,%
+LukasMishra2020}. Restricting to the flagged records is therefore not
+justified, and the count of three-generation candidates stands at
+$\FactGenHits$.
+
+What the flag does mark was not determined here, though the data constrains
+it. Every one of the $1199$ true-flagged records has prime-power order, and
+every record whose order is not a prime power --- orders $6$, $10$, $12$ and
+$20$, $41$ records in all --- is false-flagged. The converse fails: $455$
+records of prime-power order are also false-flagged, so the flag is not
+simply the condition of being a $p$-group. It is not the divisibility
+$|\Gamma| \mid \chi$ either, which holds for all $\FactGenRecords$ records on
+both sides, nor is it a property of the configuration, since $40$
+configurations carry records of both kinds while $79$ carry only true and
+$76$ only false.
+\end{remark}
+
+\begin{remark}[Consistency of the source data]
+The \textsc{Gap} order can be checked against the abelian invariants recorded
+alongside it, and the two agree in $1630$ of the $1631$ abelian cases. The
+exception carries order $8$ against invariants $\{2,8\}$, whose product is
+$16$. That is an inconsistency in the published data; both readings are
+surfaced and neither is silently preferred.
+\end{remark}
+
+% =====================================================================
+\section{Additivity along composed splits}
+\label{sec:additivity}
+
+Brittenham and Hermiller~\cite{Brittenham2025} have shown that unknotting
+number is not additive under connected sum, exhibiting
+%
+\begin{equation}
+u\bigl(7_1 \# \overline{7_1}\bigr) \;\le\; 5 \;<\; 6
+\;=\; u(7_1) + u(\overline{7_1}),
+\label{eq:unknotting}
+\end{equation}
+%
+which settles problem 1.69(B) of Kirby's list negatively \cite{Wang2025}. Unknotting number
+is a \emph{minimal move count}: the fewest crossing changes carrying a knot
+to the unknot. The content of \cref{eq:unknotting} is that the complexity of
+a composite is not determined by that of its factors.
+
+The split web of \cref{sec:web} has the same shape: a family of objects, an
+elementary move, and distinguished trivial objects, namely the five
+single-equation seeds of \cref{eq:seeds}. It is therefore natural to ask
+whether the analogous complexity measures misbehave in the analogous way.
+They do not, and the reason is worth stating because it is structural rather
+than accidental.
+
+\subsection{What cannot vary}
+
+The direct analogue of unknotting number is the \emph{split depth}: the
+fewest splits carrying a seed to a given configuration. It is rigid. A split
+adds exactly one defining equation, a contraction removes exactly one, and
+the seeds are precisely the configurations with $K=1$, so
+%
+\begin{equation}
+\text{split depth} \;=\; K - 1
+\label{eq:depth}
+\end{equation}
+%
+whatever route is taken. Every configuration in the web satisfies
+\cref{eq:depth}; every contraction path has that same length; greedy
+contraction is automatically optimal; and no contraction path terminates
+anywhere but at a seed. There is accordingly no room here for the phenomenon
+of \cref{eq:unknotting}, nor for a Bernhard--Jablan style failure of greedy
+descent~\cite{Brittenham2021}. The package verifies each of these rather than
+inferring them from \cref{eq:depth}.
+
+The total node count is rigid for a different reason. Along any chain of
+splits from $\XD$ to $\XR$ the individual counts satisfy
+%
+\begin{equation}
+\sum_i N_i \;=\; \frac{\chi(\XR) - \chi(\XD)}{2},
+\label{eq:telescope}
+\end{equation}
+%
+since the Euler characteristics telescope by \cref{eq:chi}. The right-hand
+side depends only on the endpoints, so the total cannot depend on the route.
+
+\subsection{What does vary}
+
+The \emph{decomposition} of that total is not fixed. Of the
+$\FactAddChecked$ non-seed configurations surveyed, $\FactAddMultiple$ admit
+more than one multiset of per-step node counts. For example the configuration
+$\left[\begin{smallmatrix}\PP^1&0&1&1\\ \PP^1&1&0&1\\
+\PP^4&1&2&2\end{smallmatrix}\right]$ is reached both through
+$(N_1,N_2) = (12,36)$ and through $(16,32)$; both sum to $48$, as
+\cref{eq:telescope} requires. Individual steps differ by as much as
+$\FactAddSpread$ between routes, while the totals disagree in
+$\FactAddMismatch$ cases out of $\FactAddChecked$ --- which is also a check on
+\cref{eq:chi} across the whole web, since a single arithmetic slip anywhere
+in the cohomology would break the telescoping.
+
+The common to both settings is the one worth carrying away: a quantity that looks as though it should be
+assembled additively out of elementary steps need not be, and which of the
+two failure modes occurs --- an undetermined total, or an undetermined
+decomposition --- is a fact about the structure rather than something to be
+assumed. In the case at hand the exceptional class of \cref{sec:chtwo} is a
+further instance of the same caution, being an invariant that looks as though
+it should detect a property it does not.
+
+\begin{remark}
+This section takes a question from~\cite{Brittenham2025} and asks it here; it
+does not transfer a theorem. The two settings share no formalism, and nothing
+in \cref{sec:transitions,sec:web} depends on the comparison. What is claimed
+is only what was computed: \cref{eq:depth,eq:telescope} hold across the
+generated web, and the decomposition varies.
+\end{remark}
+
+% =====================================================================
+\section{Bundles beyond the standard embedding}
+\label{sec:bundles}
+
+An exact sign obstruction to poly-stability: at a common zero of all the slopes every \emph{partial} sum of
+slopes vanishes too, so a subset whose summed slope form has no negative entry
+rules the bundle out --- $2^n-2$ sign tests replacing a numerical search that
+is a thousand times slower. 
+
+\Cref{sec:generations} treats $V = TX$, where the spectrum is a function of the
+Hodge numbers and nothing has to be chosen. That is the exception. A general
+heterotic model requires a holomorphic bundle $V$, and the bundle is extra
+data: not a function of the configuration matrix. What \emph{is} a function of
+the configuration matrix, once $V$ is given, is everything an index theorem can
+say about it.
+
+\subsection{Sums of line bundles}
+
+Take
+%
+\begin{equation}
+V \;=\; \cO(L_1) \oplus \cdots \oplus \cO(L_n),
+\qquad \sum_{a=1}^{n} L_a \;=\; 0 ,
+\label{eq:lbsum}
+\end{equation}
+%
+so that the structure group is $S\bigl(U(1)^n\bigr) \subset SU(n)$. These are
+the bundles of~\cite{AndersonGrayLukasPalti2011}, and they are the tractable
+case because cohomology commutes with direct sums: $h^i(V) = \sum_a h^i(L_a)$,
+each summand computable exactly.
+
+On a threefold with $c_1(V) = 0$ the index theorem gives
+$\operatorname{ind}(V) = \int_X \ch_3(V)$, and for \cref{eq:lbsum} this is
+%
+\begin{equation}
+\operatorname{ind}(V)
+\;=\; \frac{1}{6}\, d_{rst} \sum_{a} L_a^r L_a^s L_a^t ,
+\qquad n_{\rm gen} \;=\; -\operatorname{ind}(V) ,
+\label{eq:lbindex}
+\end{equation}
+%
+in the same convention as \cref{eq:gen}: for $V = TX$ one has
+$\ch_3 = c_3/2$, so $\operatorname{ind}(TX) = \chi/2$ and $n_{\rm gen} =
+-\chi/2$, recovering \cref{eq:gen} exactly.
+
+\Cref{eq:lbindex} admits a second derivation which shares no code with the
+first, and the reason it does is worth displaying. The Atiyah--Singer index of
+a single line bundle carries a subleading term,
+%
+\begin{equation}
+\operatorname{ind}\bigl(\cO(L)\bigr)
+\;=\;
+\underbrace{\tfrac{1}{6}\, d_{rst} L^r L^s L^t}_{\text{cubic}}
+\;+\;
+\underbrace{\tfrac{1}{12}\, c_2^{\,r} L_r}_{\text{linear in } L} ,
+\label{eq:lineindex}
+\end{equation}
+%
+and summing \cref{eq:lineindex} over the summands of \cref{eq:lbsum} gives
+%
+\begin{equation}
+\operatorname{ind}(V)
+\;=\;
+\tfrac{1}{6}\, d_{rst} \sum_a L_a^r L_a^s L_a^t
+\;+\;
+\tfrac{1}{12}\, c_2^{\,r}
+\overbrace{\Bigl(\textstyle\sum_a L_a\Bigr)_{\!r}}^{=\,0
+\ \text{by \cref{eq:lbsum}}} ,
+\end{equation}
+%
+so the linear term drops out precisely because the structure group is
+$SU(n)$ rather than $U(n)$. The two routes --- one contracting triple
+intersection numbers, the other running the Leray spectral sequence on each
+summand --- agree identically, and their agreement is a genuine check rather
+than a tautology.
+
+\subsection{Anomaly cancellation, and why it is not vacuous}
+
+The Bianchi identity requires $c_2(TX) - c_2(V) - c_2(\tilde V) = [W]$ with
+$[W]$ effective. For \cref{eq:lbsum} with $c_1(V) = 0$,
+%
+\begin{equation}
+c_2(V) \;=\; -\ch_2(V) ,
+\qquad
+\ch_2(V)_r \;=\; \tfrac{1}{2}\, d_{rst} \sum_a L_a^s L_a^t ,
+\label{eq:ch2V}
+\end{equation}
+%
+and on a favourable CICY effectiveness of a curve class is componentwise
+non-negativity in the basis descending from the ambient factors.
+
+It is tempting to conclude that \cref{eq:ch2V} makes the condition automatic:
+the triple intersection numbers satisfy $d_{rst} \ge 0$, and
+$\sum_a L_a L_a$ is positive semi-definite as a matrix. The inference fails,
+and the reason is a useful one to record. A positive semi-definite matrix has
+negative \emph{off-diagonal} entries --- $L = (1,-1,0,0)$ is the smallest
+example --- so the contraction
+%
+\begin{equation}
+\underbrace{d_{rst}}_{\ge\,0}
+\underbrace{\textstyle\sum_a L_a^s L_a^t}_{\text{positive semi-definite}}
+\qquad\text{is \emph{not} sign definite,}
+\end{equation}
+%
+and the anomaly genuinely constrains. 
+
+On the tetraquadric the charges
+$\{(3,-3,0,0), (-3,3,0,0), 0,0,0\}$ 
+\newline give surplus $(24,24,-12,-12)$ and are excluded; the same shape at charge two is admitted.
+
+\subsection{Poly-stability, and an exact sign obstruction}
+\label{sec:slopeobstruction}
+
+The Hermitian--Yang--Mills equation has a solution when $V$ is poly-stable,
+which for \cref{eq:lbsum} means every summand has vanishing slope
+simultaneously,
+%
+\begin{equation}
+\mu(L_a)(t) \;=\; d_{rst}\, L_a^r t^s t^t \;=\; 0
+\quad\text{for all } a,
+\qquad t \in \text{K\"ahler cone} .
+\label{eq:slope}
+\end{equation}
+%
+Since $\sum_a L_a = 0$ the slopes sum to zero identically, so \cref{eq:slope}
+is $n-1$ conditions on the $h^{1,1}-1$ projective directions of the cone: a
+common zero of several quadrics, generically empty, and expensive to search
+for numerically.
+
+There is an exact obstruction which is pure sign arithmetic. Write
+$M_a^{st} = d_{rst} L_a^r$, symmetrised, so that $\mu(L_a) = t^{\top} M_a t$.
+At a common zero $t_\star$ of \emph{all} the slopes, every \emph{partial} sum
+vanishes as well:
+%
+\begin{equation}
+\sum_{a \in S} \mu(L_a)(t_\star)
+\;=\; t_\star^{\top}
+\underbrace{\Bigl(\sum_{a \in S} M_a\Bigr)}_{=:\,M_S} t_\star
+\;=\; 0
+\qquad\text{for every subset } S .
+\label{eq:subsetobstruction}
+\end{equation}
+%
+On a favourable CICY the K\"ahler cone is the positive orthant, so if $M_S$ is
+non-zero with no negative entry then $t^\top M_S t > 0$ throughout the interior
+and no such $t_\star$ exists. Hence:
+%
+\begin{equation}
+\exists\, S \subseteq \{1,\dots,n\} :\;
+M_S \neq 0 \ \text{and} \ M_S \ \text{has no negative entry}
+\quad\Longrightarrow\quad
+V \ \text{is nowhere poly-stable.}
+\label{eq:obstruction}
+\end{equation}
+%
+\Cref{eq:obstruction} is $2^n - 2$ sign tests --- at most thirty for the ranks
+of interest --- against a numerical search costing some thirty milliseconds.
+Measured on a sample of twenty thousand rank-five sums on the tetraquadric it
+removed every one that the numerical search would have removed, at
+$3.5\times10^{-2}$ milliseconds each. It is also \emph{inherited}: if a
+subset already fails, so does every completion of it, which is what makes an
+exhaustive scan finite. The subsets of size one are the statement that a
+summand whose slope form is one-signed can never appear in a poly-stable
+bundle, and this survives as a condition on individual line bundles that can
+be applied to a candidate pool before any sum is assembled.
+
+One boundary case matters. If $M_a = 0$ the slope vanishes \emph{identically},
+which is compatible with poly-stability rather than an obstruction to it; the
+trivial summand $\cO_X$ is the obvious instance. Treating $M_a = 0$ as
+``not sign-changing'' silently deletes valid models.
+
+\subsection{A parity obstruction on the tetraquadric}
+
+On the tetraquadric $\bigl[\PP^1\,2;\PP^1\,2;\PP^1\,2;\PP^1\,2\bigr]$ the only
+non-zero entry of $d_{rst}$ is $2$, so $6\operatorname{ind}(V)$ is even for
+every line bundle sum and
+%
+\begin{equation}
+\operatorname{ind}(V) \;=\; -3
+\qquad\text{is unreachable, at any charge.}
+\label{eq:tetraparity}
+\end{equation}
+%
+Three generations on that manifold therefore \emph{requires} a non-trivial
+freely acting quotient --- the same conclusion \cref{sec:generations} reaches
+for the standard embedding by the entirely different route of
+\cref{eq:genquot}, and a small illustration that the two constructions are
+constrained by the same arithmetic.
+
+% =====================================================================
+\section{Equivariant structures and the character-valued index}
+\label{sec:equivariant}
+
+\Cref{eq:genquot} divides a generation count by $|\Gamma|$. That is arithmetic,
+not a model: it presumes the bundle descends to $X/\Gamma$, which requires an
+\emph{equivariant structure} --- a lift of the $\Gamma$ action to the total
+space of each line bundle. The structure is extra data again, and different
+lifts give different spectra on identical topological input.
+
+\subsection{What is exactly computable, and why}
+
+The individual groups $H^q(X, L)$ as $\Gamma$-modules require the Leray
+spectral sequence run equivariantly, and the ranks of its differentials are
+not fixed by the degrees. The \emph{alternating sum} is different, because
+characters are additive on exact sequences. Any equivariant resolution
+therefore computes
+%
+\begin{equation}
+\operatorname{ind}_\Gamma(L)
+\;=\; \sum_q (-1)^q \operatorname{ch} H^q(X, L) \;\in\; R(\Gamma) ,
+\end{equation}
+%
+with no spectral sequence anywhere. The Koszul resolution of $\cO_X$ inside
+the ambient product,
+%
+\begin{equation}
+0 \to \Lambda^K N^* \to \cdots \to N^* \to \cO_A \to \cO_X \to 0,
+\qquad N^* = \bigoplus_a \cO_A(-d_a),
+\end{equation}
+%
+gives every term as a sum of ambient line bundles, whose equivariant Euler
+characteristics factorise over the projective factors by K\"unneth. Writing
+$c_a$ for the character by which $\Gamma$ acts on the $a$-th defining
+polynomial,
+%
+\begin{equation}
+\operatorname{ind}_\Gamma\bigl(\cO_X(k)\bigr)
+\;=\;
+\sum_{S \subseteq \{1,\dots,K\}} (-1)^{|S|}
+\underbrace{\Bigl(\prod_{a \in S} c_a^{-1}\Bigr)}_{\text{Koszul twist}}
+\;
+\underbrace{\chi_\Gamma\Bigl(A,\ \cO_A\bigl(k - \textstyle\sum_{a\in S} d_a\bigr)\Bigr)}_{\text{K\"unneth product of monomial characters}} ,
+\label{eq:koszulindex}
+\end{equation}
+%
+a finite sum in exact integer arithmetic. Its total must agree with the
+ordinary index of \cref{eq:lineindex}, and does; the Koszul route is in fact
+the more exact of the two, returning integers where the spectral-sequence
+route returns floating point.
+
+When $\Gamma$ permutes the ambient factors, \cref{eq:koszulindex} still holds
+with one change: $g^j$ permutes the tensor factors, so its trace is a product
+over the \emph{cycles} of $\sigma^j$ rather than over the factors, the
+contribution of a cycle of length $\ell$ through $i$ being the trace of the
+composite once around, diagonal with weights $\sum_{s<j\ell} w_{\sigma^s(i)}$.
+When $\Gamma$ permutes the defining polynomials, only subsets with
+$\pi^j(S) = S$ contribute, each carrying the sign of $\pi^j$ restricted to $S$
+--- the cost of reordering $e_{\pi(a_1)} \wedge \cdots \wedge e_{\pi(a_r)}$
+back into increasing order.
+
+\begin{remark}[A sign the usual check cannot see]
+That wedge sign is invisible to the comparison against the ordinary index:
+at the identity $\pi^0$ is trivial and the sign is $+1$, so forcing it to
+$+1$ everywhere still reproduces the total exactly. It needs a separate
+oracle. One is available: on a configuration whose two defining polynomials
+have the same multidegree --- $[\PP^1\,1\,1]^{\times 5}$, a favourable
+threefold with $\chi = -80$ --- swapping them is, in the eigenbasis
+$p_\pm = p_1 \pm p_2$, precisely the phase-only action with charges $0$ and
+$1$. The two computations agree; forcing the sign wrong breaks $16$ of $25$
+bundles while leaving the total untouched.
+\end{remark}
+
+\subsection{Freeness, twice}
+
+If $\Gamma$ acts freely then every $g \neq e$ has no fixed points, so its
+holomorphic Lefschetz number vanishes, and
+%
+\begin{equation}
+L(g) = 0 \ \ \forall g \neq e
+\qquad\Longleftrightarrow\qquad
+\operatorname{ind}_\Gamma(L) \ \text{is a multiple of the regular
+representation,}
+\label{eq:lefschetzfree}
+\end{equation}
+%
+that is, the charges are equidistributed. \Cref{eq:lefschetzfree} is necessary
+and not sufficient, and it depends on the set of bundles probed: an action
+trivial on two of the four tetraquadric factors --- plainly not free, with a
+two-dimensional fixed locus --- passes a hand-picked list of five probes and
+fails $180$ of a $625$-probe box.
+
+A second, independent test comes from the geometry. A diagonal action fixes
+the coordinate points of the ambient, and at such a point every monomial
+vanishes except the pure power of the chosen coordinates; if that monomial's
+charge differs from the declared charge of a defining polynomial, the
+polynomial vanishes there and the fixed point \emph{lies on} $X$. Neither test
+is complete --- the geometric one sees only coordinate fixed points, the
+Lefschetz one is necessary only --- and they agree wherever both can see.
+
+\begin{remark}[A case the hand argument gets wrong]
+On the tetraquadric the $\mathbb{Z}_2$ action $[x_0:x_1] \mapsto [x_0:-x_1]$
+on each factor is free: the sixteen ambient fixed points carry monomials of
+charge $8 \equiv 0 \bmod 2$, which may appear in a charge-zero quartic, so a
+generic such quartic misses them. The identical weights for $\mathbb{Z}_3$,
+$\mathbb{Z}_4$ and $\mathbb{Z}_5$ are \emph{not} free: $11$, $8$ and $15$ of
+the sixteen points are forced onto $X$, because $8 \not\equiv 0$ modulo those
+orders. The naive argument ``a generic hypersurface avoids finitely many
+points'' would accept all four.
+\end{remark}
+
+\subsection{The structure does not matter, for the chiral spectrum}
+\label{sec:structureirrelevant}
+
+The equivariant structures on a line bundle form a torsor over the character
+group of $\Gamma$: for cyclic $\Gamma$ of order $n$ there are exactly $n$ of
+them, and a rank-$r$ sum admits $n^r$, of which those with trivial total twist
+descend. This is a finite but real ambiguity.
+
+For a \emph{free} action it is inert. By \cref{eq:lefschetzfree} each summand's
+index character is a multiple of the regular representation, hence a constant
+vector; a twist permutes a constant vector cyclically; a constant vector is
+fixed by any permutation. Therefore
+%
+\begin{equation}
+\Gamma \ \text{free}
+\quad\Longrightarrow\quad
+\underbrace{\operatorname{ind}_\Gamma(V)}_{\text{chiral spectrum}}
+\ \text{is independent of which of the } n^r \ \text{structures is chosen.}
+\label{eq:structureirrelevant}
+\end{equation}
+%
+The choice shows up only in $h^1$ and $h^2$ separately --- the vector-like
+pairs --- which an index cannot see in any case. So the ambiguity is real and
+confined to exactly the sector where nothing here could have computed anything
+anyway.
+
+\subsection{Which lattice, and which group}
+
+Two bookkeeping points are easy to get wrong and change the answer.
+
+\emph{The lattice.} Reflexivity, and hence the whole Batyrev construction of
+\cref{sec:polytopes}, is a property of a polytope \emph{and a lattice}. The
+$24$-cell written as the $D_4$ roots $\pm e_i \pm e_j$ has polar dual with
+vertices $\{\pm e_i\} \cup \{\tfrac12(\pm1,\pm1,\pm1,\pm1)\}$, which is not
+integral in $\mathbb{Z}^4$: the polytope is \emph{not} reflexive there. It is
+reflexive with respect to the lattice its own vertices generate,
+$D_4 = \{x \in \mathbb{Z}^4 : \sum x_i \in 2\mathbb{Z}\}$, of index two.
+
+\emph{The group.} An element acts on the ambient by a permutation of factors
+and linear maps, and two such data give the same map exactly when they differ
+by a scalar on each factor. The defining polynomials do not respect that
+quotient: rescaling factor $i$ by $\lambda_i$ multiplies $p_a$ by
+$\prod_i \lambda_i^{d[i][a]}$. Element equality is projective on the ambient
+and \emph{not} projective on the polynomials, and one cannot have both. Working
+with an explicit lift --- the group generated under composition with exact
+equality on the full data --- makes every character unambiguous, at the cost
+that $|\Gamma|$ then refers to the lift. If the lift contains a non-identity
+element acting trivially on the ambient it is a proper central extension, and
+the order to divide by in \cref{eq:genquot} is the geometric one. Rescaling one
+tetraquadric factor by $-1$ is the smallest example: trivial on $X$, of order
+two on $\cO(k)$, and at $k = (1,0,0,0)$ none of the two sections descend while
+at $k = (2,0,0,0)$ all four do.
+
+% =====================================================================
+\section{Wilson lines and the Standard Model group}
+\label{sec:breaking}
+
+A rank-five $V$ leaves $SU(5)$ unbroken in four dimensions. Breaking it needs a
+Wilson line on $X/\Gamma$, and which groups can supply one is a question of
+pure arithmetic.
+
+\subsection{Branching}
+
+With the hypercharge generator $Y = \operatorname{diag}(-\tfrac13,-\tfrac13,
+-\tfrac13,\tfrac12,\tfrac12)$ in the fundamental,
+%
+\begin{align}
+\mathbf{10} \;&\longrightarrow\;
+(\mathbf{3},\mathbf{2})_{1/6}
+\;+\; (\overline{\mathbf{3}},\mathbf{1})_{-2/3}
+\;+\; (\mathbf{1},\mathbf{1})_{1} ,
+\label{eq:ten}\\
+\overline{\mathbf{5}} \;&\longrightarrow\;
+(\overline{\mathbf{3}},\mathbf{1})_{1/3}
+\;+\; (\mathbf{1},\mathbf{2})_{-1/2} ,
+\label{eq:fivebar}
+\end{align}
+%
+one Standard Model generation in the left-handed conjugate convention, with
+$\operatorname{Tr} Y = 0$ over $\mathbf{10} + \overline{\mathbf{5}}$.
+
+\subsection{Which cyclic groups can break $SU(5)$}
+
+A Wilson line in the hypercharge direction is
+$W = \operatorname{diag}(a,a,a,b,b)$ with $\det W = a^3 b^2 = 1$. Its
+commutant in $SU(5)$ is $S\bigl(U(3)\times U(2)\bigr) = SU(3)\times SU(2)\times
+U(1)$ when $a \neq b$, and all of $SU(5)$ when $a = b$, in which case $W$ is
+central and breaks nothing. Writing $a = \omega^p$, $b = \omega^q$ with
+$\omega = e^{2\pi i/n}$, the determinant condition is $3p + 2q \equiv 0
+\pmod n$, and
+%
+\begin{equation}
+\#\bigl\{(p,q) : 3p + 2q \equiv 0 \ (n),\ p \neq q\bigr\}
+\;=\;
+\underbrace{n}_{\substack{\text{kernel of }(p,q)\mapsto 3p+2q,\\ \text{surjective since }\gcd(2,3,n)=1}}
+\;-\;
+\underbrace{\gcd(n,5)}_{\substack{\text{those with } p=q,\\ \text{i.e. } 5p \equiv 0}} .
+\label{eq:wilsoncount}
+\end{equation}
+%
+\Cref{eq:wilsoncount} vanishes exactly when $n \mid 5$, that is for $n = 1$ and
+$n = 5$. So
+%
+\begin{equation}
+\Gamma = \mathbb{Z}_5
+\quad\text{divides the generation count by five and \emph{cannot} break }SU(5),
+\end{equation}
+%
+every compatible Wilson line being central, while $\mathbb{Z}_2$ is the
+smallest group that can --- and is exactly the order that
+\cref{eq:tetraparity} forces on the tetraquadric. The two constraints, one from
+the parity of the intersection numbers and one from the determinant of a
+Wilson line, land on the same group for unrelated reasons.
+
+\subsection{The chiral spectrum descends without splitting}
+
+The $\mathbf{10}$ sits in $H^1(V)$ and the $\overline{\mathbf{5}}$ in
+$H^1(\Lambda^2 V)$, so their net counts are read off
+$\operatorname{ind}(V)$ and $\operatorname{ind}(\Lambda^2 V)$. A Wilson line
+shifts the $\Gamma$-charge of each Standard Model piece within its multiplet by
+a \emph{different} amount --- that is how it splits them --- and the surviving
+multiplicity is the one at the shifted charge.
+
+But by \cref{eq:structureirrelevant} every index character of a free action is
+constant, so every shift lands on the same multiplicity:
+%
+\begin{footnotesize}
+\begin{equation}
+\underbrace{\text{Wilson line}}_{\text{shifts each piece differently}}
+\ \text{acting on} \
+\underbrace{\text{a constant character}}_{\text{\cref{eq:lefschetzfree}}}
+\quad\Longrightarrow\quad
+\text{complete } SU(5) \ \text{generations, } \
+-\operatorname{ind}(V)/|\Gamma| \ \text{of them.}
+\label{eq:nosplit}
+\end{equation}
+\end{footnotesize}
+%
+The Wilson line cannot split the chiral spectrum at all. This is the correct
+physics and it resolves an apparent tension: doublet--triplet splitting is
+necessarily a statement about \emph{vector-like} pairs, the non-chiral content
+that an index cannot see, which is precisely the half left undetermined by
+\cref{eq:structureirrelevant}.
+
+For other ranks the commutant differs --- $SU(4) \to SO(10)$, $SU(3) \to E_6$
+--- and two identities serve as free checks: for rank four $\Lambda^2 V$ is the
+self-dual $\mathbf{6}$ of $SU(4)$, so $\operatorname{ind}(\Lambda^2 V) = 0$
+identically and the $\mathbf{10}$ of $SO(10)$ is vector-like; for rank three
+$\Lambda^2 V \cong V^*$, so $\operatorname{ind}(\Lambda^2 V) =
+-\operatorname{ind}(V)$ identically. Both hold at the level of the whole
+$\Gamma$-character, not merely the total.
+
+% =====================================================================
+\section{Yukawa couplings: what is exact}
+\label{sec:yukawa}
+
+\Cref{sec:notdetermined} says masses and couplings are not functions of the
+configuration matrix. That is true of \emph{physical} couplings and needs
+qualifying, because one holomorphic coupling is exactly computable and the
+entire \emph{pattern} of another is.
+
+\subsection{The standard embedding: an integer series}
+
+For $V = TX$ the coupling of three $(1,1)$-type families is
+%
+\begin{equation}
+Y_{rst} \;=\; \int_X J_r \wedge J_s \wedge J_t \;=\; d_{rst} ,
+\label{eq:classicalyukawa}
+\end{equation}
+%
+the triple intersection numbers of \cref{sec:cipro} --- integers, no metric
+anywhere. \Cref{eq:classicalyukawa} is the classical limit; the coupling
+receives worldsheet instanton corrections controlled by the genus-zero
+Gopakumar--Vafa invariants of \cref{sec:gv},
+%
+\begin{equation}
+Y(q) \;=\;
+\underbrace{d_{rst}}_{\text{\cref{eq:classicalyukawa}}}
+\;+\;
+\underbrace{\sum_{\beta} n_\beta\, \beta_r \beta_s \beta_t\,
+\frac{q^{\beta}}{1 - q^{\beta}}}_{\text{worldsheet instantons}} ,
+\label{eq:quantumyukawa}
+\end{equation}
+%
+so that on the quintic
+%
+\begin{equation}
+Y(q) \;=\; 5 \;+\; 2875\,\frac{q}{1-q}
+\;+\; 8 \cdot 609250\, \frac{q^2}{1-q^2}
+\;+\; 27 \cdot 317206375\, \frac{q^3}{1-q^3} \;+\; \cdots ,
+\end{equation}
+%
+every coefficient an integer. This is a genuine Yukawa coupling, computed
+exactly, and the same enumerative machinery that verifies the mirror map in
+\cref{sec:gv} produces it.
+
+\begin{remark}[The series converges only for small $q$]
+The invariants grow faster than $q^d$ shrinks unless $q$ is genuinely small.
+On the quintic $n_5 = 2.3\times10^{14}$, so at $q = 10^{-2}$ the degree-five
+term alone is $3\times10^{6}$ and the partial sum is meaningless; at
+$q = 10^{-4}$ the last term is $3\times10^{-4}$ and the sum is a coupling.
+A truncation of \cref{eq:quantumyukawa} should always be reported with the
+size of its last term.
+\end{remark}
+
+\subsection{Line bundle models: the texture is exact, the values are not}
+
+For \cref{eq:lbsum} of rank five the matter is
+%
+\begin{equation}
+\mathbf{10}_a \leftrightarrow H^1(X, L_a),
+\qquad
+\overline{\mathbf{5}}_{ab} \leftrightarrow H^1(X, L_a \otimes L_b),
+\qquad
+\mathbf{5}_{ab} \leftrightarrow H^1(X, L_a^{-1} \otimes L_b^{-1}),
+\end{equation}
+%
+and a coupling is a cup product landing in
+$H^3(X, \Lambda^3 V) $. That is $H^3(\cO_X) = \mathbb{C}$ only when the
+participating line bundles cancel exactly, which gives a selection rule
+needing no representatives at all:
+%
+\begin{align}
+\text{up-type} \quad
+&\mathbf{10}_a\, \mathbf{10}_b\, \mathbf{5}_{ab}
+&&\text{allowed for every } a < b,
+\label{eq:upsel}\\[2pt]
+\text{down-type} \quad
+&\mathbf{10}_a\, \overline{\mathbf{5}}_{bc}\, \overline{\mathbf{5}}_{de}
+&&\text{allowed only when } \{a,b,c,d,e\} \ \text{are all distinct.}
+\label{eq:downsel}
+\end{align}
+%
+\Cref{eq:downsel} is worth pausing on. Since $\sum_a L_a = 0$, the charges
+cancel precisely when all five indices appear, so
+%
+\begin{equation}
+\underbrace{\varepsilon_{abcde}}_{\text{the } SU(5) \ \text{invariant}}
+\qquad\text{reappears as}\qquad
+\underbrace{\textstyle\sum_a L_a = 0}_{\text{the } S(U(1)^5) \ \text{condition}} ,
+\end{equation}
+%
+and there are exactly $5 \times 3 = 15$ down-type patterns: five choices of
+$a$, three ways of pairing the remaining four.
+
+A second filter is equally exact. A charge-allowed coupling is still absent if
+any of the three cohomology groups is zero-dimensional --- there is no field to
+couple --- and those dimensions are computed by the same line bundle
+cohomology that gives the spectrum. The result is a \emph{texture} of allowed
+and forbidden couplings, forbidden in two distinct senses:
+%
+\begin{equation}
+\underbrace{\text{charge-forbidden}}_{\text{symmetry}}
+\qquad\text{versus}\qquad
+\underbrace{\text{charge-allowed but } h^1 = 0}_{\text{geometry: a \emph{texture zero}}} .
+\end{equation}
+%
+What is \emph{not} available is the value of a surviving coupling. It is
+quasi-topological --- no metric required --- but evaluating the cup product
+needs explicit cohomology representatives rather than dimensions. That is a
+missing computation, not an obstruction, and it should be kept distinct from
+the physical coupling, which \emph{is} obstructed.
+
+\subsection{A necessary condition on the manifold}
+
+Since an up-type coupling needs $h^1(L_a) > 0$, $h^1(L_b) > 0$ and
+$h^1(L_a^{-1} L_b^{-1}) > 0$ with charges summing to zero, one may ask whether
+any such triple exists at all inside a charge box --- a question about the
+manifold, answerable before any bundle is chosen. If none does, no model in
+that box has a coupling, whatever else it satisfies.
+
+The condition sharpens when combined with \cref{sec:slopeobstruction}: a
+summand whose slope form is one-signed can never sit in a poly-stable bundle,
+so each member of the triple must also be slope-non-definite. The two filters
+together are informative. Without the slope condition, the first triple found
+on the tetraquadric contains $(0,0,-2,0)$, whose slope is definite; a search
+over $9390$ models built around that pair contains exactly zero poly-stable
+ones. With both conditions, viable triples exist on the tetraquadric at charge
+two and on CICY~$7833$ at charge five but not at charge four --- a reminder
+that the answer is a statement about the box as much as the manifold. Both
+conditions are necessary and neither is sufficient: a model realising a viable
+triple must still close with the right index, anomaly and \emph{joint}
+poly-stability, and the per-summand slope test does not imply the joint one.
+
+% =====================================================================
+\section{Reflexive polytopes and the Batyrev construction}
+\label{sec:polytopes}
+
+The toric side of the same package is two-dimensional in
+\cite{SuppFigures}: sixteen reflexive polygons, each the toric diagram of a
+local Calabi--Yau. Reflexivity generalises, and in four dimensions it produces
+compact threefolds.
+
+A lattice polytope $P$ containing the origin in its interior is
+\emph{reflexive} when its polar dual
+$P^* = \{y : \langle x,y\rangle \ge -1 \ \forall x \in P\}$ is again a lattice
+polytope. For a reflexive four-polytope $\Delta$ the anticanonical
+hypersurface in the toric variety of the face fan of $\Delta^*$ is a
+Calabi--Yau threefold with
+%
+\begin{align}
+h^{1,1} &= \ell(\Delta^*) - 5
+- \sum_{\theta^* \ \mathrm{facet}} \ell^*(\theta^*)
++ \sum_{\theta^* \ \mathrm{codim}\,2} \ell^*(\theta^*)\, \ell^*(\theta) ,
+\label{eq:batyrev11}\\
+h^{2,1} &= \ell(\Delta) - 5
+- \sum_{\theta \ \mathrm{facet}} \ell^*(\theta)
++ \sum_{\theta \ \mathrm{codim}\,2} \ell^*(\theta)\, \ell^*(\theta^*) ,
+\label{eq:batyrev21}
+\end{align}
+%
+with $\ell$ the number of lattice points of a face and $\ell^*$ the number in
+its relative interior, and $\theta \leftrightarrow \theta^*$ the
+dimension-reversing duality $\dim\theta + \dim\theta^* = 3$.
+
+\subsection{The 24-cell}
+
+The $24$-cell is reflexive in $D_4$ but not in $\mathbb{Z}^4$, as noted in
+\cref{sec:equivariant}. In a basis of $D_4$ both it and its dual are lattice
+polytopes with $f$-vector $(24, 96, 96, 24)$, and
+%
+\begin{equation}
+\ell(\Delta) \;=\; \ell(\Delta^*) \;=\;
+\underbrace{24}_{\text{vertices}} + \underbrace{1}_{\text{origin}} \;=\; 25 ,
+\end{equation}
+%
+so no proper face has an interior lattice point and \emph{both} correction sums
+in \cref{eq:batyrev11,eq:batyrev21} vanish identically. Hence
+%
+\begin{equation}
+h^{1,1} \;=\; h^{2,1} \;=\; 25 - 5 \;=\; 20 ,
+\qquad \chi \;=\; 0 ,
+\end{equation}
+%
+and self-duality forces $h^{1,1} = h^{2,1}$ independently of the arithmetic, so
+two arguments land in the same place. Braun's Hodge numbers
+$(1,1)$~\cite{Braun2011} are those of a free quotient of this threefold, not
+of the threefold itself.
+
+\begin{remark}[Which polytope to pass]
+$\Delta$ in \cref{eq:batyrev11,eq:batyrev21} is the \emph{Newton} polytope,
+whose lattice points index monomials, and $\Delta^*$ the fan polytope, whose
+vertices are the rays. Interchanging them transposes the Hodge numbers, and
+the failure is silent. The quintic calibrates it: the fan polytope of $\PP^4$
+has six lattice points and its polar has $\binom{9}{4} = 126$, one per quintic
+monomial, giving $(h^{1,1}, h^{2,1}) = (1, 101)$; passing the fan polytope
+directly returns $(101,1)$, the mirror. For a self-dual polytope such as the
+$24$-cell the distinction is invisible, which is exactly why it needs stating.
+\end{remark}
+
+% =====================================================================
+\section{The characteristic polynomial of the Hofstadter model}
+\label{sec:hofstadter}
+
+The quantized mirror curves of \cite{SuppFigures} produce Hofstadter spectra
+numerically. There is a closed form for the characteristic polynomial, due to
+Marra, Proietti and Sheng~\cite{MarraProiettiSheng2024}, and it connects to the
+same enumerative geometry through the relativistic Toda lattice.
+
+Let $\tilde e_k$ denote the \emph{two-step} elementary symmetric polynomial,
+summing over $k$-subsets no two of whose indices are adjacent:
+%
+\begin{equation}
+\tilde e_k(x_1,\dots,x_m)
+\;=\;
+\sum_{\substack{1 \le j_1 < \cdots < j_k \le m \\ |j_i - j_{i+1}| \ge 2}}
+x_{j_1} \cdots x_{j_k} ,
+\qquad \tilde e_0 = 1 .
+\end{equation}
+%
+These are what appear in the determinant of a tridiagonal matrix, because a
+term of the Leibniz expansion can use each off-diagonal pair at most once and
+never two overlapping ones. At the mid-band point the characteristic
+polynomial of the flux-$P/Q$ Hofstadter Hamiltonian is
+%
+\begin{equation}
+f(E) \;=\; \det\bigl(\hat H_{P/Q} - E\bigr)
+\;=\;
+\sum_{i=0}^{\lfloor Q/2 \rfloor} (-1)^{Q+i}\, 4^i\, E^{Q-2i}\,
+\tilde e_i\bigl(\sin^2(\pi\alpha), \dots, \sin^2((Q-1)\pi\alpha)\bigr),
+\label{eq:hofstadterpoly}
+\end{equation}
+%
+with $\alpha = P/Q$. Only powers $E^{Q-2i}$ survive, which is the statement
+that the spectrum is symmetric under $E \mapsto -E$ for even $Q$.
+
+Two consequences are worth recording. The constant term gives a closed-form
+evaluation with no free parameters and no $P$ dependence,
+%
+\begin{equation}
+\tilde e_{Q/2}\bigl(\sin^2(\pi\alpha), \dots, \sin^2((Q-1)\pi\alpha)\bigr)
+\;=\; 4^{-(Q/2 - 1)}
+\qquad (Q \ \text{even}),
+\label{eq:etildeidentity}
+\end{equation}
+%
+and the dependence on the Brillouin torus is a single additive constant,
+independent of $E$:
+%
+\begin{equation}
+f(E, \nu_x, \nu_y) \;=\;
+f\Bigl(E, \tfrac{\pi}{2Q}, \tfrac{\pi}{2Q}\Bigr)
+\;+\; 2(-1)^{Q-1}\bigl(\cos Q\nu_x + \cos Q\nu_y\bigr) ,
+\label{eq:chambers}
+\end{equation}
+%
+the Chambers relation. \Cref{eq:chambers} is why the band structure is a rigid
+translation of one polynomial rather than a family of unrelated ones, and it
+fixes where the zero mode sits: $E = 0$ occurs at the mid-band point when $Q$ is
+odd, at the corner when $Q \equiv 2 \bmod 4$, and at the centre when
+$4 \mid Q$.
+
+\begin{remark}[Computability]
+$\tilde e_k$ read as a definition is exponential in the number of variables.
+The recurrence $E_k(m) = E_k(m-1) + x_m E_{k-1}(m-2)$ --- a subset either omits
+$x_m$, or contains it and then cannot contain $x_{m-1}$ --- makes it quadratic,
+which is the difference between $2^{200}$ subsets and three milliseconds for
+the degree-$201$ polynomial. That is the range in which the butterfly is
+actually drawn.
+\end{remark}
+
+% =====================================================================
+\section{The boundary, stated precisely}
+\label{sec:boundary}
+
+\Cref{sec:notdetermined} draws the line in one sentence. It is worth drawing it
+in three, because the failures are different in kind and conflating them makes
+a construction look more predictive than it is.
+
+\begin{enumerate}[leftmargin=2em]
+\item \emph{Not implemented, but exact in principle.} The values of the
+surviving line bundle Yukawa couplings of \cref{sec:yukawa}. They are
+quasi-topological; they need explicit cohomology representatives, obtained
+from a Koszul or \v{C}ech resolution, and no metric. Supplying them would give
+exact integers, as \cref{eq:classicalyukawa} does for the standard embedding.
+
+\item \emph{Obstructed by the metric.} The physical couplings. A physical
+Yukawa is the holomorphic one divided by the norms of the three fields, and
+those norms are integrals of harmonic representatives against the Ricci-flat
+metric, for which no closed form is known on any compact Calabi--Yau
+threefold. Numerical approximations exist~\cite{Larfors2022,HendiLarforsWalden2024, Butbaia2024,}, and
+handing them a model requires supplying, beyond the polytope data, three
+things a metric package cannot know: that the defining polynomial must be
+$\Gamma$-invariant, that the K\"ahler moduli must sit where the bundle is
+poly-stable, and that $\Gamma$ must preserve the holomorphic form. The last is
+a condition on characters,
+%
+\begin{equation}
+\chi(\Omega) \;=\;
+\underbrace{\sum_{\text{all coordinates}} w}_{\text{ambient volume form}}
+\;-\;
+\underbrace{\sum_a c_a}_{\text{Jacobian of the defining polynomials}}
+\;\equiv\; 0 ,
+\label{eq:omegachar}
+\end{equation}
+%
+which is $\Gamma \subset SU(3)$ rather than merely $U(3)$; if
+\cref{eq:omegachar} fails then $\Omega$ does not descend and $X/\Gamma$ is not
+Calabi--Yau at all. It is independent of freeness and neither implies the
+other: on the tetraquadric the order-four action preserves $\Omega$ and is not
+free, while the $\mathbb{Z}_3$ action does neither.
+
+\item \emph{Obstructed by unsolved physics.} The masses. A fermion mass is a
+physical coupling times a Higgs vacuum expectation value, and the vacuum
+expectation value requires the moduli to be stabilised.
+\end{enumerate}
+
+\noindent
+Nothing in \cref{sec:bundles,sec:equivariant,sec:breaking,sec:yukawa} touches
+the second or third. What they do is push the first boundary as far as it will
+go, and mark exactly where it stops.
+
+% =====================================================================
+
+\section{Conclusion: transport without a carrier}
+\label{sec:aside}
+What follows is an analogy, not a result.  The Heterotic anomaly cancellation reads
+%
+\begin{equation}
+\ch_2(T_X) \;=\; \ch_2(V) \;-\; [C],
+\label{eq:anomaly}
+\end{equation}
+%
+with $V$ the gauge bundle and $[C]$ the class of curves wrapped by
+five-branes~\cite{Anderson2025,Anderson2023branes}. Across a conifold
+transition the left-hand side changes,
+%
+\begin{equation}
+\ch_2(T_{\XR}) \;=\; \ch_2(T_{\XD}) \;+\; \bigl[\PP^1_s\bigr],
+\qquad\text{yet \cref{eq:anomaly} must hold on both sides,}
+\label{eq:ch2}
+\end{equation}
+%
+and the resolution offered in~\cite{Anderson2025} is that the bridging curve
+classes shift in compensation,
+%
+\begin{equation}
+[C_R] \;=\; [C_D] \;-\; \bigl[\PP^1_s\bigr].
+\label{eq:bridging}
+\end{equation}
+%
+The conserved quantity is neither destroyed nor independently created: it changes
+which object carries it. The same pattern appears in the moduli map, where
+active complex structure moduli on the deformation side correspond to brane
+and bundle moduli together with the new K\"ahler modulus on the resolution
+side, while computable quantities are unchanged --- in one worked example
+of~\cite{Anderson2025}, $147{,}440$ independent Yukawa couplings agree across
+the correspondence. The labels move; the observables do not.
+
+Aharonov, Collins and Popescu~\cite{Aharonov2023} exhibit angular momentum
+transported across a region where the probability of finding any particle or
+field is vanishingly small, and argue that the picture of a conservation law
+as a flux of carriers needs revisiting. Waegell, Tollaksen and
+Aharonov~\cite{Waegell2024} discuss a pre- and post-selected arrangement in
+which, on their reading, a particle's mass and momentum are localised in
+different places. In both cases, as in \cref{eq:ch2,eq:bridging}, a conserved
+bookkeeping quantity is not tied to the object one would naively call its
+carrier.
+
+The resemblance should not be pushed. \Cref{eq:ch2} is an identity between
+cohomology classes on distinct manifolds, whereas weak values are complex
+numbers extracted from an ensemble. Nothing in
+\cref{eq:anomaly,eq:ch2,eq:bridging} describes a process in time, while
+\cite{Aharonov2023} is precisely about flow through an intermediate region.
+The quantum reading is contested: the authors of~\cite{Waegell2024} state in
+their own abstract that the titular interpretation is extremely controversial
+and rests on several assumptions, and offer an alternative. And there is no
+map from one setting to the other; the phrase ``a conserved quantity not
+residing where one expects'' is doing all of the work and is broad enough to
+cover much else. The honest summary is that both literatures make the same
+pedagogical point --- identifying a conserved quantity with a carrier is a
+habit rather than a necessity --- which is a reason to find both interesting,
+not evidence that they are the same phenomenon.
+
+% =====================================================================
+\appendix
+\small
+
+\section{Source Code and Limitations}
+\label{sec:limits}
+
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+
+\item Source code: \url{https://github.com/brentharts/CICY}
+
+\item \textbf{The web is partial.} Depth $\FactDepth$ yields $\FactConfigs$
+configurations and $\FactHodgePairs$ distinct Hodge pairs, against $7890$ and
+$266$ in the published list, with the frontier still expanding. Going deeper
+is a compute budget question.
+
+\item \textbf{$\ch_2$ is checked only in the split presentation}, where
+\cref{eq:reembed} puts both sides in one ambient space. Transitions requiring
+a general toric weight matrix, such as the flop partner of Anderson and Gray (2025) ~\cite{Anderson2025}
+eq.~(1.14), are outside what a configuration matrix expresses. The ambient
+class representation is also not faithful, since a class can restrict to zero
+on $X$.
+
+\item \textbf{Gopakumar--Vafa invariants cover only the one-parameter models}
+of \cref{eq:oneparam}, at genus zero. Every other CICY has $h^{1,1}>1$ and
+needs the multivariable mirror map, which \texttt{CIPro} Anderson and Constantin (2026) ~\cite{Anderson2026}
+covers and this does not.
+
+\item \textbf{Fourfold Hodge numbers are lightly tested.} One case, the
+sextic in $\PP^5$, is verified here; the four-fold
+classification~\cite{GrayHauptLukas2013} is not otherwise exercised.
+
+\item \textbf{Smoothness is checked over finite fields, not proved.} The
+Jacobian rank criterion of~\cite{Anderson2026} is implemented by exhaustive
+enumeration over $\PP^{n_1}(\mathbb{F}_p)\times\cdots$, which is rigorous
+about the reduction modulo $p$ but is evidence, not proof, in characteristic
+zero; the implementation returns that distinction rather than a bare boolean.
+Two traps are handled: a prime dividing a degree makes formal derivatives
+vanish so that everything looks singular, and a single random member over a
+small field need not be generic, so the generic question is settled by
+exhibiting one smooth member. The published singular
+example of Anderson, et al. (2026) ~\cite{Anderson2026} is correctly reported as singular.
+
+\item \textbf{Only the standard embedding is treated.} \Cref{eq:gen} assumes
+$V = TX$. Realistic model building uses other bundles~\cite{Anderson2011,%
+Anderson2012}, for which the spectrum depends on $V$ and on Wilson lines and
+not on the configuration matrix alone. Nothing here yet computes a mass or a
+coupling; see \cref{sec:notdetermined}.
+\end{enumerate}
+
+
+
+% =====================================================================
+\small
+\begin{thebibliography}{99}
+\setlength{\itemsep}{1pt plus 0.5pt}
+
+\bibitem{Anderson2026}
+L.~B.~Anderson, A.~Constantin, J.~Gray, Y.-H.~He, S.-J.~Lee and A.~Lukas,
+\emph{CIPro Package: Complete Intersections in Products of Projective Spaces
+and Line Bundles},
+\href{https://arxiv.org/abs/2606.27588}{arXiv:2606.27588}.
+
+
+\bibitem{Candelas1988}
+P.~Candelas, A.~M.~Dale, C.~A.~L\"utken and R.~Schimmrigk,
+\emph{Complete Intersection Calabi--Yau Manifolds},
+Nucl.\ Phys.\ B \textbf{298} (1988) 493.
+
+\bibitem{Anderson2025}
+L.~B.~Anderson, J.~Gray, S.~A.~Patil and C.~Scanlon,
+\emph{Mapping moduli across heterotic conifolds},
+\href{https://arxiv.org/abs/2512.18124}{arXiv:2512.18124}.
+
+\bibitem{Larfors2019}
+M.~Larfors and R.~Schneider,
+\emph{Line bundle cohomologies on CICYs with Picard number two},
+Fortsch.\ Phys.\ \textbf{67} (2019) 1900083,
+\href{https://arxiv.org/abs/1906.00392}{arXiv:1906.00392}.
+
+\bibitem{SuppFigures}
+B.S.~Hartshorn,
+\emph{Supplementary material: figures for the pyCICY-X package},
+companion document (Pre-print 2026), \url{https://doi.org/10.5281/zenodo.21843383}.
+
+\bibitem{AndersonGaoGrayLee2017}
+L.~B.~Anderson, X.~Gao, J.~Gray and S.-J.~Lee,
+\emph{Fibrations in CICY threefolds},
+JHEP \textbf{10} (2017) 077,
+\href{https://arxiv.org/abs/1708.07907}{arXiv:1708.07907}.
+
+\bibitem{AndersonFibrations2018}
+L.~B.~Anderson, J.~Gray and B.~Hammack,
+\emph{Fibrations in non-simply connected Calabi--Yau quotients},
+JHEP \textbf{08} (2018) 128,
+\href{https://arxiv.org/abs/1805.05497}{arXiv:1805.05497}.
+
+\bibitem{HKTY1994}
+S.~Hosono, A.~Klemm, S.~Theisen and S.-T.~Yau,
+\emph{Mirror symmetry, mirror map and applications to complete intersection
+Calabi--Yau spaces},
+Nucl.\ Phys.\ B \textbf{433} (1995) 501,
+\href{https://arxiv.org/abs/hep-th/9406055}{arXiv:hep-th/9406055}.
+
+\bibitem{Braun2010}
+V.~Braun,
+\emph{On free quotients of complete intersection Calabi--Yau manifolds},
+JHEP \textbf{04} (2011) 005,
+\href{https://arxiv.org/abs/1003.3235}{arXiv:1003.3235}.
+
+\bibitem{ConstantinGrayLukas2017}
+A.~Constantin, J.~Gray and A.~Lukas,
+\emph{Hodge numbers for all CICY quotients},
+JHEP \textbf{01} (2017) 001,
+\href{https://arxiv.org/abs/1607.01830}{arXiv:1607.01830}.
+
+\bibitem{CandelasConstantinMishra2016}
+P.~Candelas, A.~Constantin and C.~Mishra,
+\emph{Hodge numbers for CICYs with symmetries of order divisible by 4},
+Fortsch.\ Phys.\ \textbf{64} (2016) 463,
+\href{https://arxiv.org/abs/1511.01103}{arXiv:1511.01103}.
+
+\bibitem{GrayWang2022}
+J.~Gray and J.~Wang,
+\emph{Free quotients of favorable Calabi--Yau manifolds},
+JHEP \textbf{07} (2022) 116,
+\href{https://arxiv.org/abs/2112.12683}{arXiv:2112.12683}.
+
+\bibitem{LukasMishra2020}
+A.~Lukas and C.~Mishra,
+\emph{Discrete symmetries of complete intersection Calabi--Yau manifolds},
+Commun.\ Math.\ Phys.\ \textbf{379} (2020) 847,
+\href{https://arxiv.org/abs/1708.08943}{arXiv:1708.08943}.
+
+\bibitem{TianYau1987}
+G.~Tian and S.-T.~Yau,
+\emph{Three dimensional algebraic manifolds with $c_1 = 0$ and $\chi = -6$},
+in \emph{Mathematical Aspects of String Theory}, World Scientific (1987) 543.
+
+\bibitem{CandelasIII}
+P.~Candelas, C.~A.~L\"utken and R.~Schimmrigk,
+\emph{Complete intersection Calabi--Yau manifolds II: three generation
+manifolds},
+Nucl.\ Phys.\ B \textbf{306} (1988) 113.
+
+\bibitem{Brittenham2025}
+M.~Brittenham and S.~Hermiller,
+\emph{Unknotting number is not additive under connected sum},
+\href{https://arxiv.org/abs/2506.24088}{arXiv:2506.24088}.
+
+\bibitem{Wang2025}
+Chao Wang, Yimu Zhang (2025)
+\emph{A remark on the counterexample to the unknotting number conjecture}
+\url{https://doi.org/10.48550/arXiv.2507.14265}
+
+
+\bibitem{Brittenham2021}
+M.~Brittenham and S.~Hermiller,
+\emph{A counterexample to the Bernhard--Jablan Unknotting Conjecture},
+Exp.\ Math.\ \textbf{30} (2021) 547.
+
+
+\bibitem{AndersonGrayLukasPalti2011}
+L.B.~Anderson, J.~Gray, A.~Lukas and E.~Palti,
+\emph{Heterotic line bundle standard models},
+Phys.\ Rev.\ D \textbf{84} (2011) 106005,
+\href{https://arxiv.org/abs/1106.4804}{arXiv:1106.4804}.
+
+\bibitem{Braun2011}
+V.~Braun,
+\emph{The 24-cell and Calabi--Yau threefolds with Hodge numbers $(1,1)$},
+JHEP \textbf{05} (2012) 101,
+\href{https://arxiv.org/abs/1102.4880}{arXiv:1102.4880}.
+
+\bibitem{MarraProiettiSheng2024}
+P.~Marra, V.~Proietti and X.~Sheng,
+\emph{Hofstadter--Toda spectral duality and quantum groups},
+J.\ Math.\ Phys.\ \textbf{65} (2024) 072102,
+\href{https://arxiv.org/abs/2312.14242}{arXiv:2312.14242}.
+
+
+\bibitem{Larfors2022}
+M.~Larfors, A.~Lukas, F.~Ruehle and R.~Schneider,
+\emph{Learning size and shape of Calabi--Yau spaces},
+\href{https://arxiv.org/abs/2111.01436}{arXiv:2111.01436};
+code at \url{https://github.com/pythoncymetric/cymetric}.
+
+\bibitem{HendiLarforsWalden2024}
+A.~Hendi, M.~Larfors and M.~Walden,
+\emph{Learning Group Invariant Calabi--Yau Metrics by Fundamental Domain
+Projections},
+\href{https://arxiv.org/abs/2407.06914}{arXiv:2407.06914}.
+
+\bibitem{Butbaia2024}
+G.~Butbaia, D.~Mayorga Pe\~na, J.~Tan, P.~Berglund, T.~H\"ubsch,
+V.~Jejjala and C.~Mishra,
+\emph{Physical Yukawa couplings in heterotic string compactifications},
+\href{https://arxiv.org/abs/2401.15078}{arXiv:2401.15078};
+code at \url{https://github.com/Justin-Tan/cymyc}.
+
+\bibitem{Anderson2023branes}
+L.~B.~Anderson, C.~R.~Brodie and J.~Gray,
+\emph{Branes and bundles through conifold transitions and dualities in heterotic string theory},
+Phys.\ Rev.\ D \textbf{108} (2023) 106018,
+\href{https://arxiv.org/abs/2211.05804}{arXiv:2211.05804}.
+
+
+
+
+\bibitem{Green1987}
+P.~Green and T.~H\"ubsch,
+\emph{Calabi--Yau manifolds as complete intersections in products of complex projective spaces},
+Commun.\ Math.\ Phys.\ \textbf{109} (1987) 99.
+
+\bibitem{Green1989}
+P.~S.~Green, T.~H\"ubsch and C.~A.~L\"utken,
+\emph{All the Hodge Numbers for All Calabi--Yau Complete Intersections},
+Class.\ Quant.\ Grav.\ \textbf{6} (1989) 105.
+
+
+\bibitem{Aharonov2023}
+Y.~Aharonov, D.~Collins and S.~Popescu,
+\emph{Angular momentum flows without anything carrying it},
+\href{https://arxiv.org/abs/2310.07568}{arXiv:2310.07568}.
+
+\bibitem{Waegell2024}
+M.~Waegell, J.~Tollaksen and Y.~Aharonov,
+\emph{Separating a particle's mass from its momentum},
+Quantum \textbf{8} (2024) 1536,
+\href{https://arxiv.org/abs/2401.10408}{arXiv:2401.10408}.
+
+
+
+\bibitem{GrayHauptLukas2013}
+J.~Gray, A.~S.~Haupt and A.~Lukas,
+\emph{All complete intersection Calabi--Yau four-folds},
+JHEP \textbf{07} (2013) 070,
+\href{https://arxiv.org/abs/1303.1832}{arXiv:1303.1832}.
+
+
+\bibitem{Anderson2011}
+L.~B.~Anderson, J.~Gray, A.~Lukas and E.~Palti,
+\emph{Two hundred heterotic standard models on smooth Calabi--Yau threefolds},
+Phys.\ Rev.\ D \textbf{84} (2011) 106005,
+\href{https://arxiv.org/abs/1106.4804}{arXiv:1106.4804}.
+
+\bibitem{Anderson2012}
+L.~B.~Anderson, J.~Gray, A.~Lukas and E.~Palti,
+\emph{Heterotic line bundle standard models},
+JHEP \textbf{06} (2012) 113,
+\href{https://arxiv.org/abs/1202.1757}{arXiv:1202.1757}.
+
+
+
+
+
+\end{thebibliography}
+
+\end{document}
