@@ -21,8 +21,8 @@ estimate.
 
 ## Papers and figures
 
-- Supplementary material: figures for the Extended pyCICY package —
-  https://doi.org/10.5281/zenodo.21798923
+- Supplementary material: figures for the pyCICY-X package —
+  [https://doi.org/10.5281/zenodo.21798923](https://doi.org/10.5281/zenodo.21843383)
 
 What follows is a tour of the results, roughly in the order the modules were
 built.
