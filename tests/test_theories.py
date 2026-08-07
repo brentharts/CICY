@@ -744,6 +744,83 @@ def test_viable_model():
                    and f["all_liftable"] for f in found))
 
 
+def test_differentials():
+    print("\n[14] computing the differentials, not just detecting them")
+    import itertools
+    from pyCICY import CICY
+    from pyCICY.theories import cocycles as CO
+    from pyCICY.theories import differentials as DF
+    from pyCICY.theories import yukawa as Y
+
+    conf = Y.CICY5299["configuration"]
+    M = Y.CICY5299["summands"]
+    X = CICY(conf)
+
+    # The whole point: charges that cocycles declines, E_2 decides. These are
+    # exactly the two buckets it could only detect.
+    sample = [[-3, 1, 0], [1, 1, -3], [2, -1, 1], [-1, 2, 2], [-2, 3, 1]]
+    declined = recovered = 0
+    for k in sample:
+        if CO.class_origin(conf, k, 1)["status"] != "unique":
+            declined += 1
+            rep = DF.degeneration_report(conf, k)
+            if rep["degenerates"] and rep["predicted"] == rep["true"]:
+                recovered += 1
+    check_true("cocycles declines these charges", declined == len(sample))
+    check("E_2 reproduces line_co on every one", recovered, len(sample))
+
+    # An explicit basis, of the right size, made of genuine combinations.
+    b = DF.cohomology_basis(conf, [-3, 1, 0], degree=1)
+    check("H^1(O(-3,1,0)) has dimension 3", b["dimension"],
+          int(X.line_co([-3, 1, 0])[1]))
+    check_true("and its representatives are not single monomials",
+               any(len(v["terms"]) > 1 for v in b["basis"]))
+
+    # Degeneration is checked against line_co, never assumed.
+    rep = DF.degeneration_report(conf, [0, 0, 0])
+    check("the structure sheaf gives h^0 = h^3 = 1",
+          rep["true"], {0: 1, 3: 1})
+    check_true("and E_2 agrees", rep["degenerates"])
+
+    # Where both modules apply they must agree, sign included. This is the
+    # cross-check that matters: different machinery, same five numbers.
+    a = CO.model_couplings(conf, M)
+    d = DF.model_couplings(conf, M)
+    check("E_2 finds the same five couplings", d["present"], a["present"])
+    check("and the same five absences", d["vanishing"], a["vanishing"])
+    same = all(ra["value"] == rd["value"]
+               for ra, rd in zip(a["records"], d["records"]))
+    check_true("with identical values and signs", same)
+    check_true("every one well-defined modulo coboundaries",
+               all(r.get("well_defined") for r in d["records"]))
+
+    # A coupling wholly beyond the single-term method.
+    trio = [[-3, 1, 0], [0, -3, 1], [3, 2, -1]]
+    try:
+        CO.coupling(conf, trio)
+        check_true("cocycles cannot do this triple", False)
+    except ValueError:
+        check_true("cocycles cannot do this triple", True)
+    r = DF.coupling(conf, trio)
+    check("but E_2 returns a tensor of the line_co shape", r["shape"],
+          tuple(int(X.line_co(k)[1]) for k in trio))
+    check_true("which is non-zero and well-defined",
+               (not r["vanishes"]) and r["well_defined"])
+
+    # The verdict must not depend on the prime or the random polynomials.
+    verdicts = set()
+    for p, seed in ((32003, 0), (10007, 0), (32003, 3)):
+        verdicts.add(DF.coupling(conf, trio, p=p, seeds=(seed, seed + 1))["vanishes"])
+    check("the same verdict over three prime/seed choices", len(verdicts), 1)
+
+    # And the charges must still cancel.
+    try:
+        DF.coupling(conf, [[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        check_true("a non-cancelling triple is refused", False)
+    except ValueError:
+        check_true("a non-cancelling triple is refused", True)
+
+
 def test_cocycles():
     print("\n[13] explicit representatives, and a number")
     import itertools
@@ -909,6 +986,7 @@ def main():
     test_viable_model()
     test_representatives()
     test_cocycles()
+    test_differentials()
 
     print("\n" + "=" * 72)
     if FAILURES:
