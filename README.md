@@ -20,7 +20,7 @@ stabilisation — it stops explicitly, with an exception rather than an
 estimate.
 
 ## Papers and figures
-
+- What a Configuration Matrix Determines, and What It Does Not: Exact Methods for Heterotic Compactifications on CICYs https://doi.org/10.5281/zenodo.21844007
 - Supplementary material: figures for the pyCICY-X package —
   [https://doi.org/10.5281/zenodo.21798923](https://doi.org/10.5281/zenodo.21843383)
 
