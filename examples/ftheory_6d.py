@@ -241,6 +241,102 @@ is blown up. Reporting it as a gauge algebra would be reporting physics for a
 geometry that does not exist.""")
 
 
+def spinors_and_intersections():
+    banner("8. so(N) spinors, and matter where divisors meet")
+
+    print("""\
+The spinor trace coefficients are not tabulated. The weights of a spinor are
+(+-1/2, ..., +-1/2), so summing over sign patterns gives the traces directly,
+and the index comes out as the dimension over eight for both even and odd
+rank. so(8) is the exception: there the quartic expansion reaches a term
+involving all four signs, which is the Pfaffian, and triality then makes the
+spinors indistinguishable from the vector.
+""")
+    print("  %-8s %-6s %-8s %-8s %-8s %s"
+          % ("algebra", "dim", "A", "B", "C", "reality"))
+    for N in (7, 8, 9, 10, 11, 12, 13, 14, 16):
+        d, A, B, C = FT.algebra_data("so(%d)" % N)["reps"]["spinor"]
+        print("  %-8s %-6d %-8s %-8s %-8s %s"
+              % ("so(%d)" % N, d, A, B, C, FT.reality("so(%d)" % N, "spinor")))
+
+    print("""
+With spinors available so(N) is no longer confined to the -4 curve, where the
+vectors alone would put it. The reality column is what says which
+multiplicities are allowed: half a hypermultiplet exists only for a
+pseudo-real representation.
+""")
+    print("  %-9s %s" % ("D.D", "matter"))
+    for N in (10, 12, 14):
+        for n in (-4, -3, -2, 0):
+            try:
+                m = FT.matter_content("so(%d)" % N, n)["matter"]
+                text = ", ".join("%s x %s" % (v, k)
+                                 for k, v in sorted(m.items()))
+            except ValueError as e:
+                text = "refused: " + str(e).split(",")[-1].strip()[:46]
+            print("  so(%-2d) %3d  %s" % (N, n, text))
+
+    banner("   and bifundamentals")
+    print("""\
+Every defining representation tabulated here has index one, so the mixed
+anomaly condition b_i . b_j = sum x A A makes the intersection number the
+multiplicity outright. The states are not new: a bifundamental looks, to each
+factor alone, like copies of that factor's defining representation, so the
+spectrum has to remove the overlap rather than add anything. Getting that
+wrong breaks the gravitational anomaly, which is how it gets caught.
+""")
+    B = FT.Base.hirzebruch(0)
+    print("  %-20s %-7s %-8s %-10s %-9s %s"
+          % ("gauge", "b_i.b_j", "shared", "H_charged", "(h11,h21)", "anomaly"))
+    for a, b in [("su(5)", "su(3)"), ("su(6)", "su(4)"), ("so(10)", "su(2)"),
+                 ("su(8)", "su(2)")]:
+        m = FT.FTheory6D(B, gauge=[(a, [1, 0]), (b, [0, 1])])
+        s = m.spectrum()
+        bif = m.bifundamentals()[0]
+        print("  %-20s %-7d %-8d %-10d %-9s %s"
+              % ("%s x %s" % (a, b), bif["multiplicity"],
+                 s["bifundamental_states"], s["H_charged"],
+                 "%s" % (m.hodge_numbers(),),
+                 "cancels" if m.check_anomalies()["ok"] else "FAILS"))
+
+
+def fourfolds():
+    banner("9. Four dimensions, and the box the flux lives in")
+
+    print("""\
+An elliptic fourfold over a threefold base gives four-dimensional N=1. Two
+computations of its Euler characteristic, sharing nothing: h^{3,1} is a moduli
+count on the base, and chi = 6(8 + h11 + h31 - h21) follows because X is a
+Calabi-Yau fourfold; separately chi = 12 c_1 c_2 + 360 c_1^3 is a Chern number
+of the fibration.
+""")
+    print("  %-16s %-7s %-7s %-5s %-7s %-9s %-9s %s"
+          % ("base", "c1c2", "c1^3", "h11", "h31", "chi", "Chern", "agree"))
+    for dims in ([3], [1, 2], [1, 1, 1]):
+        B = FT.ProductBase(dims)
+        h = FT.fourfold_hodge(B)
+        print("  %-16s %-7d %-7d %-5d %-7d %-9d %-9d %s"
+              % (B.name, B.chern_number([1, 2]), B.chern_number([1, 1, 1]),
+                 h["h11"], h["h31"], h["euler"], h["euler_chern"],
+                 "yes" if h["agree"] else "NO"))
+
+    print("""
+On P^3 both give 23328, so the D3 tadpole is 972. The flux is then bounded
+without being determined:
+""")
+    m = FT.FTheory4D.over([3])
+    f = m.flux()
+    print("    chi/24 = %s, so N_D3 + (1/2) int G ^ G = %s"
+          % (f["tadpole"], f["tadpole"]))
+    print("    with N_D3 >= 0 this gives  int G ^ G <= %s" % f["max_GG"])
+    for c in f["conditions"]:
+        print("      - %s" % c)
+    print("""
+None of that is a spectrum. The chiral index is an index twisted by G, and G
+is a choice this package does not carry, so spectrum() raises rather than
+returning a number that would look like a prediction.""")
+
+
 def missing():
     banner("7. Three ways a number can be unavailable")
 
@@ -302,16 +398,18 @@ def main():
                    help="divisor class, comma separated, in the base's basis")
     p.add_argument("--only", default=None,
                    choices=["clusters", "matter", "counts", "survey",
-                            "model", "kodaira", "missing"],
+                            "model", "kodaira", "spinors",
+                            "fourfolds", "missing"],
                    help="run one section instead of all of them")
     a = p.parse_args()
 
     sections = {"clusters": derivation, "matter": matter,
+                "spinors": spinors_and_intersections, "fourfolds": fourfolds,
                 "counts": base_counts, "survey": survey,
                 "model": lambda: chosen(a.base, a.gauge, a.divisor),
                 "kodaira": kodaira, "missing": missing}
     order = ["clusters", "matter", "counts", "survey", "model", "kodaira",
-             "missing"]
+             "spinors", "fourfolds", "missing"]
     for key in ([a.only] if a.only else order):
         sections[key]()
     print()
