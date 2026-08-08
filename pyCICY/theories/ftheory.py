@@ -96,8 +96,9 @@ from .base import NeedsMetric, Theory, register
 
 __all__ = ["Base", "FTheory6D", "FTheory4D", "NoSuchTheory",
            "kodaira_type", "KODAIRA", "NON_HIGGSABLE",
-           "algebra_data", "matter_content", "check_anomalies",
-           "weierstrass_euler",
+           "algebra_data", "matter_content", "check_anomalies", "reality",
+           "weierstrass_euler", "ProductBase",
+           "fourfold_euler", "fourfold_hodge",
            "matter_free_algebras", "weierstrass_moduli",
            "obvious_fibrations", "is_obviously_fibred"]
 
@@ -340,10 +341,11 @@ def algebra_data(name):
                 "so(%d) is not tabulated here; below so(7) the algebra is "
                 "isomorphic to an su or sp algebra, which should be used "
                 "instead" % n)
+        reps = {"vector": (n, F(1), F(1), F(0)),
+                "adj": (n * (n - 1) // 2, F(n - 2), F(n - 8), F(3))}
+        reps["spinor"] = _spinor(n)
         return {"dim": n * (n - 1) // 2, "rank": n // 2, "lam": 2,
-                "adjoint": "adj",
-                "reps": {"vector": (n, F(1), F(1), F(0)),
-                         "adj": (n * (n - 1) // 2, F(n - 2), F(n - 8), F(3))}}
+                "adjoint": "adj", "reps": reps}
     if kind == "sp":
         if n < 1:
             raise ValueError("sp(%d) is not a simple algebra" % n)
@@ -354,6 +356,89 @@ def algebra_data(name):
                          "adj": (n * (2 * n + 1), F(2 * n + 2), F(2 * n + 8),
                                  F(3))}}
     raise ValueError("unknown algebra %r" % (name,))
+
+
+def _spinor(n):
+    r"""Trace coefficients of the so(N) spinor, from its weights.
+
+    Not quoted from a table. The weights of a spinor are
+    (+-1/2, ..., +-1/2) in the orthogonal basis, so putting the field strength
+    in the Cartan with eigenvalues x_1 ... x_r and summing over sign patterns
+    gives the traces directly. Writing t_2 and t_4 for the vector traces,
+    which are 2 sum x_i^2 and 2 sum x_i^4,
+
+        tr_S F^2 = (d_S / 8) t_2
+        tr_S F^4 = -(d_S / 16) t_4 + (3 d_S / 64) t_2^2
+
+    with d_S the dimension of the spinor. The odd terms drop out of the sign
+    sum, and the cross terms drop out because summing a product of an
+    incomplete set of signs over all patterns gives zero. Both the even and
+    odd rank cases land on the same formula once written in terms of d_S,
+    which is the reason for writing it that way.
+
+    so(8) is the exception, and it is the one place a table is needed. There
+    the incomplete-set argument fails: the quartic expansion reaches a term
+    involving all four signs at once, which does not cancel. That term is the
+    Pfaffian, the extra invariant so(8) has and no other so(N) does, and
+    triality is the statement that the two spinors are then indistinguishable
+    from the vector. So they take the vector's coefficients.
+
+    Returns
+    -------
+    (dim, A, B, C)
+    """
+    n = int(n)
+    if n == 8:
+        return (8, F(1), F(1), F(0))
+    d = 2 ** ((n - 1) // 2)
+    return (d, F(d, 8), F(-d, 16), F(3 * d, 64))
+
+
+def reality(name, rep):
+    r"""Whether a representation is real, complex or pseudo-real.
+
+    This decides which multiplicities are allowed. A hypermultiplet in a
+    pseudo-real representation can be halved -- the reality condition can be
+    imposed on half of it -- and that is why e7 on a -7 curve carries half a
+    56 and why the answer is exact rather than a rounding artefact. For a
+    real or complex representation there is no such thing as half a
+    hypermultiplet, so a fractional multiplicity there means the
+    configuration does not exist.
+
+    The so(N) spinors follow the eightfold pattern: real for N congruent to
+    0, 1 or 7 mod 8, pseudo-real for 3, 4 or 5, complex for 2 or 6.
+    """
+    data = algebra_data(name)
+    if rep not in data["reps"]:
+        raise ValueError("%s has no representation %r" % (name, rep))
+    if rep == data["adjoint"]:
+        return "real"
+    s = str(name).strip().lower().replace(" ", "")
+    if s in ("e6", "e_6"):
+        return "complex"
+    if s in ("e7", "e_7"):
+        return "pseudoreal"
+    if s in ("f4", "f_4", "g2", "g_2"):
+        return "real"
+    kind, n = _parse_classical(s)
+    if kind == "sp":
+        return "pseudoreal" if rep == "fund" else "real"
+    if kind == "su":
+        if n == 2:
+            return "pseudoreal" if rep == "fund" else "real"
+        if rep == "antisym" and n == 4:
+            return "real"                      # the 6 of su(4) = vector of so(6)
+        return "complex"
+    if kind == "so":
+        if rep == "vector":
+            return "real"
+        m = n % 8
+        if m in (0, 1, 7):
+            return "real"
+        if m in (3, 4, 5):
+            return "pseudoreal"
+        return "complex"
+    return "complex"
 
 
 def _parse_classical(s):
@@ -376,7 +461,7 @@ def _parse_classical(s):
 DEFAULT_REPS = {
     "su2": ["fund"], "su3": ["fund"],
     "su": ["fund", "antisym"],
-    "so": ["vector"],
+    "so": ["vector", "spinor"],
     "sp": ["fund", "antisym"],
     "e6": ["27"], "e7": ["56"], "e8": [], "f4": ["26"], "g2": ["7"],
 }
@@ -388,7 +473,17 @@ def _default_reps(name, data):
         return list(DEFAULT_REPS[s])
     for kind in ("su", "so", "sp"):
         if s.startswith(kind):
-            return [r for r in DEFAULT_REPS[kind] if r in data["reps"]]
+            reps = [r for r in DEFAULT_REPS[kind] if r in data["reps"]]
+            # so(8) is the one place a default has to be trimmed. Triality
+            # makes its spinors carry the vector's trace coefficients exactly,
+            # so a spinor column would duplicate the vector column and leave
+            # the anomaly system underdetermined -- not because the physics is
+            # ambiguous but because the two representations are
+            # indistinguishable to it. Ask for them explicitly if you want the
+            # split; the total is what the conditions fix.
+            if s.startswith("so") and _parse_classical(s)[1] == 8:
+                reps = [r for r in reps if r != "spinor"]
+            return reps
     raise ValueError("no default representations for %r" % (name,))
 
 
@@ -566,6 +661,18 @@ def matter_content(name, self_intersection, genus=0, reps=None):
                 "genus-%d curve of self-intersection %d, which is not a "
                 "spectrum" % (r, v, name, genus, self_intersection))
         if v != 0:
+            if v.denominator == 2 and reality(name, r) != "pseudoreal":
+                raise ValueError(
+                    "anomaly cancellation wants %s of %s with multiplicity "
+                    "%s, but %s is %s, not pseudo-real, so there is no half "
+                    "hypermultiplet to have. The configuration does not "
+                    "exist." % (r, name, v, r, reality(name, r)))
+            if v.denominator > 2:
+                raise ValueError(
+                    "anomaly cancellation wants %s of %s with multiplicity "
+                    "%s. Multiplicities are integers, or halves for a "
+                    "pseudo-real representation; nothing smaller is a "
+                    "spectrum." % (r, name, v))
             matter[r] = v
     if genus:
         matter[data["adjoint"]] = F(genus)
@@ -883,6 +990,178 @@ class Base(object):
             self.name, self.h11, self.K2, self.T)
 
 
+class ProductBase(object):
+    r"""A base that is a product of projective spaces, of any dimension.
+
+    :class:`Base` carries a surface as an intersection form, which is all six
+    dimensional F-theory needs. Four dimensional F-theory compactifies on an
+    elliptic fourfold, so the base is a threefold, and the quantities that
+    matter there are Chern numbers rather than a single intersection matrix.
+    Products of projective spaces are enough to reach the standard examples
+    and are simple enough to do exactly: the cohomology is generated by one
+    hyperplane class per factor with H_i^{n_i+1} = 0, and
+
+        c(B) = prod_i (1 + H_i)^{n_i + 1} .
+
+    Parameters
+    ----------
+    dims : list of int
+        The n_i, so ``[3]`` is P^3 and ``[1, 2]`` is P^1 x P^2.
+
+    Examples
+    --------
+    >>> B = ProductBase([3])
+    >>> B.dim, B.h11, B.chern_number([1, 1, 1]), B.chern_number([1, 2])
+    (3, 1, 64, 24)
+    """
+
+    def __init__(self, dims, name=None):
+        self.dims = [int(d) for d in dims]
+        if any(d < 1 for d in self.dims):
+            raise ValueError("each factor needs positive dimension")
+        self.dim = sum(self.dims)
+        self.h11 = len(self.dims)
+        self.name = name or " x ".join("P^%d" % d for d in self.dims)
+
+    def __repr__(self):
+        return "<ProductBase %s, dim %d>" % (self.name, self.dim)
+
+    # -- the cohomology ring, truncated ------------------------------------
+
+    def _mul(self, a, b):
+        out = {}
+        for ea, ca in a.items():
+            for eb, cb in b.items():
+                e = tuple(x + y for x, y in zip(ea, eb))
+                if any(e[i] > self.dims[i] for i in range(self.h11)):
+                    continue
+                out[e] = out.get(e, 0) + ca * cb
+        return {e: c for e, c in out.items() if c}
+
+    def chern(self):
+        """The total Chern class, as a dict from exponents to coefficients."""
+        total = {tuple([0] * self.h11): 1}
+        for i, n in enumerate(self.dims):
+            e = [0] * self.h11
+            e[i] = 1
+            h = {tuple([0] * self.h11): 1, tuple(e): 1}
+            factor = {tuple([0] * self.h11): 1}
+            for _ in range(n + 1):
+                factor = self._mul(factor, h)
+            total = self._mul(total, factor)
+        return total
+
+    def chern_class(self, k):
+        """The degree-k part of the total Chern class."""
+        return {e: c for e, c in self.chern().items() if sum(e) == k}
+
+    def integrate(self, poly):
+        """The coefficient of prod_i H_i^{n_i}, which is the integral."""
+        return int(poly.get(tuple(self.dims), 0))
+
+    def chern_number(self, parts):
+        """An integral of a product of Chern classes, e.g. ``[1, 2]`` for c1 c2."""
+        if sum(parts) != self.dim:
+            raise ValueError(
+                "c_%s has degree %d on a %d-fold; the integrand must have "
+                "degree %d" % (parts, sum(parts), self.dim, self.dim))
+        out = {tuple([0] * self.h11): 1}
+        for k in parts:
+            out = self._mul(out, self.chern_class(int(k)))
+        return self.integrate(out)
+
+    # -- the data the Weierstrass model needs ------------------------------
+
+    def h0_anticanonical(self, k):
+        r"""h^0(B, -kK), a product of binomials.
+
+        With -K = sum_i (n_i + 1) H_i, the sections of -kK are the
+        multi-homogeneous polynomials of degree k(n_i + 1) in each factor.
+        """
+        from math import comb
+        out = 1
+        for n in self.dims:
+            out *= comb(k * (n + 1) + n, n)
+        return out
+
+    def chi_tangent(self):
+        r"""chi(T_B) = sum_i ((n_i + 1)^2 - 1), the automorphisms.
+
+        A product of projective spaces has no deformations and no higher
+        cohomology of its tangent sheaf, so the Euler characteristic is just
+        h^0, which is the dimension of prod_i PGL(n_i + 1).
+        """
+        return sum((n + 1) ** 2 - 1 for n in self.dims)
+
+    @property
+    def K2(self):
+        """c_1^2 for a surface, so that a two-factor product matches Base."""
+        if self.dim != 2:
+            raise ValueError("K^2 is a surface quantity; this base has "
+                             "dimension %d" % self.dim)
+        return self.chern_number([1, 1])
+
+    @property
+    def chi_top(self):
+        """The topological Euler characteristic, prod_i (n_i + 1)."""
+        out = 1
+        for n in self.dims:
+            out *= n + 1
+        return out
+
+
+def fourfold_euler(base):
+    r"""chi of the smooth Weierstrass fourfold over a threefold base.
+
+        chi(X) = 12 int_B c_1 c_2 + 360 int_B c_1^3
+
+    On P^3 that is 12 x 24 + 360 x 64 = 23328, and the D3-brane tadpole
+    chi/24 is 972.
+    """
+    if base.dim != 3:
+        raise ValueError("an elliptic fourfold needs a threefold base; this "
+                         "one has dimension %d" % base.dim)
+    return 12 * base.chern_number([1, 2]) + 360 * base.chern_number([1, 1, 1])
+
+
+def fourfold_hodge(base):
+    r"""Hodge numbers of the smooth Weierstrass fourfold, and a check on them.
+
+    The dictionary is the same as in six dimensions, one dimension up:
+
+        h^{1,1}(X) = h^{1,1}(B) + 1
+        h^{3,1}(X) = h^0(-4K) + h^0(-6K) - chi(T_B) - 1
+        h^{2,1}(X) = 0     for a base with no odd cohomology
+
+    and then chi is determined, because a Calabi-Yau fourfold satisfies
+
+        chi = 6 (8 + h^{1,1} + h^{3,1} - h^{2,1}) .
+
+    That is a completely different computation from :func:`fourfold_euler`,
+    which is a Chern number of the fibration. On P^3 the moduli count gives
+    h^{3,1} = 969 + 2925 - 15 - 1 = 3878 and hence chi = 6 x 3888 = 23328,
+    which is what the Chern numbers give. The agreement is the check.
+
+    Returns
+    -------
+    dict
+        ``h11``, ``h21``, ``h31``, ``h22``, ``euler``, ``euler_chern`` and
+        ``agree``.
+    """
+    if base.dim != 3:
+        raise ValueError("this is the fourfold case; the base is a threefold")
+    h11 = base.h11 + 1
+    h21 = 0
+    h31 = (base.h0_anticanonical(4) + base.h0_anticanonical(6)
+           - base.chi_tangent() - 1)
+    h22 = 2 * (22 + 2 * h11 + 2 * h31 - h21)
+    chi = 6 * (8 + h11 + h31 - h21)
+    chern = fourfold_euler(base)
+    return {"h11": h11, "h21": h21, "h31": h31, "h22": h22,
+            "euler": chi, "euler_chern": chern, "agree": chi == chern,
+            "d3_tadpole": Fraction(chern, 24)}
+
+
 def weierstrass_euler(base):
     r"""chi of the smooth Weierstrass threefold over ``base``, which is -60 K^2.
 
@@ -1006,6 +1285,67 @@ class FTheory6D(Theory):
             return "trivial"
         return " x ".join(a for a, _, _ in self.gauge)
 
+    # -- matter where the divisors meet ------------------------------------
+
+    def bifundamentals(self):
+        r"""Matter localised where two gauge divisors intersect.
+
+        The mixed anomaly condition for two simple factors is
+
+            b_i . b_j = sum_{RS} x^{ij}_{RS} A_R A_S
+
+        and the defining representation of every algebra tabulated here --
+        the fundamental of su and sp, the vector of so, the 27, 56, 26 and 7
+        of e6, e7, f4 and g2 -- has A = 1. So a pair of gauge divisors
+        meeting in ``b_i . b_j`` points carries that many bifundamentals of
+        the two defining representations, and the intersection number *is*
+        the multiplicity.
+
+        These are not extra states. They are already inside the per-divisor
+        counts: a bifundamental (d_i, d_j) looks, to factor i alone, like d_j
+        copies of its defining representation. That is why
+        :meth:`spectrum` has to subtract the overlap rather than add
+        anything, and why the count of plain fundamentals on each divisor is
+        what is left after the shared ones are removed.
+
+        Returns
+        -------
+        list of dict
+            ``factors`` (the pair of indices), ``algebras``, ``multiplicity``,
+            ``reps``, ``dim`` (states per bifundamental) and ``total``.
+        """
+        out = []
+        for i in range(len(self.gauge)):
+            for j in range(i + 1, len(self.gauge)):
+                mult = self.base.dot(self.gauge[i][1], self.gauge[j][1])
+                if mult == 0:
+                    continue
+                if mult < 0:
+                    raise ValueError(
+                        "the gauge divisors %s and %s have intersection "
+                        "number %d. A negative intersection between distinct "
+                        "irreducible divisors is not a matter multiplicity, "
+                        "so these cannot both carry gauge algebras as given."
+                        % (self.gauge[i][1], self.gauge[j][1], mult))
+                di, ri = self._defining(i)
+                dj, rj = self._defining(j)
+                out.append({"factors": (i, j),
+                            "algebras": (self.gauge[i][0], self.gauge[j][0]),
+                            "reps": (ri, rj), "multiplicity": mult,
+                            "dim": di * dj, "total": mult * di * dj})
+        return out
+
+    def _defining(self, i):
+        """(dimension, name) of the defining representation of factor i."""
+        data = algebra_data(self.gauge[i][0])
+        for r in ("fund", "vector", "27", "56", "26", "7"):
+            if r in data["reps"]:
+                return data["reps"][r][0], r
+        raise ValueError(
+            "%s has no representation of index one below the adjoint, so "
+            "bifundamental matter with it is not covered here"
+            % self.gauge[i][0])
+
     # -- the exact part ----------------------------------------------------
 
     def spectrum(self):
@@ -1037,6 +1377,14 @@ class FTheory6D(Theory):
             rank += data["rank"]
             for r, x in matter.items():
                 H_charged += data["reps"][r][0] * F(x)
+        # Matter at an intersection has been counted once by each of the two
+        # divisors that meet there, so remove the duplicate. Adding it in
+        # instead would break the gravitational anomaly, which is the check
+        # that catches this if it is got wrong.
+        shared = 0
+        for b in self.bifundamentals():
+            shared += b["total"]
+        H_charged -= shared
         if H_charged.denominator != 1:
             raise ValueError(
                 "the charged hypermultiplet count came out as %s. Half "
@@ -1047,6 +1395,7 @@ class FTheory6D(Theory):
         H = 273 - 29 * T + V
         return {"T": T, "V": V, "H": H, "H_charged": H_charged,
                 "H_neutral": H - H_charged, "rank": rank,
+                "bifundamental_states": int(shared),
                 "gravitational_anomaly": H - V + 29 * T - 273}
 
     def hodge_numbers(self):
@@ -1091,10 +1440,32 @@ class FTheory6D(Theory):
             r["algebra"] = alg
             r["divisor"] = list(D)
             gauge.append(r)
+        # The mixed condition, and the consistency it demands: the shared
+        # matter has to fit inside what each divisor was independently told to
+        # carry. If a divisor's own anomaly conditions give fewer copies of
+        # its defining representation than the intersections require, the two
+        # statements contradict and the model does not exist.
+        mixed = []
+        for b in self.bifundamentals():
+            ok = True
+            for k, side in zip(b["factors"], (0, 1)):
+                _, _, matter = self.gauge[k]
+                _, rep = self._defining(k)
+                have = F(matter.get(rep, 0))
+                need = sum(F(c["multiplicity"]) * c["dim"]
+                           / algebra_data(self.gauge[k][0])["reps"][rep][0]
+                           for c in self.bifundamentals()
+                           if k in c["factors"])
+                if have < need:
+                    ok = False
+            b = dict(b)
+            b["ok"] = ok
+            mixed.append(b)
         return {"gravitational": s["gravitational_anomaly"],
-                "gauge": gauge,
+                "gauge": gauge, "mixed": mixed,
                 "ok": s["gravitational_anomaly"] == 0
-                      and all(g["ok"] for g in gauge)}
+                      and all(g["ok"] for g in gauge)
+                      and all(m["ok"] for m in mixed)}
 
     def heterotic_dual(self):
         r"""The heterotic dual, when the base is a Hirzebruch surface.
@@ -1269,8 +1640,27 @@ class FTheory4D(Theory):
 
     key = "f-theory-4d"
 
+    @classmethod
+    def over(cls, base, name=None):
+        """Build the generic Weierstrass fourfold over a threefold base.
+
+        The alternative to handing in a CICY. The generic model is a
+        hypersurface in a P^{2,3,1} bundle, which is not a complete
+        intersection in a product of projective spaces, so it has no
+        configuration matrix -- but its Hodge numbers, Euler characteristic
+        and tadpole all follow from the base, exactly.
+        """
+        obj = cls.__new__(cls)
+        Theory.__init__(obj, None, name=name)
+        obj.base = base if isinstance(base, ProductBase) else ProductBase(base)
+        if obj.base.dim != 3:
+            raise ValueError("an elliptic fourfold needs a threefold base")
+        obj.fibrations = []
+        return obj
+
     def __init__(self, X, name=None):
         Theory.__init__(self, X, name=name)
+        self.base = None
         if self.X.nfold != 4:
             raise ValueError(
                 "F-theory in four dimensions compactifies on a Calabi-Yau "
@@ -1279,10 +1669,72 @@ class FTheory4D(Theory):
                 % self.X.nfold)
         self.fibrations = obvious_fibrations(self.X.M.tolist())
 
+    def geometry(self):
+        if self.base is not None:
+            return "the generic elliptic fourfold over %s" % self.base.name
+        return self.X.M.tolist()
+
     def gauge_group(self):
         """Not determined by the fourfold alone."""
+        if self.base is not None:
+            return ("trivial for the generic Weierstrass model over a smooth "
+                    "base; a gauge algebra needs a divisor tuned to a "
+                    "Kodaira type")
         return ("determined by the singular fibres over the base threefold, "
                 "which the configuration matrix does not resolve")
+
+    def hodge_numbers(self):
+        """Hodge numbers of the generic Weierstrass fourfold. Base only."""
+        if self.base is None:
+            raise NotImplementedError(
+                "Hodge numbers of a general Calabi-Yau fourfold beyond h^{1,1} "
+                "and h^{3,1} are not computed here; use FTheory4D.over(base) "
+                "for the generic Weierstrass model, where they follow from "
+                "the base.")
+        return fourfold_hodge(self.base)
+
+    def flux(self):
+        r"""What the G-flux has to satisfy. Constraints, not a choice.
+
+        Three conditions bound the flux without determining it, and all three
+        are exact:
+
+        *Quantisation.* G + c_2(X)/2 must be an integral class. So the flux
+        is integrally quantised only when c_2(X) is even, and otherwise
+        carries a half-integral shift. The same arithmetic shows in
+        :meth:`d3_tadpole`: a non-integral chi/24 is the signal.
+
+        *The tadpole.* N_D3 + (1/2) int G ^ G = chi/24 with N_D3 a
+        non-negative integer, so
+
+            int_X G ^ G  <=  chi / 12 ,
+
+        which is a finite bound on an infinite-looking choice. On P^3 that is
+        1944.
+
+        *Supersymmetry.* G must be primitive and of Hodge type (2,2), which
+        is a condition on the complex structure, not a numerical one.
+
+        The chiral spectrum is an index twisted by G, so none of this gives a
+        spectrum. It gives the box the flux lives in.
+        """
+        chi = self.euler()
+        t = Fraction(chi, 24)
+        return {"chi": chi, "tadpole": t,
+                "max_GG": Fraction(chi, 12),
+                "integrally_quantised": t.denominator == 1,
+                "conditions": [
+                    "G + c_2(X)/2 integral (Witten quantisation)",
+                    "N_D3 + (1/2) int G ^ G = chi/24, with N_D3 >= 0",
+                    "G primitive and of type (2,2)"],
+                "note": "these bound the flux; they do not choose it, and the "
+                        "chiral spectrum is an index twisted by the choice"}
+
+    def euler(self):
+        """chi of the fourfold, from the CICY or from the base."""
+        if self.base is not None:
+            return fourfold_euler(self.base)
+        return int(self.X.euler_characteristic())
 
     def is_elliptically_fibred(self):
         """Whether an obvious genus-one fibration was found. Necessary, not
@@ -1303,7 +1755,7 @@ class FTheory4D(Theory):
         dict
             ``chi``, ``tadpole``, ``integral``, ``note``.
         """
-        chi = int(self.X.euler_characteristic())
+        chi = self.euler()
         t = Fraction(chi, 24)
         return {"chi": chi, "tadpole": t, "integral": t.denominator == 1,
                 "note": ("chi/24 is an integer, so integrally quantised flux "
