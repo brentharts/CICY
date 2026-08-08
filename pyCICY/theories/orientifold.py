@@ -895,30 +895,56 @@ class Orientifold(Theory):
         choice of D7-branes subject to the tadpole condition, and
         :meth:`d7_tadpole` states that condition rather than solving it.
 
-        Raises
-        ------
-        NotImplementedError
-            For an O5/O9 involution. The multiplet assignment there is
-            different and is not implemented; the Hodge split and the O-plane
-            content are still available from the involution.
+        For an O5/O9 orientifold the projection is Omega_p sigma, without the
+        left-moving fermion number, and the parities of the Ramond-Ramond
+        fields under worldsheet parity change accordingly. Under Omega_p the
+        fields C_0 and C_4 are odd and C_2 is even, which is the statement
+        that Type I keeps C_2; multiplying by (-1)^{F_L} flips all three, and
+        that is the difference between the two cases. Running the reduction
+        again with the other parities:
+
+            h^{1,1}_+   chiral, the Kahler moduli paired with C_2
+            h^{1,1}_-   chiral, from B_2 and C_4
+            h^{2,1}_+   chiral, the complex structure moduli
+            h^{2,1}_-   vector, U(1)s from C_4
+            1           chiral, the dilaton with the dual of C_{mu nu}
+
+        The Kahler moduli stay in ``h^{1,1}_+`` in both cases, because the
+        Kahler form is invariant under an isometry either way. What swaps is
+        the three-form sector: the complex structure moduli and the vectors
+        exchange halves of ``h^{2,1}``.
+
+        The reason they swap is the one the module keeps returning to.
+        Deformations of the complex structure live in ``H^1(T_X)``, and
+        ``H^{2,1}`` is that tensored with ``H^{3,0}``, on which sigma acts by
+        the Omega sign. The invariant deformations are therefore in
+        ``H^{2,1}_-`` when the sign is negative and in ``H^{2,1}_+`` when it
+        is positive. It is the same twist that reconciles the two routes in
+        :meth:`SignInvolution.hodge_split`, showing up in the spectrum.
+
+        Note that the axio-dilaton is not an axio-dilaton here: C_0 is odd
+        under Omega_p and there is no sigma-odd zero-form for it to survive
+        on, so it is projected out and the dilaton pairs with the dual of the
+        four-dimensional two-form from C_2 instead. The count is one chiral
+        multiplet either way.
         """
-        if self.involution.omega_sign() > 0:
-            raise NotImplementedError(
-                "this is an O5/O9 involution, where the four-dimensional "
-                "multiplet assignment differs from the O3/O7 case and is not "
-                "implemented here. involution.hodge_split() still gives the "
-                "equivariant Hodge numbers, and fixed_components() the "
-                "O-planes.")
         h = self.involution.hodge_split()
         h11p, h11m = h["h11"]
         h21p, h21m = h["h21"]
+        o3o7 = self.involution.omega_sign() < 0
+        # The only thing that moves is which half of h^{2,1} is matter and
+        # which is gauge.
+        cs, vec = (h21m, h21p) if o3o7 else (h21p, h21m)
         return {"h11_plus": h11p, "h11_minus": h11m,
                 "h21_plus": h21p, "h21_minus": h21m,
-                "chiral": h11p + h11m + h21m + 1,
-                "vectors": h21p,
+                "oplane_type": self.involution.oplane_type(),
+                "chiral": h11p + h11m + cs + 1,
+                "vectors": vec,
                 "kahler moduli": h11p,
-                "complex structure moduli": h21m,
-                "axio-dilaton": 1,
+                "complex structure moduli": cs,
+                "two-form moduli": h11m,
+                "axio-dilaton": 1 if o3o7 else 0,
+                "dilaton": 0 if o3o7 else 1,
                 "oplanes": h["oplanes"]}
 
     def d7_tadpole(self):
@@ -1010,7 +1036,11 @@ class Orientifold(Theory):
             s = self.spectrum()
             lines.append("  %d chiral multiplets, %d vector multiplets"
                          % (s["chiral"], s["vectors"]))
-        except NotImplementedError as e:
+            lines.append("     %d Kahler, %d two-form, %d complex structure, "
+                         "1 dilaton" % (s["kahler moduli"],
+                                        s["two-form moduli"],
+                                        s["complex structure moduli"]))
+        except (NotImplementedError, ValueError) as e:
             lines.append("  spectrum: %s" % str(e).split(".")[0])
         lines.append("  gauge group:        %s" % self.gauge_group())
         lines.append("  not computable here; needs")

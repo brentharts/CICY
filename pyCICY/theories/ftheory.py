@@ -97,6 +97,8 @@ from .base import NeedsMetric, Theory, register
 __all__ = ["Base", "FTheory6D", "FTheory4D", "NoSuchTheory",
            "kodaira_type", "KODAIRA", "NON_HIGGSABLE",
            "algebra_data", "matter_content", "check_anomalies", "reality",
+           "cluster", "NON_HIGGSABLE_CLUSTERS", "index_one_reps",
+           "u1_matter",
            "weierstrass_euler", "ProductBase",
            "fourfold_euler", "fourfold_hodge",
            "matter_free_algebras", "weierstrass_moduli",
@@ -441,6 +443,55 @@ def reality(name, rep):
     return "complex"
 
 
+def index_one_reps(name):
+    """Representations of index one, which is what a bifundamental needs.
+
+    The mixed anomaly condition weighs each side by A_R, so the matter at an
+    intersection sits in representations with A_R = 1. Usually there is only
+    one below the adjoint -- the fundamental of su and sp, the vector of so,
+    the 27, 56, 26 and 7 -- but not always: the spinor of so(7) and of so(8)
+    also has index one, and on a -3 curve so(7) carries spinors and no
+    vectors at all, so assuming the vector would look for matter that is not
+    there. Which one appears is decided by what the curve actually carries,
+    not by the algebra.
+    """
+    data = algebra_data(name)
+    adj = data["adjoint"]
+    return [r for r, v in sorted(data["reps"].items())
+            if r != adj and v[1] == 1]
+
+
+def _pick_defining(name, matter):
+    """The index-one representation this curve actually carries."""
+    options = index_one_reps(name)
+    if not options:
+        raise ValueError(
+            "%s has no representation of index one below the adjoint, so "
+            "bifundamental matter with it is not covered here" % name)
+    present = [r for r in options if F(matter.get(r, 0)) > 0]
+    if present:
+        present.sort(key=lambda r: -F(matter.get(r, 0)))
+        return present[0]
+    return options[0]
+
+
+def _pair_reality(alg1, rep1, alg2, rep2):
+    """Reality of a bifundamental, from the reality of its two factors.
+
+    A tensor product of two real or two pseudo-real representations is real;
+    one of each is pseudo-real; anything with a complex factor is complex.
+    The pseudo-real case is the one that matters, since it is the only one
+    that admits a half hypermultiplet -- which is what the (-3, -2) cluster
+    needs for its half (7, 2).
+    """
+    a, b = reality(alg1, rep1), reality(alg2, rep2)
+    if "complex" in (a, b):
+        return "complex"
+    if a == b:
+        return "real"
+    return "pseudoreal"
+
+
 def _parse_classical(s):
     for kind in ("su", "so", "sp"):
         if s.startswith(kind):
@@ -751,6 +802,153 @@ def matter_free_algebras(candidates=None):
         if n_A == n_C and n_A.denominator == 1:
             out[name] = int(n_A)
     return out
+
+
+#: The non-Higgsable clusters that span more than one curve, from Morrison
+#: and Taylor. A chain of curves whose self-intersections are individually too
+#: shallow to force anything can still force a gauge algebra collectively,
+#: because the intersections tie the Weierstrass model on one curve to the
+#: model on its neighbour. There are exactly three, and a -2 curve carrying no
+#: algebra can still be part of one.
+#:
+#: Only the curves, their self-intersections and the algebras are listed. The
+#: matter is derived by :func:`cluster`, and the derivation is the point: the
+#: half (7, 2) of the first cluster and the two spinors of the third are what
+#: the anomaly conditions give, not what was typed in.
+NON_HIGGSABLE_CLUSTERS = [
+    {"name": "(-3, -2)",
+     "curves": [(-3, "g2"), (-2, "su(2)")],
+     "edges": {(0, 1): 1}},
+    {"name": "(-3, -2, -2)",
+     "curves": [(-3, "g2"), (-2, "su(2)"), (-2, None)],
+     "edges": {(0, 1): 1, (1, 2): 1}},
+    {"name": "(-2, -3, -2)",
+     "curves": [(-2, "su(2)"), (-3, "so(7)"), (-2, "su(2)")],
+     "edges": {(0, 1): 1, (1, 2): 1}},
+]
+
+
+def cluster(curves, edges=None, genus=None):
+    r"""A chain of curves carrying gauge algebras, with all matter derived.
+
+    The local version of :class:`FTheory6D`: no base, just the
+    self-intersections of a set of curves and how they meet. That is all the
+    anomaly conditions need, since every condition is either local to one
+    curve or refers to one intersection number.
+
+    Parameters
+    ----------
+    curves : list of (int, str or None)
+        Self-intersection and gauge algebra for each curve. ``None`` means the
+        curve carries no algebra, which is a real possibility inside a
+        cluster: the middle curve does the work and a neighbour may be along
+        for the ride.
+    edges : dict, optional
+        ``{(i, j): n}`` for the intersection numbers. Pairs left out do not
+        meet.
+    genus : list of int, optional
+        Genus per curve; rational by default.
+
+    Returns
+    -------
+    dict
+        ``matter`` per curve, ``shared`` for the bifundamentals, ``dim_V``,
+        ``charged``, ``rank`` and ``consistent``.
+
+    Notes
+    -----
+    ``consistent`` is the check worth having. Each curve's own conditions fix
+    how many copies of its defining representation it carries, and the
+    intersections say how many of those must be shared with a neighbour. The
+    two are computed independently and the shared ones have to fit. On the
+    (-2, -3, -2) cluster they fit exactly: the so(7) is given two spinors by
+    its own conditions, and each of the two su(2) neighbours claims one of
+    them.
+
+    Examples
+    --------
+    >>> r = cluster([(-3, "g2"), (-2, "su(2)")], {(0, 1): 1})
+    >>> r["shared"][0]["multiplicity"]
+    Fraction(1, 2)
+    >>> r["consistent"]
+    True
+    """
+    curves = [(int(n), a) for n, a in curves]
+    edges = dict(edges or {})
+    genus = list(genus or [0] * len(curves))
+
+    matter, dim_V, rank = [], 0, 0
+    for k, (n, alg) in enumerate(curves):
+        if alg is None:
+            matter.append({})
+            continue
+        matter.append(matter_content(alg, n, genus[k])["matter"])
+        d = algebra_data(alg)
+        dim_V += d["dim"]
+        rank += d["rank"]
+
+    def defining(k):
+        alg = curves[k][1]
+        r = _pick_defining(alg, matter[k])
+        return algebra_data(alg)["reps"][r][0], r
+
+    shared, charged_shared = [], F(0)
+    for (i, j), n in sorted(edges.items()):
+        if curves[i][1] is None or curves[j][1] is None:
+            continue
+        lam = (algebra_data(curves[i][1])["lam"]
+               * algebra_data(curves[j][1])["lam"])
+        mult = F(int(n), lam)
+        if mult == 0:
+            continue
+        di, ri = defining(i)
+        dj, rj = defining(j)
+        if mult.denominator == 2 and _pair_reality(curves[i][1], ri,
+                                                   curves[j][1],
+                                                   rj) != "pseudoreal":
+            raise ValueError(
+                "half a (%s, %s) is wanted between %s and %s, but the pair is "
+                "not pseudo-real" % (ri, rj, curves[i][1], curves[j][1]))
+        if mult.denominator > 2:
+            raise ValueError("multiplicity %s is not a spectrum" % mult)
+        shared.append({"curves": (i, j), "algebras": (curves[i][1],
+                                                      curves[j][1]),
+                       "reps": (ri, rj), "multiplicity": mult,
+                       "dim": di * dj, "total": mult * di * dj,
+                       "intersection": int(n)})
+        charged_shared += mult * di * dj
+
+    # Does the shared matter fit inside what each curve was independently
+    # told to carry?
+    ok, notes = True, []
+    for k, (n, alg) in enumerate(curves):
+        if alg is None:
+            continue
+        dk, rk = defining(k)
+        have = F(matter[k].get(rk, 0))
+        need = F(0)
+        for sh in shared:
+            if k not in sh["curves"]:
+                continue
+            other = sh["curves"][1] if sh["curves"][0] == k else sh["curves"][0]
+            need += sh["multiplicity"] * defining(other)[0]
+        if need > have:
+            ok = False
+            notes.append("curve %d carries %s copies of the %s but the "
+                         "intersections need %s" % (k, have, rk, need))
+
+    charged = F(0)
+    for k, (n, alg) in enumerate(curves):
+        if alg is None:
+            continue
+        d = algebra_data(alg)
+        for r, x in matter[k].items():
+            charged += d["reps"][r][0] * F(x)
+    charged -= charged_shared
+
+    return {"curves": curves, "matter": matter, "shared": shared,
+            "dim_V": dim_V, "rank": rank, "charged": charged,
+            "consistent": ok, "notes": notes}
 
 
 #: Non-Higgsable clusters on a single rational curve, from Morrison and
@@ -1209,6 +1407,51 @@ def weierstrass_moduli(base):
 # ---------------------------------------------------------------------------
 
 
+def u1_matter(charges, c1_dot_b, b_dot_b):
+    r"""Charged matter of an abelian factor, from the anomaly conditions.
+
+    The abelian conditions are the non-abelian ones with the adjoint removed
+    and ``lam A_R`` replaced by ``q^2``:
+
+        sum_q x_q q^2 = 6 c_1 . b ,     sum_q x_q q^4 = 3 b . b
+
+    with ``b`` the height pairing of the section generating the U(1), which
+    plays the role the gauge divisor plays for a non-abelian factor.
+
+    Two conditions, so two charges are determined and more are not. That is
+    the honest limit: with charges 1 and 2 the multiplicities follow, and a
+    model with three distinct charges needs input this function does not
+    have.
+
+    Notes
+    -----
+    Setting every multiplicity to zero forces ``c_1 . b = 0`` and
+    ``b . b = 0``, so a U(1) with no charged matter has vanishing height
+    pairing -- which is to say it is not there. The abelian analogue of
+    :func:`matter_free_algebras`, and it comes out with nothing surviving.
+    """
+    charges = [int(q) for q in charges]
+    if len(set(charges)) != len(charges):
+        raise ValueError("the charges must be distinct")
+    rows = [[F(q ** 2) for q in charges], [F(q ** 4) for q in charges]]
+    rhs = [F(6) * c1_dot_b, F(3) * b_dot_b]
+    x = _solve_exact(rows, rhs)
+    out = {}
+    for q, v in zip(charges, x):
+        if v < 0:
+            raise ValueError(
+                "anomaly cancellation forces %s states of charge %d, which is "
+                "not a spectrum" % (v, q))
+        if v.denominator != 1:
+            raise ValueError(
+                "anomaly cancellation forces %s states of charge %d; abelian "
+                "charged multiplicities are integers" % (v, q))
+        if v:
+            out[q] = v
+    return {"matter": out, "charged_dim": sum(out.values()),
+            "c1_dot_b": c1_dot_b, "b_dot_b": b_dot_b}
+
+
 @register
 class FTheory6D(Theory):
     r"""F-theory on an elliptic Calabi-Yau threefold: six-dimensional (1,0).
@@ -1255,9 +1498,10 @@ class FTheory6D(Theory):
 
     key = "f-theory-6d"
 
-    def __init__(self, base, gauge=None, name=None):
+    def __init__(self, base, gauge=None, abelian=None, name=None):
         Theory.__init__(self, None, name=name)
         self.base = base if isinstance(base, Base) else _named_base(base)
+        self.abelian = self._resolve_abelian(abelian)
         if gauge is None:
             gauge = _generic_gauge(self.base)
         self.gauge = []
@@ -1285,6 +1529,35 @@ class FTheory6D(Theory):
             return "trivial"
         return " x ".join(a for a, _, _ in self.gauge)
 
+    def _resolve_abelian(self, abelian):
+        r"""Abelian factors from extra sections, and their charged matter.
+
+        Each entry is a dict with a ``height`` divisor class -- the height
+        pairing of the generating section -- and either explicit ``matter``
+        as a charge-to-multiplicity map, or ``charges`` to have
+        :func:`u1_matter` solve for the multiplicities.
+
+        The states are taken to be neutral under the non-abelian factors. A
+        state charged under both would be counted once here and once by its
+        divisor, and rather than guess at the overlap the constructor refuses
+        the combination; see :meth:`spectrum`.
+        """
+        out = []
+        for item in (abelian or []):
+            b = list(item["height"])
+            if "matter" in item:
+                matter = {int(q): F(v) for q, v in item["matter"].items()}
+            else:
+                matter = u1_matter(item.get("charges", (1, 2)),
+                                   -self.base.dot(self.base.K, b),
+                                   self.base.dot(b, b))["matter"]
+            out.append({"height": b, "matter": matter})
+        return out
+
+    def abelian_rank(self):
+        """The Mordell-Weil rank, one U(1) per independent extra section."""
+        return len(self.abelian)
+
     # -- matter where the divisors meet ------------------------------------
 
     def bifundamentals(self):
@@ -1296,10 +1569,18 @@ class FTheory6D(Theory):
 
         and the defining representation of every algebra tabulated here --
         the fundamental of su and sp, the vector of so, the 27, 56, 26 and 7
-        of e6, e7, f4 and g2 -- has A = 1. So a pair of gauge divisors
-        meeting in ``b_i . b_j`` points carries that many bifundamentals of
-        the two defining representations, and the intersection number *is*
-        the multiplicity.
+        of e6, e7, f4 and g2 -- has A = 1. The normalisation factors do not
+        cancel, though:
+
+            multiplicity = (b_i . b_j) / (lam_i lam_j) .
+
+        For two su factors both lambdas are one and the multiplicity is the
+        intersection number outright. Where one factor is an so or an
+        exceptional algebra it is not, and the difference is not cosmetic.
+        On the (-3, -2) non-Higgsable cluster the g2 carries exactly one 7,
+        while a full (7, 2) bifundamental would need two; with the lambdas in
+        place the multiplicity is one half, which needs exactly the one 7
+        that is there. That is what fixes the normalisation.
 
         These are not extra states. They are already inside the per-divisor
         counts: a bifundamental (d_i, d_j) looks, to factor i alone, like d_j
@@ -1317,7 +1598,10 @@ class FTheory6D(Theory):
         out = []
         for i in range(len(self.gauge)):
             for j in range(i + 1, len(self.gauge)):
-                mult = self.base.dot(self.gauge[i][1], self.gauge[j][1])
+                raw = self.base.dot(self.gauge[i][1], self.gauge[j][1])
+                lam = (algebra_data(self.gauge[i][0])["lam"]
+                       * algebra_data(self.gauge[j][0])["lam"])
+                mult = F(raw, lam)
                 if mult == 0:
                     continue
                 if mult < 0:
@@ -1329,22 +1613,31 @@ class FTheory6D(Theory):
                         % (self.gauge[i][1], self.gauge[j][1], mult))
                 di, ri = self._defining(i)
                 dj, rj = self._defining(j)
+                if mult.denominator == 2:
+                    if _pair_reality(self.gauge[i][0], ri,
+                                     self.gauge[j][0], rj) != "pseudoreal":
+                        raise ValueError(
+                            "the mixed anomaly condition wants half a "
+                            "(%s, %s) between %s and %s, but that "
+                            "representation is not pseudo-real, so there is "
+                            "no half hypermultiplet to have"
+                            % (ri, rj, self.gauge[i][0], self.gauge[j][0]))
+                elif mult.denominator != 1:
+                    raise ValueError(
+                        "the mixed anomaly condition wants %s of a (%s, %s), "
+                        "which is not a multiplicity" % (mult, ri, rj))
                 out.append({"factors": (i, j),
                             "algebras": (self.gauge[i][0], self.gauge[j][0]),
                             "reps": (ri, rj), "multiplicity": mult,
+                            "intersection": raw,
                             "dim": di * dj, "total": mult * di * dj})
         return out
 
     def _defining(self, i):
-        """(dimension, name) of the defining representation of factor i."""
-        data = algebra_data(self.gauge[i][0])
-        for r in ("fund", "vector", "27", "56", "26", "7"):
-            if r in data["reps"]:
-                return data["reps"][r][0], r
-        raise ValueError(
-            "%s has no representation of index one below the adjoint, so "
-            "bifundamental matter with it is not covered here"
-            % self.gauge[i][0])
+        """(dimension, name) of the index-one representation factor i carries."""
+        alg, _, matter = self.gauge[i]
+        r = _pick_defining(alg, matter)
+        return algebra_data(alg)["reps"][r][0], r
 
     # -- the exact part ----------------------------------------------------
 
@@ -1368,8 +1661,8 @@ class FTheory6D(Theory):
             ``gravitational_anomaly`` (zero when cancelled).
         """
         T = self.base.T
-        V = 0
-        rank = 0
+        V = self.abelian_rank()          # one vector multiplet per U(1)
+        rank = self.abelian_rank()       # and one extra divisor per section
         H_charged = F(0)
         for alg, D, matter in self.gauge:
             data = algebra_data(alg)
@@ -1381,10 +1674,24 @@ class FTheory6D(Theory):
         # divisors that meet there, so remove the duplicate. Adding it in
         # instead would break the gravitational anomaly, which is the check
         # that catches this if it is got wrong.
-        shared = 0
+        shared = F(0)
         for b in self.bifundamentals():
             shared += b["total"]
         H_charged -= shared
+        # Abelian charged states, taken as non-abelian singlets. Anything
+        # charged under both sectors would be counted twice, and the module
+        # has no way to know which states those are, so it refuses rather
+        # than choosing.
+        if self.abelian and self.gauge:
+            raise NotImplementedError(
+                "abelian factors alongside non-abelian ones are not handled: "
+                "a state charged under both would be counted once by its "
+                "gauge divisor and once by the U(1), and which states those "
+                "are is not determined by the data here. The Mordell-Weil "
+                "rank alone, with no non-abelian factors, is handled, and so "
+                "is the non-abelian side alone.")
+        for u in self.abelian:
+            H_charged += sum(F(v) for v in u["matter"].values())
         if H_charged.denominator != 1:
             raise ValueError(
                 "the charged hypermultiplet count came out as %s. Half "
@@ -1411,9 +1718,9 @@ class FTheory6D(Theory):
         second is the complex structure moduli, the neutral hypermultiplets
         minus the universal one containing the overall volume.
 
-        The Mordell-Weil rank is taken to be zero, which is the generic case;
-        a model with extra sections has extra U(1)s and this understates
-        h^{1,1}.
+        Extra rational sections contribute too: the Mordell-Weil rank adds one
+        divisor each, and :meth:`spectrum` counts them in ``rank``. With no
+        ``abelian`` argument the rank is zero, which is the generic case.
         """
         s = self.spectrum()
         return (self.base.h11 + 1 + s["rank"], s["H_neutral"] - 1)
@@ -1452,10 +1759,14 @@ class FTheory6D(Theory):
                 _, _, matter = self.gauge[k]
                 _, rep = self._defining(k)
                 have = F(matter.get(rep, 0))
-                need = sum(F(c["multiplicity"]) * c["dim"]
-                           / algebra_data(self.gauge[k][0])["reps"][rep][0]
-                           for c in self.bifundamentals()
-                           if k in c["factors"])
+                need = F(0)
+                for c in self.bifundamentals():
+                    if k not in c["factors"]:
+                        continue
+                    other = c["factors"][1] if c["factors"][0] == k \
+                        else c["factors"][0]
+                    d_other, r_other = self._defining(other)
+                    need += F(c["multiplicity"]) * d_other
                 if have < need:
                     ok = False
             b = dict(b)
