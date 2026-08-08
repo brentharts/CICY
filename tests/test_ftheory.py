@@ -223,8 +223,15 @@ def test_matter():
           FT.matter_content("so(10)", -4)["matter"], {"vector": Fraction(2)})
     check("so(14) on a -4 curve: N-8 vectors",
           FT.matter_content("so(14)", -4)["matter"], {"vector": Fraction(6)})
+    # Restricted to vectors there is no solution off the -4 curve, and that
+    # was the whole story before the spinors were derived. With a spinor
+    # column the same curve is fine, which is the point of section [10].
     check_true("so(10) on a -3 curve has no vector-only solution",
-               _raises(ValueError, FT.matter_content, "so(10)", -3))
+               _raises(ValueError, FT.matter_content, "so(10)", -3,
+                       reps=["vector"]))
+    check("but with spinors allowed it does",
+          FT.matter_content("so(10)", -3)["matter"],
+          {"vector": Fraction(3), "spinor": Fraction(1)})
 
     # Genus enters as adjoint hypermultiplets, one per unit of genus.
     m = FT.matter_content("su(5)", 0, genus=1)["matter"]
@@ -628,6 +635,194 @@ def test_fourfolds():
                _raises(ValueError, FT.FTheory4D, [[4, 5]]))
 
 
+def test_spinors():
+    print("\n[10] so(N) spinors, and which multiplicities are allowed")
+
+    # The trace coefficients are derived from the weights, not tabulated.
+    # The index of a spinor comes out as its dimension over eight, uniformly
+    # across even and odd rank, which is the check that the two cases were
+    # done consistently.
+    for N in (7, 9, 10, 11, 12, 13, 14, 16):
+        d, A, B, C = FT.algebra_data("so(%d)" % N)["reps"]["spinor"]
+        check("so(%-2d) spinor: A = dim/8" % N, A, Fraction(d, 8))
+        check("   and B = -dim/16", B, Fraction(-d, 16))
+        check("   and C = 3 dim/64", C, Fraction(3 * d, 64))
+    check("so(10) spinor is the 16",
+          FT.algebra_data("so(10)")["reps"]["spinor"][0], 16)
+    check("so(12) spinor is the 32",
+          FT.algebra_data("so(12)")["reps"]["spinor"][0], 32)
+    # so(8) is the exception: triality makes its spinors indistinguishable
+    # from the vector, and they take the vector's coefficients.
+    check("so(8) spinors take the vector coefficients",
+          FT.algebra_data("so(8)")["reps"]["spinor"],
+          FT.algebra_data("so(8)")["reps"]["vector"])
+
+    # With spinors available, so(N) is no longer stuck on the -4 curve. The
+    # three anomaly conditions are three equations for two unknowns and they
+    # are consistent, which is not automatic.
+    for n in (-4, -3, -2, -1, 0):
+        m = FT.matter_content("so(10)", n)["matter"]
+        check("so(10) on a %2d curve" % n,
+              (m.get("vector"), m.get("spinor", Fraction(0))),
+              (Fraction(n + 6), Fraction(n + 4)))
+    # The vector count generalises: N - 4 + D^2 for every so(N) tabulated,
+    # which reduces to the N - 8 of the -4 curve.
+    for N in (10, 12, 14):
+        m = FT.matter_content("so(%d)" % N, -4)["matter"]
+        check("so(%d) on a -4 curve: N-8 vectors" % N,
+              m, {"vector": Fraction(N - 8)})
+
+    # Half-hypermultiplets exist only for pseudo-real representations. The
+    # so(N) spinors follow the eightfold pattern, and a fractional
+    # multiplicity in a complex or real representation is not a spectrum.
+    check("so(10) spinor is complex", FT.reality("so(10)", "spinor"),
+          "complex")
+    check("so(12) spinor is pseudo-real", FT.reality("so(12)", "spinor"),
+          "pseudoreal")
+    check("so(16) spinor is real", FT.reality("so(16)", "spinor"), "real")
+    check("the 56 of e7 is pseudo-real", FT.reality("e7", "56"),
+          "pseudoreal")
+    check("the fundamental of su(2) is too", FT.reality("su(2)", "fund"),
+          "pseudoreal")
+    check("but of su(5) is complex", FT.reality("su(5)", "fund"), "complex")
+
+    # so(12) gets a half spinor on a -3 curve, and it is allowed.
+    check("so(12) on a -3 curve has half a 32",
+          FT.matter_content("so(12)", -3)["matter"]["spinor"],
+          Fraction(1, 2))
+    # so(14) wants a quarter of a 64 there, which is nothing at all, and
+    # so(16) wants a fraction of a real representation. Both are refused.
+    check_true("so(14) on a -3 curve is refused",
+               _raises(ValueError, FT.matter_content, "so(14)", -3))
+    check_true("so(16) on a -2 curve is refused",
+               _raises(ValueError, FT.matter_content, "so(16)", -2))
+
+    # And a whole model with spinors, anomaly free.
+    m = FT.FTheory6D("dP3", gauge=[("so(10)", [0, 1, 0, 0])])
+    check("so(10) on a -1 curve of dP_3", m.gauge_group(), "so(10)")
+    check("   with 5 vectors and 3 spinors",
+          (m.gauge[0][2]["vector"], m.gauge[0][2]["spinor"]),
+          (Fraction(5), Fraction(3)))
+    check("   charged hypers", m.spectrum()["H_charged"], 5 * 10 + 3 * 16)
+    check_true("   anomaly free", m.check_anomalies()["ok"])
+
+
+def test_bifundamentals():
+    print("\n[11] matter where gauge divisors meet")
+
+    # Two divisors of F_0 meeting once. Every defining representation has
+    # index one, so the mixed anomaly condition makes the intersection number
+    # the bifundamental multiplicity outright.
+    B = FT.Base.hirzebruch(0)
+    m = FT.FTheory6D(B, gauge=[("su(5)", [1, 0]), ("su(3)", [0, 1])])
+    bif = m.bifundamentals()
+    check("one bifundamental sector", len(bif), 1)
+    check("   multiplicity is the intersection number",
+          bif[0]["multiplicity"], B.dot([1, 0], [0, 1]))
+    check("   of dimension 5 x 3", bif[0]["dim"], 15)
+    check("   the (5,3) itself", bif[0]["reps"], ("fund", "fund"))
+
+    # The states are counted once by each divisor, so the spectrum has to
+    # subtract the overlap. Adding it, or ignoring it, breaks the
+    # gravitational anomaly, which is what catches the error.
+    s = m.spectrum()
+    check("shared states", s["bifundamental_states"], 15)
+    check("charged hypers, overlap removed", s["H_charged"],
+          16 * 5 + 2 * 10 + 18 * 3 - 15)
+    check("gravitational anomaly still cancels",
+          s["gravitational_anomaly"], 0)
+    check_true("and every gauge and mixed condition", m.check_anomalies()["ok"])
+    check("Hodge numbers of the resolved threefold", m.hodge_numbers(),
+          (9, 136))
+
+    # A range of pairs, each anomaly free, each with the overlap removed.
+    for N, M in [(6, 4), (8, 2), (4, 4), (7, 5)]:
+        mm = FT.FTheory6D(B, gauge=[("su(%d)" % N, [1, 0]),
+                                    ("su(%d)" % M, [0, 1])])
+        r = mm.check_anomalies()
+        check_true("su(%d) x su(%d) on F_0 is anomaly free" % (N, M), r["ok"])
+        check("   sharing %d states" % (N * M),
+              mm.spectrum()["bifundamental_states"], N * M)
+
+    # Divisors that do not meet carry no shared matter, and the answer must
+    # be the same as putting them on separate models.
+    d = FT.FTheory6D("dP3", gauge=[("su(5)", [1, -1, -1, 0]),
+                                   ("su(2)", [0, 0, 0, 1])])
+    check("disjoint divisors, no bifundamentals", d.bifundamentals(), [])
+    check("and nothing shared", d.spectrum()["bifundamental_states"], 0)
+    check_true("still anomaly free", d.check_anomalies()["ok"])
+
+    # An so(10) meeting an su(2): the defining representations are the vector
+    # and the fundamental, both of index one, so the rule is the same.
+    v = FT.FTheory6D(B, gauge=[("so(10)", [1, 0]), ("su(2)", [0, 1])])
+    check("so(10) x su(2) bifundamental is the (10,2)",
+          v.bifundamentals()[0]["dim"], 20)
+    check_true("and it is anomaly free", v.check_anomalies()["ok"])
+
+
+def test_fourfolds_over_a_base():
+    print("\n[12] the elliptic fourfold, two routes to its Euler number")
+
+    # h^{3,1} is a moduli count on the base; chi is then fixed because a
+    # Calabi-Yau fourfold satisfies chi = 6(8 + h11 + h31 - h21). Separately,
+    # chi is a Chern number of the fibration, 12 c1c2 + 360 c1^3. The two have
+    # nothing to do with each other.
+    for dims, name in ([3], "P^3"), ([1, 2], "P^1xP^2"), ([1, 1, 1], "P^1^3"):
+        B = FT.ProductBase(dims)
+        h = FT.fourfold_hodge(B)
+        check_true("%-8s moduli count and Chern number agree" % name,
+                   h["agree"])
+        check("   chi", h["euler"], h["euler_chern"])
+
+    # P^3 is the standard example and both numbers are known ones.
+    B = FT.ProductBase([3])
+    h = FT.fourfold_hodge(B)
+    check("P^3: h^{1,1}", h["h11"], 2)
+    check("P^3: h^{3,1}", h["h31"], 3878)
+    check("P^3: chi", h["euler"], 23328)
+    check("P^3: D3 tadpole chi/24", h["d3_tadpole"], Fraction(972))
+    check("P^3: c_1 c_2", B.chern_number([1, 2]), 24)
+    check("P^3: c_1^3", B.chern_number([1, 1, 1]), 64)
+    check("P^3: h^0(-4K) = h^0(O(16))", B.h0_anticanonical(4), 969)
+    check("P^3: chi(T_B) = dim PGL(4)", B.chi_tangent(), 15)
+
+    # A product base in dimension two has to reproduce the Base class, since
+    # they compute the same things by different routes.
+    check("P^2 as a product: K^2", FT.ProductBase([2]).K2, 9)
+    check("   and the moduli", FT.weierstrass_moduli(FT.ProductBase([2])),
+          FT.weierstrass_moduli(FT.Base.P2()))
+    check("P^1 x P^1 as a product: K^2", FT.ProductBase([1, 1]).K2, 8)
+    check("   and the moduli",
+          FT.weierstrass_moduli(FT.ProductBase([1, 1])),
+          FT.weierstrass_moduli(FT.Base.hirzebruch(0)))
+
+    check_true("a surface is refused as a fourfold base",
+               _raises(ValueError, FT.fourfold_euler, FT.ProductBase([2])))
+    check_true("and a wrong-degree Chern number is refused",
+               _raises(ValueError, FT.ProductBase([3]).chern_number, [1, 1]))
+
+    # The theory built over a base, rather than from a CICY.
+    m = FT.FTheory4D.over([3])
+    check("built over P^3", m.euler(), 23328)
+    check("tadpole", m.d3_tadpole()["tadpole"], Fraction(972))
+    f = m.flux()
+    check("the flux is bounded by chi/12", f["max_GG"], Fraction(1944))
+    check_true("and integrally quantised here", f["integrally_quantised"])
+    check("three conditions on it", len(f["conditions"]), 3)
+    # It still has no spectrum, and for the same reason as before.
+    check_true("no spectrum without a flux choice",
+               _raises(T.NeedsMetric, m.spectrum))
+    check_true("a surface base is refused",
+               _raises(ValueError, FT.FTheory4D.over, [2]))
+
+    # The CICY route is untouched.
+    m2 = FT.FTheory4D([[2, 3], [3, 4]])
+    check("the CICY route still works", m2.euler(), 2016)
+    check_true("and still finds the fibration", m2.is_elliptically_fibred())
+    check_true("but has no generic Hodge numbers to offer",
+               _raises(NotImplementedError, m2.hodge_numbers))
+
+
 def main():
     t0 = time.time()
     test_kodaira()
@@ -639,6 +834,9 @@ def main():
     test_absent_couplings()
     test_fibrations()
     test_fourfolds()
+    test_spinors()
+    test_bifundamentals()
+    test_fourfolds_over_a_base()
 
     print("\n" + "=" * 72)
     if FAILURES:
