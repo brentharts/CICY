@@ -1731,6 +1731,72 @@ do with, so there is a separate `NoSuchTheory`.
 All three subclass `NotImplementedError`, so a caller that catches broadly
 still works; a caller that wants to know *why* can tell them apart.
 
+### so(N) spinors, derived
+
+The spinor trace coefficients are computed from the weights rather than quoted.
+A spinor's weights are `(±1/2, ..., ±1/2)`, so putting the field strength in
+the Cartan and summing over sign patterns gives the traces directly. The odd
+terms drop out; the cross terms drop out because summing an incomplete set of
+signs over all patterns gives zero. Written in terms of the spinor dimension
+`d`, the even and odd rank cases land on the same formula — `A = d/8`,
+`B = −d/16`, `C = 3d/64` — which is itself the check that the two were done
+consistently.
+
+so(8) is the one exception, and the exception is meaningful: there the quartic
+expansion reaches a term involving all four signs at once, which does not
+cancel. That term is the Pfaffian, the extra invariant so(8) alone has, and
+triality is the statement that its spinors are then indistinguishable from the
+vector. They take the vector's coefficients — and its default reps are trimmed,
+since a duplicate column would leave the anomaly system underdetermined.
+
+With spinors, so(N) is no longer confined to the −4 curve where vectors alone
+would put it. The three conditions are three equations in two unknowns and they
+are consistent, which is not automatic:
+
+| so(10) on D² = | −4 | −3 | −2 | 0 |
+| --- | --- | --- | --- | --- |
+| vectors | 2 | 3 | 4 | 6 |
+| spinors | 0 | 1 | 2 | 4 |
+
+`reality()` decides which multiplicities are legal. A half-hypermultiplet
+exists only for a pseudo-real representation, and so(N) spinors follow the
+eightfold pattern. so(12) gets half a **32** on a −3 curve and that is exact;
+so(14) would want a quarter of a **64** there, which is nothing at all, and is
+refused.
+
+### Matter where divisors meet
+
+Every defining representation tabulated has index one, so the mixed anomaly
+condition `b_i · b_j = Σ x_RS A_R A_S` makes the intersection number the
+bifundamental multiplicity outright.
+
+These are not new states. A bifundamental `(d_i, d_j)` looks, to factor `i`
+alone, like `d_j` copies of its defining representation — so the spectrum has
+to *subtract* the overlap, not add anything. Getting that wrong breaks the
+gravitational anomaly, which is how it gets caught. `su(5) × su(3)` on the two
+rulings of F₀ shares 15 states, and `H_charged = 16·5 + 2·10 + 18·3 − 15`.
+
+### Four dimensions, and the box the flux lives in
+
+`ProductBase` handles bases of any dimension as products of projective spaces,
+which is enough for the standard fourfold examples. Two computations of the
+Euler characteristic, sharing nothing: `h^{3,1}` is a moduli count on the base
+and `χ = 6(8 + h¹¹ + h³¹ − h²¹)` follows because X is a Calabi–Yau fourfold;
+separately `χ = 12∫c₁c₂ + 360∫c₁³` is a Chern number of the fibration.
+
+| base | c₁c₂ | c₁³ | h¹¹ | h³¹ | χ (moduli) | χ (Chern) |
+| --- | --- | --- | --- | --- | --- | --- |
+| P³ | 24 | 64 | 2 | 3878 | 23328 | 23328 |
+| P¹×P² | 24 | 54 | 3 | 3277 | 19728 | 19728 |
+| P¹×P¹×P¹ | 24 | 48 | 4 | 2916 | 17568 | 17568 |
+
+So the D3 tadpole over P³ is 972. `flux()` then bounds G without determining
+it — Witten quantisation `G + c₂(X)/2 ∈ H⁴(X,ℤ)`, the tadpole
+`N_D3 + ½∫G∧G = χ/24` with `N_D3 ≥ 0` giving `∫G∧G ≤ 1944`, and primitivity
+of type (2,2). None of that is a spectrum: the chiral index is an index
+twisted by G, and G is a choice the package doesn't carry, so `spectrum()`
+raises rather than returning something that would look like a prediction.
+
 ### Fibrations of the CICY list
 
 `obvious_fibrations` implements the block criterion of Anderson, Gao, Gray and
