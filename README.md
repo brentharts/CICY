@@ -1776,6 +1776,70 @@ to *subtract* the overlap, not add anything. Getting that wrong breaks the
 gravitational anomaly, which is how it gets caught. `su(5) × su(3)` on the two
 rulings of F₀ shares 15 states, and `H_charged = 16·5 + 2·10 + 18·3 − 15`.
 
+### Clusters that span several curves
+
+A curve too shallow to force anything alone can still be part of a cluster
+that forces something collectively. `cluster()` derives the matter for a chain
+of curves from the anomaly conditions; `NON_HIGGSABLE_CLUSTERS` lists the three
+that exist.
+
+Deriving the first one turned up a normalisation bug in the bifundamentals from
+the previous stage. The mixed condition is
+
+```
+b_i . b_j = lam_i lam_j sum_RS x_RS A_R A_S
+```
+
+and the lambdas are not decoration. On the (−3, −2) cluster the g2's own
+conditions give it exactly **one** 7, while a full (7, 2) bifundamental would
+need two. With the lambdas in place the multiplicity is one half — which needs
+exactly the one 7 that is there. For two su factors both lambdas are one and
+the intersection number is the multiplicity outright, which is why the bug was
+invisible until an so or exceptional factor appeared.
+
+The three-curve cluster is the sharper check, because the middle curve's matter
+is claimed twice:
+
+| (−2, −3, −2) | matter | shared |
+| --- | --- | --- |
+| su(2) on −2 | 4 doublets | ½(2, 8) |
+| so(7) on −3 | 2 spinors, no vectors | — |
+| su(2) on −2 | 4 doublets | ½(8, 2) |
+
+Each su(2) claims one of the two spinors, and the count closes exactly. Note
+which representation carries it: the **spinor**, not the vector, because on a
+−3 curve so(7) has no vectors at all. Both have index one, so `index_one_reps`
+and the matter decide — the algebra alone doesn't.
+
+### Extra sections and the Mordell–Weil rank
+
+`h^{1,1}` was previously understated wherever a model had extra sections.
+`FTheory6D` now takes an `abelian` argument: each entry is a rational section
+with a height pairing, contributing a U(1) vector multiplet to V and a divisor
+to `h^{1,1}`.
+
+The abelian anomaly conditions are the non-abelian ones with the adjoint
+dropped and `lam A_R` replaced by `q²`:
+
+```
+sum_q x_q q^2 = 6 c_1 . b ,     sum_q x_q q^4 = 3 b . b
+```
+
+Two conditions, so two charges are determined and more are not — `u1_matter`
+says so rather than guessing. Setting every multiplicity to zero forces `b = 0`:
+a U(1) with no charged matter is not there, the abelian counterpart of
+`matter_free_algebras` finding nothing.
+
+Over P², only some height pairings admit a spectrum at all. `b = 6H` gives 108
+states of charge one and `(h¹¹, h²¹) = (3, 165)` against the sectionless
+`(2, 272)` — the section visible in both entries. Odd multiples of H want
+fractional numbers of states and are refused.
+
+Abelian and non-abelian factors together are refused rather than double
+counted: a state charged under both would be counted by its gauge divisor and
+again by the U(1), and which states those are isn't determined by the data
+here.
+
 ### Four dimensions, and the box the flux lives in
 
 `ProductBase` handles bases of any dimension as products of projective spaces,
@@ -1933,6 +1997,33 @@ A third route to the Euler characteristic came along with it.
 base where the generic Weierstrass model is smooth, and differ exactly where
 it is not — F₁₂ gives −960 against −480, the difference being the resolution
 of the e₈ fibre.
+
+### Both kinds of involution
+
+`spectrum()` now handles O5/O9 as well as O3/O7. The projection there is
+`Omega_p sigma` without the left-moving fermion number, so `C_0`, `C_2` and
+`C_4` all flip parity — the statement that Type I keeps `C_2`. Running the
+reduction again:
+
+| | O3/O7 | O5/O9 |
+| --- | --- | --- |
+| Kähler moduli | h¹¹₊ | h¹¹₊ |
+| two-form moduli | h¹¹₋ | h¹¹₋ |
+| complex structure | h²¹₋ | h²¹₊ |
+| vectors | h²¹₊ | h²¹₋ |
+| dilaton | axio-dilaton | dilaton with the dual of C_μν |
+
+The Kähler moduli stay in `h^{1,1}_+` either way, because the Kähler form is
+invariant under an isometry. What swaps is the three-form sector — and it
+swaps for the reason that runs through the whole module: deformations live in
+`H^1(T_X)`, and `H^{2,1}` is that tensored with `H^{3,0}`, on which σ acts by
+the Ω sign. The same twist that reconciles the two routes to the Hodge split
+shows up here as which half of `h^{2,1}` is matter and which is gauge.
+
+The axio-dilaton is not one here: `C_0` is odd under worldsheet parity and
+there's no σ-odd zero-form for it to survive on, so the dilaton pairs with the
+dual of the four-dimensional two-form instead. One chiral multiplet either way,
+but not the same one.
 
 ### What is not here
 
