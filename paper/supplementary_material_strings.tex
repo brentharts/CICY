@@ -1,0 +1,1188 @@
+% supplementary_material_strings.tex
+%
+% Build with:  make strings-paper      (from the repository root)
+% or:          python3 paper/make_strings_facts.py && pdflatex supplementary_material_strings.tex (x2)
+%
+% Every number quoted in this document is recomputed from the pyCICY source by
+% paper/make_strings_facts.py and written to figures/strings_facts.tex, which
+% is \input{} below. The prose and the code therefore cannot drift apart
+% silently. There are no figures; the content is arithmetic.
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink,capitalize]{cleveref}
+\usepackage{framed}
+\usepackage{orcidlink}
+
+\graphicspath{{figures/}}
+
+% Numbers computed by paper/make_strings_facts.py. Defined here as fallbacks so
+% the document still typesets before the script has been run; the \input below
+% overrides every one of them with the computed value.
+\newcommand{\SFMatterFreeCount}{?}\newcommand{\SFMatterFreeList}{?}
+\newcommand{\SFSUFiveMinusOneFund}{?}\newcommand{\SFSUFiveMinusOneAnti}{?}
+\newcommand{\SFSUFiveMinusTwoFund}{?}\newcommand{\SFSUFiveZeroFund}{?}
+\newcommand{\SFSUFiveZeroAnti}{?}\newcommand{\SFESevenHalf}{?}
+\newcommand{\SFESevenCharged}{?}\newcommand{\SFSOTenSpinorDim}{?}
+\newcommand{\SFSOTenSpinorA}{?}\newcommand{\SFSOTenMinusThreeVec}{?}
+\newcommand{\SFSOTenMinusThreeSpin}{?}\newcommand{\SFSOTwelveHalfSpinor}{?}
+\newcommand{\SFSOSevenIndexOne}{?}\newcommand{\SFClusterCount}{?}
+\newcommand{\SFGTwoSevens}{?}\newcommand{\SFGTwoSUTwoDoublets}{?}
+\newcommand{\SFGTwoSharedMult}{?}\newcommand{\SFSOSevenSpinors}{?}
+\newcommand{\SFClusterThreeCharged}{?}\newcommand{\SFPTwoHfour}{?}
+\newcommand{\SFPTwoHsix}{?}\newcommand{\SFPTwoChiT}{?}
+\newcommand{\SFPTwoModuli}{?}\newcommand{\SFFTwoChiT}{?}
+\newcommand{\SFFTwoModuli}{?}\newcommand{\SFModuliAgree}{?}
+\newcommand{\SFPTwoHone}{?}\newcommand{\SFPTwoHtwo}{?}
+\newcommand{\SFPTwoChi}{?}\newcommand{\SFPTwoAlg}{?}
+\newcommand{\SFFZeroHone}{?}\newcommand{\SFFZeroHtwo}{?}
+\newcommand{\SFFZeroChi}{?}\newcommand{\SFFZeroAlg}{?}
+\newcommand{\SFFTwelveHone}{?}\newcommand{\SFFTwelveHtwo}{?}
+\newcommand{\SFFTwelveChi}{?}\newcommand{\SFFTwelveAlg}{?}
+\newcommand{\SFFSevenHone}{?}\newcommand{\SFFSevenHtwo}{?}
+\newcommand{\SFFSevenChi}{?}\newcommand{\SFFSevenAlg}{?}
+\newcommand{\SFFSevenCharged}{?}\newcommand{\SFPTwoChern}{?}
+\newcommand{\SFFTwelveChern}{?}\newcommand{\SFFTwelveGap}{?}
+\newcommand{\SFMWCharge}{?}\newcommand{\SFMWHone}{?}
+\newcommand{\SFMWHtwo}{?}\newcommand{\SFMWGood}{?}
+\newcommand{\SFPThreeCoCt}{?}\newcommand{\SFPThreeCoCube}{?}
+\newcommand{\SFPThreeHone}{?}\newcommand{\SFPThreeHthree}{?}
+\newcommand{\SFPThreeChi}{?}\newcommand{\SFPThreeChiChern}{?}
+\newcommand{\SFPThreeTadpole}{?}\newcommand{\SFPThreeAgree}{?}
+\newcommand{\SFPOneTwoCoCt}{?}\newcommand{\SFPOneTwoCoCube}{?}
+\newcommand{\SFPOneTwoHone}{?}\newcommand{\SFPOneTwoHthree}{?}
+\newcommand{\SFPOneTwoChi}{?}\newcommand{\SFPOneTwoChiChern}{?}
+\newcommand{\SFPOneTwoTadpole}{?}\newcommand{\SFPOneTwoAgree}{?}
+\newcommand{\SFPThreeFluxBound}{?}\newcommand{\SFQuinticFixedChi}{?}
+\newcommand{\SFQuinticHtwoPlus}{?}\newcommand{\SFQuinticHtwoMinus}{?}
+\newcommand{\SFQuinticDefPlus}{?}\newcommand{\SFQuinticDefMinus}{?}
+\newcommand{\SFQuinticRoutesAgree}{?}\newcommand{\SFQuinticChiral}{?}
+\newcommand{\SFQuinticVectors}{?}\newcommand{\SFQuinticFiveChiral}{?}
+\newcommand{\SFQuinticFiveVectors}{?}\newcommand{\SFQuinticFiveHtwoPlus}{?}
+\newcommand{\SFQuinticFiveHtwoMinus}{?}\newcommand{\SFSenCoverChi}{?}
+\newcommand{\SFSenBases}{?}\newcommand{\SFSenGenusPTwo}{?}
+\newcommand{\SFSenGenusDPEight}{?}\newcommand{\SFSenTadpoleAll}{?}
+\newcommand{\SFBraneKodairaAgree}{?}\newcommand{\SFCicyTotal}{?}
+\newcommand{\SFCicyElliptic}{?}\newcommand{\SFCicyKThree}{?}
+\newcommand{\SFBicubicHone}{?}\newcommand{\SFBicubicHtwo}{?}
+\newcommand{\SFBicubicFibrations}{?}\newcommand{\SFTetraFibrations}{?}
+\newcommand{\SFMFsuThree}{?}\newcommand{\SFMFsoEight}{?}
+\newcommand{\SFMFfFour}{?}\newcommand{\SFMFeSix}{?}
+\newcommand{\SFMFeSeven}{?}\newcommand{\SFMFeEight}{?}
+\IfFileExists{figures/strings_facts.tex}{\input{figures/strings_facts.tex}}{}
+
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\cO}{\mathcal{O}}
+\newcommand{\ch}{\operatorname{ch}}
+\newcommand{\g}[1]{\mathfrak{#1}}
+
+\theoremstyle{definition}
+\newtheorem{remark}{Remark}
+
+\title{\vspace{-1cm}\textbf{What Anomaly Cancellation Determines,\\
+and What Does Not Exist:\\[2pt]
+\large Exact Methods for F-theory and Type IIB Orientifolds}}
+\author{B.S. Hartshorn \orcidlink{0009-0004-2853-655X} \small \url{https://github.com/brentharts/CICY}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A companion paper~\cite{SuppMath} asked which quantities in a heterotic
+compactification are determined by the configuration matrix alone, and drew a
+sharp line between what is exact and what is not. This paper asks the same
+question of three constructions where the geometry is usually not a complete
+intersection at all --- F-theory in six and four dimensions, and Type IIB
+orientifolds --- and finds that the determining structure is different. It is
+not the degrees of the defining polynomials. It is anomaly cancellation, and
+in six dimensions it does not merely constrain the spectrum but produces it:
+the matter content of a gauge algebra on a divisor is the unique solution of
+three linear conditions in the intersection form of a surface, with no
+cohomology and no metric anywhere. We derive rather than tabulate the six
+matter-free non-Higgsable algebras, the matter of the multi-curve clusters,
+the trace coefficients of the $\g{so}(N)$ spinors, and the
+half-hypermultiplet of $\g{e}_7$ on a $-7$ curve. Several quantities are
+computed twice by unrelated routes and required to agree --- the complex
+structure moduli of a Weierstrass model by Riemann--Roch against the
+gravitational anomaly, the Euler characteristic of an elliptic fourfold by a
+moduli count against a Chern number, the equivariant Hodge numbers of an
+orientifold involution by the Lefschetz fixed point theorem against a count
+of monomials --- and each agreement is a check rather than a construction.
+The boundary is again sharp, and it acquires a category the heterotic paper
+had no occasion to name. Beside quantities that are exact, quantities awaiting
+an implementation, and quantities obstructed by the Ricci-flat metric, there
+are quantities that \emph{do not exist}: six-dimensional $(1,0)$ supersymmetry
+forbids a superpotential, so an F-theory compactification to six dimensions
+has no Yukawa couplings at all, and returning zero for one would be
+numerically right and conceptually wrong.
+\end{abstract}
+
+\tableofcontents
+
+% =====================================================================
+
+\section{Introduction}
+\label{sec:intro}
+
+The companion paper~\cite{SuppMath} is organised around a single question:
+given a configuration matrix, which physical quantities follow from the
+degrees alone? The answer there is that a surprising number do, that they are
+exact, and that the ones which do not fail for three distinguishable reasons.
+
+That question does not transplant directly. The generic F-theory background is
+an elliptic fibration whose fibre is a hypersurface in the weighted projective
+space $\PP^{2,3,1}$, which is not a product of projective spaces, so it has no
+configuration matrix; and an orientifold is not a manifold at all but a
+manifold with an involution. What survives the move is the shape of the
+question --- what is determined, by what, and exactly --- and the answer turns
+out to be sharper rather than weaker.
+
+In six dimensions the determining structure is anomaly cancellation. A chiral
+theory with $\mathcal{N}=(1,0)$ supersymmetry is inconsistent unless a set of
+polynomial identities in divisor classes holds~\cite{GSW1985,Sagnotti1992,
+Erler1994,KumarMorrisonTaylor2010}, and those identities are strong enough not
+merely to constrain a spectrum but to \emph{produce} one. Given a gauge
+algebra and the divisor class it sits on, the multiplicities of the charged
+matter are the unique solution of three linear equations, in exact rational
+arithmetic on the intersection form of a surface. There is no cohomology
+computation, no metric, no approximation, and --- this is the part worth
+insisting on --- no table.
+
+\Cref{sec:kodaira,sec:anomaly,sec:spinors,sec:clusters} develop that machinery
+and check it against itself. \Cref{sec:bases,sec:chi,sec:mw} turn to the base
+surface, where several quantities admit two unrelated computations that must
+agree. \Cref{sec:four} goes up one dimension to the elliptic fourfold and the
+$G$-flux, where the exact statements stop early and the paper says so.
+\Cref{sec:cicy} connects the constructions back to the complete intersections
+the companion paper is about. \Cref{sec:orientifold,sec:sen} treat Type IIB
+orientifolds and Sen's weak coupling limit, which is where the two halves of
+the paper meet. \Cref{sec:boundary} restates the boundary.
+
+Everything is implemented in \texttt{pyCICY.theories}, which is the same
+subpackage the heterotic constructions of~\cite{SuppMath} live in and shares
+its interface; every number quoted below is recomputed by
+\texttt{paper/make\_strings\_facts.py} and inserted into this document
+mechanically.
+
+% =====================================================================
+
+\section{Kodaira's table, and its internal consistency}
+\label{sec:kodaira}
+
+An F-theory background is a Weierstrass model
+%
+\begin{equation}
+y^2 \;=\; x^3 + f\,x + g ,
+\qquad
+f \in H^0(B, -4K_B),
+\quad
+g \in H^0(B, -6K_B),
+\label{eq:weierstrass}
+\end{equation}
+%
+over a base $B$, with the fibre degenerating over the vanishing locus of the
+discriminant $\Delta = 4f^3 + 27g^2 \in |-12K_B|$. The type of degeneration
+--- hence the gauge algebra carried by that divisor --- is fixed by the orders
+to which $f$, $g$ and $\Delta$ vanish along it, by Kodaira's
+classification~\cite{Kodaira1963,BIKMSV1996}.
+
+The table is quoted, as it must be. What is not quoted is its consistency with
+the equation it classifies. Since $\Delta = 4f^3 + 27g^2$,
+%
+\begin{equation}
+\operatorname{ord}\Delta \;\geq\; \min\bigl(3\operatorname{ord}f,\;
+2\operatorname{ord}g\bigr),
+\label{eq:deltabound}
+\end{equation}
+%
+with equality unless the two terms cancel at leading order, which they cannot
+when $3\operatorname{ord}f \neq 2\operatorname{ord}g$. This is an arithmetic
+constraint independent of Kodaira, and a classifier that assigns a fibre type
+to orders violating it is assigning physics to a geometry that does not exist.
+The implementation enforces \cref{eq:deltabound}, and a scan over all
+$(\operatorname{ord}f, \operatorname{ord}g, \operatorname{ord}\Delta)$ in a
+box confirms that no entry of the table is rejected by it. That is a real
+check: the $I_0^*$ row in particular requires
+$\operatorname{ord}f = 2$ \emph{or} $\operatorname{ord}g = 3$, not merely both
+at least those values, and without that refinement the classifier accepts
+$(3,4,6)$, which \cref{eq:deltabound} forbids.
+
+A model with $\operatorname{ord}f \geq 4$ and $\operatorname{ord}g \geq 6$ is
+non-minimal: it is not the Weierstrass form of a Calabi--Yau with canonical
+singularities, and the base must be blown up before it means anything. This is
+reported as such rather than being given a gauge algebra, and the distinction
+matters in \cref{sec:bases}, where it disqualifies three of the Hirzebruch
+surfaces as bases.
+
+% =====================================================================
+
+\section{Anomaly cancellation as a source of spectra}
+\label{sec:anomaly}
+
+\subsection{The conditions}
+
+For a simple algebra $\g{g}$ on an irreducible divisor $D$ in the base, write
+$A_R$, $B_R$, $C_R$ for the coefficients in
+%
+\begin{equation}
+\operatorname{tr}_R F^2 = A_R \operatorname{tr}F^2 ,
+\qquad
+\operatorname{tr}_R F^4 = B_R \operatorname{tr}F^4
++ C_R \bigl(\operatorname{tr}F^2\bigr)^2 ,
+\label{eq:traces}
+\end{equation}
+%
+the trace on the right being in the defining representation, and $\lambda$ for
+the normalisation of~\cite{KumarMorrisonTaylor2010}. Anomaly cancellation
+requires
+%
+\begin{align}
+\lambda \Bigl( A_{\mathrm{adj}} - \sum_R x_R A_R \Bigr)
+&\;=\; 6\,K \cdot D , \label{eq:condA}\\
+\lambda^2 \Bigl( \sum_R x_R C_R - C_{\mathrm{adj}} \Bigr)
+&\;=\; 3\,D \cdot D , \label{eq:condC}\\
+B_{\mathrm{adj}} &\;=\; \sum_R x_R B_R , \label{eq:condB}
+\end{align}
+%
+the last only when $\g{g}$ has an independent quartic Casimir. The adjoint
+appears on both sides of the first two: once as the vector multiplet, and once
+as matter with multiplicity equal to the genus of $D$, since a curve of genus
+$g$ carries $g$ adjoint hypermultiplets. The intersection $K \cdot D$ is not
+independent data; adjunction fixes it as $2g - 2 - D\cdot D$. Alongside these
+sits the gravitational condition
+%
+\begin{equation}
+H - V + 29\,T \;=\; 273 ,
+\label{eq:grav}
+\end{equation}
+%
+with $T = h^{1,1}(B) - 1$ tensor multiplets.
+
+\subsection{Matter, solved}
+\label{sec:matter}
+
+\Crefrange{eq:condA}{eq:condB} are three linear equations in the
+multiplicities. For $\g{su}(N)$ with fundamental and antisymmetric matter they
+are three equations in two unknowns and are consistent, which is not
+automatic, and their solution reproduces the standard results without any of
+them being stored:
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+$D\cdot D$ & $-2$ & $-1$ & $0$ \\
+\midrule
+fundamentals of $\g{su}(5)$
+& \SFSUFiveMinusTwoFund & \SFSUFiveMinusOneFund & \SFSUFiveZeroFund \\
+antisymmetrics
+& --- & \SFSUFiveMinusOneAnti & \SFSUFiveZeroAnti \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+that is, $2N$ fundamentals on a $-2$ curve, $N+8$ and one antisymmetric on a
+$-1$ curve, sixteen and two on a $0$ curve.
+
+The case worth dwelling on is $\g{e}_7$ on a curve of self-intersection $-7$,
+where the unique solution is $x = \SFESevenHalf$ of a $\mathbf{56}$. Half a
+hypermultiplet is not a rounding artefact: the $\mathbf{56}$ is pseudo-real,
+the reality condition can be imposed on half of it, and the answer is exactly
+one half. The rational arithmetic is carried through with
+\texttt{fractions.Fraction} for precisely this reason. The
+\SFESevenCharged{} charged states it contributes are what
+\cref{eq:grav} then sees.
+
+\subsection{The matter-free algebras, derived}
+\label{sec:matterfree}
+
+Set every multiplicity to zero on a rational curve and
+\cref{eq:condA,eq:condC} each become a formula for the self-intersection:
+%
+\begin{equation}
+D \cdot D \;=\; -2 - \frac{\lambda A_{\mathrm{adj}}}{6}
+\qquad\text{and}\qquad
+D \cdot D \;=\; -\frac{\lambda^2 C_{\mathrm{adj}}}{3} .
+\label{eq:matterfree}
+\end{equation}
+%
+These are different functions of the group theory. They agree for very few
+algebras and at an integer for fewer still, and the survivors are exactly
+\SFMatterFreeCount{} in number:
+
+\begin{center}
+\begin{tabular}{lcccccc}
+\toprule
+algebra & $\g{su}(3)$ & $\g{so}(8)$ & $\g{f}_4$ & $\g{e}_6$ & $\g{e}_7$
+& $\g{e}_8$ \\
+\midrule
+$D\cdot D$ & $-\SFMFsuThree$ & $-\SFMFsoEight$ & $-\SFMFfFour$
+& $-\SFMFeSix$ & $-\SFMFeSeven$ & $-\SFMFeEight$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+which is the tabulated list of matter-free non-Higgsable
+clusters~\cite{MorrisonTaylor2012}, at the tabulated self-intersections.
+Nothing in the derivation consults that list. $\g{g}_2$ and $\g{su}(2)$ fail
+the integrality of \cref{eq:matterfree} and are therefore forced to carry
+matter, which is also correct and is what \cref{sec:clusters} exploits.
+
+The single-curve non-Higgsable table is quoted, since which algebra the
+\emph{generic} Weierstrass model realises on a curve is not an anomaly
+question. But its matter content is derived, and the agreement of the derived
+matter-free subset with the quoted table is a check on the group theory in
+\cref{eq:traces} rather than an input to it.
+
+% =====================================================================
+
+\section{The \texorpdfstring{$\g{so}(N)$}{so(N)} spinors, from their weights}
+\label{sec:spinors}
+
+The vector and adjoint coefficients of $\g{so}(N)$ are elementary. The spinor
+coefficients are usually taken from a table; here they are computed. The
+weights of a spinor are $(\pm\tfrac12, \dots, \pm\tfrac12)$ in the orthogonal
+basis, so placing the field strength in the Cartan with eigenvalues
+$x_1, \dots, x_r$ and summing over sign patterns gives the traces directly.
+The odd terms drop out of the sign sum; the cross terms drop out because
+summing a product of an incomplete set of signs over all patterns vanishes.
+Writing $t_2$ and $t_4$ for the vector traces,
+%
+\begin{equation}
+\operatorname{tr}_S F^2 = \frac{d_S}{8}\, t_2 ,
+\qquad
+\operatorname{tr}_S F^4 = -\frac{d_S}{16}\, t_4
++ \frac{3 d_S}{64}\, t_2^2 ,
+\label{eq:spinor}
+\end{equation}
+%
+with $d_S$ the dimension of the spinor. The even and odd rank cases have
+different weight lattices and different numbers of sign patterns, and they
+land on the same formula once written in terms of $d_S$; that they do is the
+check that the two were done consistently. For $\g{so}(10)$,
+\cref{eq:spinor} gives the $\mathbf{\SFSOTenSpinorDim}$ with
+$A = \SFSOTenSpinorA$.
+
+$\g{so}(8)$ is the exception, and the exception is informative. There the
+quartic expansion reaches a term involving all four signs at once, which does
+not cancel. That term is the Pfaffian --- the extra invariant $\g{so}(8)$
+alone possesses --- and triality is the statement that its two spinors are
+then indistinguishable from the vector. They take the vector's coefficients,
+and consequently the spinor column duplicates the vector column and would
+leave the anomaly system underdetermined; the implementation trims it from the
+defaults and says why.
+
+With spinors available, $\g{so}(N)$ is no longer confined to the $-4$ curve
+where the vector alone would put it. On a $-3$ curve $\g{so}(10)$ carries
+\SFSOTenMinusThreeVec{} vectors and \SFSOTenMinusThreeSpin{} spinor, and
+\crefrange{eq:condA}{eq:condB} remain three equations in two unknowns and
+remain consistent.
+
+\subsection{Reality, and which multiplicities exist}
+
+A half-hypermultiplet exists only for a pseudo-real representation, and the
+$\g{so}(N)$ spinors follow the eightfold pattern: real for
+$N \equiv 0, 1, 7 \bmod 8$, pseudo-real for $3, 4, 5$, complex for $2, 6$.
+This is not bookkeeping. On a $-3$ curve $\g{so}(12)$ is given
+$\SFSOTwelveHalfSpinor$ of a $\mathbf{32}$, which is legitimate because that
+spinor is pseudo-real; $\g{so}(14)$ on the same curve is given a quarter of a
+$\mathbf{64}$, which is not a spectrum at all, and $\g{so}(16)$ a fraction of
+a real representation, which is likewise not. Both are refused. A
+multiplicity that is neither an integer nor --- in the pseudo-real case --- a
+half is a statement that the configuration does not exist, and it is more
+useful reported as such than rounded.
+
+% =====================================================================
+
+\section{Clusters spanning several curves}
+\label{sec:clusters}
+
+A curve too shallow to force a gauge algebra on its own can belong to a chain
+that forces one collectively, because the intersections tie the Weierstrass
+model on one curve to the model on its neighbour. There are exactly
+\SFClusterCount{} such clusters~\cite{MorrisonTaylor2012}, and their matter is
+derived here from the same conditions, extended by the mixed one.
+
+\subsection{A normalisation the clusters fix}
+
+For two simple factors the mixed anomaly condition is
+%
+\begin{equation}
+b_i \cdot b_j \;=\; \lambda_i \lambda_j
+\sum_{R,S} x^{ij}_{RS}\, A_R\, A_S .
+\label{eq:mixed}
+\end{equation}
+%
+Every representation of index one --- the fundamental of $\g{su}$ and
+$\g{sp}$, the vector of $\g{so}$, the $\mathbf{27}$, $\mathbf{56}$,
+$\mathbf{26}$ and $\mathbf{7}$ --- makes the sum on the right the
+multiplicity, so that for two $\g{su}$ factors the intersection number
+\emph{is} the number of bifundamentals. The normalisation factors do not
+cancel in general, and the $(-3,-2)$ cluster is what settles them. There
+$\g{g}_2$ sits on the $-3$ curve and $\g{su}(2)$ on the $-2$, meeting once.
+Their own conditions give the $\g{g}_2$ exactly $\SFGTwoSevens$ seven and the
+$\g{su}(2)$ exactly $\SFGTwoSUTwoDoublets$ doublets. A full
+$(\mathbf{7},\mathbf{2})$ would require two sevens, which are not there;
+\cref{eq:mixed} with the $\lambda$'s gives multiplicity
+$\SFGTwoSharedMult$, which requires exactly the one that is. Dropping the
+$\lambda$'s is invisible when both factors are $\g{su}$ and wrong as soon as
+one is not.
+
+\subsection{The three-curve cluster}
+
+The $(-2,-3,-2)$ chain is the sharper case, because the middle curve's matter
+is claimed from both sides. Its own conditions give $\g{so}(7)$ on the $-3$
+curve $\SFSOSevenSpinors$ spinors and no vectors at all, and each $\g{su}(2)$
+neighbour claims one of them through a half
+$(\mathbf{2},\mathbf{8})$; the accounting closes exactly, with
+$\SFClusterThreeCharged$ charged states in the cluster.
+
+Two things had to be right for that to happen. First, the spinor coefficients
+of \cref{eq:spinor} for $\g{so}(7)$, which are not the tabulated ones for any
+larger $\g{so}$ and which this cluster tests independently. Second, the
+identity of the representation carrying the shared matter: $\g{so}(7)$ has
+\emph{two} representations of index one, namely \SFSOSevenIndexOne, and on a
+$-3$ curve it carries no vectors, so the bifundamental sits in the spinor.
+Which one appears is decided by the matter the curve actually has and not by
+the algebra, and assuming the vector --- the natural default --- looks for
+states that are not there.
+
+% =====================================================================
+
+\section{The base surface, counted twice}
+\label{sec:bases}
+
+Six-dimensional F-theory needs remarkably little about the base: the
+intersection pairing on $H^2$ and the canonical class. Two computations of the
+same quantity out of that data, sharing nothing, are available and must agree.
+
+The complex structure moduli of the generic Weierstrass model are a
+Riemann--Roch count. The model is fixed by $f$ and $g$ of \cref{eq:weierstrass}
+modulo the automorphisms of $B$ and the rescaling
+$(f,g) \mapsto (t^4 f, t^6 g)$, so
+%
+\begin{equation}
+n_{\text{moduli}} \;=\; h^0(-4K) + h^0(-6K) - \chi(T_B) - 1 .
+\label{eq:moduli}
+\end{equation}
+%
+On $\PP^2$ that is $\SFPTwoHfour + \SFPTwoHsix - \SFPTwoChiT - 1 =
+\SFPTwoModuli$. The gravitational anomaly \cref{eq:grav} is a one-loop
+condition in six dimensions and says the answer must be $272 - 29T$. The two
+have nothing to do with each other, and they agree on every rational base
+tested (\SFModuliAgree).
+
+The delicate case is $F_2$. Its automorphism group is one dimension larger
+than $F_0$'s, which on its own would undercount the moduli by one; the
+compensation is that $F_2$ deforms to $F_0$, so $h^1(T_B) = 1$. Using the
+Euler characteristic $\chi(T_B)$ in \cref{eq:moduli} rather than $h^0(T_B)$
+alone is exactly what holds the count at $\SFFTwoModuli$ across the Hirzebruch
+surfaces, with $\chi(T_B) = \SFFTwoChiT$ throughout. A formula in $h^0$ would
+agree on $F_0$ and $F_1$ and fail on $F_2$, which is the kind of error that
+survives casual testing.
+
+\subsection{Whole models}
+
+With the matter derived and \cref{eq:grav} closing the neutral count, the
+Hodge numbers of the elliptic threefold follow from
+$h^{1,1}(X) = h^{1,1}(B) + 1 + \operatorname{rank}(G)$ and
+$h^{2,1}(X) = H_{\text{neutral}} - 1$:
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+base & algebra & $h^{1,1}$ & $h^{2,1}$ & $\chi$ \\
+\midrule
+$\PP^2$   & \SFPTwoAlg    & \SFPTwoHone    & \SFPTwoHtwo    & \SFPTwoChi \\
+$F_0$     & \SFFZeroAlg   & \SFFZeroHone   & \SFFZeroHtwo   & \SFFZeroChi \\
+$F_7$     & $\g{e}_7$     & \SFFSevenHone  & \SFFSevenHtwo  & \SFFSevenChi \\
+$F_{12}$  & $\g{e}_8$     & \SFFTwelveHone & \SFFTwelveHtwo & \SFFTwelveChi \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+$F_7$ is the only one of these with charged matter, and it is the
+half-hypermultiplet of \cref{sec:matter}: \SFFSevenCharged{} charged states.
+$F_{12}$ is the far end of the six-dimensional landscape and reproduces the
+familiar $(\SFFTwelveHone, \SFFTwelveHtwo)$.
+
+The bases $F_9$, $F_{10}$ and $F_{11}$ are absent on purpose. Their sections
+carry points where the Weierstrass model is non-minimal in the sense of
+\cref{sec:kodaira}, so they are not bases at all until those points are blown
+up, after which the surface is no longer Hirzebruch. Reporting a spectrum for
+them would be reporting physics for a geometry that does not exist. On the
+heterotic side those are exactly the cases with three, two and one instanton
+in the second $E_8$ --- too few to fit --- and the small instanton transition
+that repairs it is the same event as the blowup~\cite{MorrisonVafaII}.
+
+% =====================================================================
+
+\section{Three routes to one Euler characteristic}
+\label{sec:chi}
+
+The Hodge numbers above give $\chi = 2(h^{1,1} - h^{2,1})$ through the
+spectrum and hence through the anomaly. Independently, for a smooth
+Weierstrass model over a surface, the Chern classes of the fibration
+give~\cite{KLRY1998,GrassiMorrison2011}
+%
+\begin{equation}
+\chi(X) \;=\; -60 \int_B c_1(B)^2 \;=\; -60\,K_B^2 .
+\label{eq:chithree}
+\end{equation}
+%
+On $\PP^2$ both give $\SFPTwoChern$. They agree on every base for which the
+generic Weierstrass model is smooth, and they must \emph{disagree} where it is
+not: $F_{12}$ gives $\SFFTwelveChi$ through the spectrum against
+$\SFFTwelveChern$ through \cref{eq:chithree}, and the difference of
+$\SFFTwelveGap$ is the resolution of the $\g{e}_8$ fibre. An implementation
+reporting agreement there would not be computing what it claims. Together with
+the moduli count of \cref{sec:bases} this makes three independent handles on
+the same geometry, and the pattern of where they agree is as informative as
+the agreement.
+
+% =====================================================================
+
+\section{Extra sections and the Mordell--Weil rank}
+\label{sec:mw}
+
+An elliptic fibration with rational sections beyond the zero section carries
+abelian gauge factors~\cite{MorrisonPark2012}, one per generator of the
+Mordell--Weil group, and each contributes a vector multiplet to $V$ and a
+divisor to $h^{1,1}$. The abelian anomaly conditions are
+\cref{eq:condA,eq:condC} with the adjoint removed and $\lambda A_R$ replaced
+by $q^2$:
+%
+\begin{equation}
+\sum_q x_q\, q^2 \;=\; 6\, c_1 \cdot b ,
+\qquad
+\sum_q x_q\, q^4 \;=\; 3\, b \cdot b ,
+\label{eq:abelian}
+\end{equation}
+%
+with $b$ the height pairing of the generating section, playing the role the
+gauge divisor plays for a non-abelian factor.
+
+Two conditions determine two charges and no more, and the implementation says
+so rather than guessing. Setting every multiplicity to zero forces
+$c_1 \cdot b = b \cdot b = 0$: a $U(1)$ with no charged matter has vanishing
+height pairing, which is to say it is not there. This is the abelian
+counterpart of \cref{sec:matterfree}, and it finds nothing, which is the
+correct answer.
+
+Over $\PP^2$ with charges $1$ and $2$, only the height pairings
+$b \in \{\SFMWGood\}$ times the hyperplane admit an integral spectrum at all;
+the rest want fractional numbers of states and are refused. At $b = 6H$ the
+solution is \SFMWCharge{} states of charge one and none of charge two, giving
+$(h^{1,1}, h^{2,1}) = (\SFMWHone, \SFMWHtwo)$ against the sectionless
+$(\SFPTwoHone, \SFPTwoHtwo)$ --- the extra section visible in both entries, as
+one more divisor and as charged states removed from the neutral count.
+
+Abelian and non-abelian factors together are declined rather than
+approximated. A state charged under both would be counted once by its gauge
+divisor and once by the $U(1)$, and which states those are is not determined
+by the data available here.
+
+% =====================================================================
+
+\section{Four dimensions, and the box the flux lives in}
+\label{sec:four}
+
+An elliptic Calabi--Yau fourfold over a threefold base gives four-dimensional
+$\mathcal{N}=1$. Two computations of its Euler characteristic are again
+available and again share nothing. The complex structure moduli are the
+generalisation of \cref{eq:moduli}, and a Calabi--Yau fourfold
+satisfies~\cite{KLRY1998}
+%
+\begin{equation}
+\chi \;=\; 6\bigl(8 + h^{1,1} + h^{3,1} - h^{2,1}\bigr) ,
+\label{eq:chifour}
+\end{equation}
+%
+while separately, for the smooth Weierstrass model,
+%
+\begin{equation}
+\chi(X) \;=\; 12 \int_B c_1 c_2 \;+\; 360 \int_B c_1^3 .
+\label{eq:chifourchern}
+\end{equation}
+
+\begin{center}
+\begin{tabular}{lcccccc}
+\toprule
+base & $\int c_1 c_2$ & $\int c_1^3$ & $h^{1,1}$ & $h^{3,1}$
+& $\chi$ \eqref{eq:chifour} & $\chi$ \eqref{eq:chifourchern} \\
+\midrule
+$\PP^3$
+& \SFPThreeCoCt & \SFPThreeCoCube & \SFPThreeHone & \SFPThreeHthree
+& \SFPThreeChi & \SFPThreeChiChern \\
+$\PP^1 \times \PP^2$
+& \SFPOneTwoCoCt & \SFPOneTwoCoCube & \SFPOneTwoHone & \SFPOneTwoHthree
+& \SFPOneTwoChi & \SFPOneTwoChiChern \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The $\PP^3$ row is the standard example and both of its entries are the
+familiar numbers. The D3-brane tadpole is then
+$\chi/24 = \SFPThreeTadpole$~\cite{SethiVafaWitten1996}.
+
+That is where the exact statements stop, and the paper stops with them. The
+$G$-flux is bounded but not determined. Witten quantisation requires
+$G + c_2(X)/2$ to be integral~\cite{Witten1996flux}; the tadpole
+$N_{D3} + \tfrac12 \int G \wedge G = \chi/24$ with $N_{D3} \geq 0$ bounds
+$\int G \wedge G \leq \SFPThreeFluxBound$ on $\PP^3$; and supersymmetry
+demands that $G$ be primitive and of type $(2,2)$. None of this is a spectrum.
+The chiral index is an index twisted by $G$, and $G$ is a choice this package
+does not carry, so the spectrum is declined rather than returned.
+
+% =====================================================================
+
+\section{The complete intersections, and what they are not}
+\label{sec:cicy}
+
+The constructions above are stated in terms of a base and its intersection
+form, and none of them needs the total space as a complete intersection.
+That is not an accident of presentation: the generic Weierstrass model is a
+hypersurface in a $\PP^{2,3,1}$ bundle and is not a CICY. But complete
+intersections do fibre in elliptic curves, and the criterion is
+combinatorial~\cite{AndersonGaoGrayLee2017}. Reordering a configuration matrix
+into
+%
+\begin{equation}
+\begin{pmatrix} F & 0 \\ C & B \end{pmatrix}
+\label{eq:fibblock}
+\end{equation}
+%
+with the top rows vanishing outside the left columns makes the top block a
+complete intersection in its own ambient factors; when it has dimension one it
+is a Calabi--Yau one-fold, an elliptic curve, and the manifold fibres over the
+bottom block. The Calabi--Yau condition on the fibre is automatic and worth
+seeing why: each row of the full matrix sums to its ambient dimension plus
+one, and a fibre row is zero on every base column, so its entries in the fibre
+columns already sum correctly.
+
+Implemented from that definition and swept over the published list, this finds
+\SFCicyElliptic{} of the \SFCicyTotal{} CICY threefolds with an obvious
+genus-one fibration, which is the published count, and \SFCicyKThree{} with an
+obvious K3 fibration.
+
+The gap between that and an F-theory background is the point of stating it. An
+obvious fibration is a \emph{genus-one} fibration: the fibres are elliptic
+curves but nothing marks a point on them, and without a section there is no
+Weierstrass form and no place to read the axio-dilaton. The $(3,3)$
+hypersurface in $\PP^2 \times \PP^2$ fibres over $\PP^2$ in plane cubics
+\SFBicubicFibrations{} ways, one per projection, and has
+$(h^{1,1}, h^{2,1}) = (\SFBicubicHone, \SFBicubicHtwo)$; the Weierstrass model
+over the same base has $(\SFPTwoHone, \SFPTwoHtwo)$. Same base, same fibre
+type, different manifolds. The tetraquadric fibres \SFTetraFibrations{} ways,
+one per choice of two of its four $\PP^1$ factors.
+
+% =====================================================================
+
+\section{Type IIB orientifolds}
+\label{sec:orientifold}
+
+An orientifold quotients Type IIB by $\Omega_p (-1)^{F_L} \sigma$ with
+$\sigma$ a holomorphic involution of $X$, and the four-dimensional closed
+string spectrum follows from how $\sigma$ splits the cohomology. Here the
+construction does return to complete intersections, because the involutions
+that matter act on the ambient coordinates.
+
+\subsection{Two kinds, distinguished by geometry}
+
+A holomorphic involution acts on the holomorphic three-form by a sign, and the
+sign decides everything: $\sigma^*\Omega = -\Omega$ gives O3- and O7-planes,
+fixed points and divisors; $\sigma^*\Omega = +\Omega$ gives O5- and O9-planes,
+fixed curves and all of $X$. The implementation computes the sign by counting
+flipped coordinates and polynomial signs, and computes the fixed dimensions by
+intersecting the defining polynomials with coordinate subspaces. That even
+complex codimension accompanies the minus sign is a theorem, so the agreement
+of the two is a test and not a definition.
+
+The polynomial signs are not decoration. Flipping a set of coordinates and
+flipping its complement are the \emph{same} map on projective space, and the
+two descriptions give opposite values of $\sum_i \mathrm{minus}_i$; what puts
+them back together is that they also give opposite $\varepsilon_a$ in
+$p_a \circ \sigma = \varepsilon_a p_a$. Omitting them would make the O-plane
+type depend on how the same involution was written down.
+
+\subsection{The equivariant Hodge numbers, twice}
+\label{sec:hodgesplit}
+
+The spectrum is a function of the splits
+$h^{1,1} = h^{1,1}_+ + h^{1,1}_-$ and $h^{2,1} = h^{2,1}_+ + h^{2,1}_-$, and
+these are computed by two routes with no code in common.
+
+The first is the topological Lefschetz fixed point theorem. For a holomorphic
+involution of a Calabi--Yau threefold,
+%
+\begin{equation}
+\chi(\mathrm{Fix}\,\sigma) \;=\;
+2 + 2\bigl(h^{1,1}_+ - h^{1,1}_-\bigr) - 2 s
+- 2 \bigl(h^{2,1}_+ - h^{2,1}_-\bigr) ,
+\label{eq:lefschetz}
+\end{equation}
+%
+with $s$ the sign on $\Omega$, using that the traces on $H^2$ and $H^4$ agree
+by Poincar\'e duality. On a favourable CICY a coordinate sign flip fixes every
+ambient hyperplane class, so $h^{1,1}$ is entirely invariant and
+$\chi(\mathrm{Fix}\,\sigma)$ determines the rest. The fixed locus is a
+complete intersection in a product of projective spaces and is almost never
+Calabi--Yau, so it is computed from Chern classes rather than by the CICY
+machinery.
+
+The second route counts monomials: the complex structure deformations of a
+hypersurface are its monomials modulo the ambient reparametrisations, and the
+involution grades both.
+
+On the quintic with one coordinate flipped, the fixed locus is a quintic
+surface --- the O7 --- together with the point $[0{:}0{:}0{:}0{:}1]$, which
+lies on $X$ because no invariant quintic has an $x_4^5$ term. Its Euler
+characteristic is $\SFQuinticFixedChi$, and \cref{eq:lefschetz} gives
+$(h^{2,1}_+, h^{2,1}_-) = (\SFQuinticHtwoPlus, \SFQuinticHtwoMinus)$. The
+monomial count gives $(\SFQuinticDefPlus, \SFQuinticDefMinus)$ --- the same
+numbers in the opposite order --- and reconciling them is the subtlety this
+section exists for.
+
+\begin{framed}
+\noindent
+$H^{2,1} \cong H^1(X, T_X) \otimes H^{3,0}$, and the monomials grade
+$H^1(T_X)$, not $H^{2,1}$. When $\sigma^*\Omega = -\Omega$ the two gradings
+are opposite, so the invariant deformations are the \emph{anti}-invariant part
+of $H^{2,1}$. Getting this backwards leaves both routes internally consistent
+and both wrong; the fixed point theorem is what decides which way round it
+goes. With the twist applied the two agree (\SFQuinticRoutesAgree).
+\end{framed}
+
+\subsection{Involutions that change the manifold}
+
+Some sign patterns cannot be imposed on a generic $X$ at all, and an
+implementation that does not notice will return numbers belonging to a
+different manifold. If every defining polynomial vanishes identically on a
+coordinate subspace, that subspace lies inside $X$. When it is a divisor,
+$X$ contains a linear subspace of the ambient whose class is not in the
+lattice the ambient generates: $h^{1,1}$ exceeds what the configuration matrix
+says, and the CICY Hodge numbers no longer describe $X$. When it has the
+dimension of $X$, the polynomial factorises and $X$ is not irreducible.
+
+On the quintic both occur. Flipping three coordinates forces every invariant
+monomial to vanish on the plane they span, so $X$ contains a plane --- and a
+quintic containing a plane is a Noether--Lefschetz jump with $h^{1,1} = 2$,
+not $1$. Flipping four forces every invariant monomial to be divisible by the
+fifth coordinate. Both routes of \cref{sec:hodgesplit} refuse in both cases,
+and refuse for the stated reason rather than by failing an assertion. A curve
+inside $X$ is not a problem, since a generic quintic contains lines; only a
+divisor is.
+
+\subsection{Both projections}
+
+For $\sigma^*\Omega = -\Omega$ the massless closed string sector is
+$h^{1,1}_+$ chiral multiplets pairing the K\"ahler moduli with $C_4$,
+$h^{1,1}_-$ from $B_2$ and $C_2$, $h^{2,1}_-$ complex structure moduli,
+$h^{2,1}_+$ vectors from $C_4$, and the axio-dilaton~\cite{GrimmLouis2004}.
+For $\sigma^*\Omega = +\Omega$ the projection is $\Omega_p \sigma$ without the
+left-moving fermion number, so $C_0$, $C_2$ and $C_4$ all change parity ---
+the statement that Type I retains $C_2$. Running the reduction again:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+& O3/O7 & O5/O9 \\
+\midrule
+K\"ahler moduli        & $h^{1,1}_+$ & $h^{1,1}_+$ \\
+two-form moduli        & $h^{1,1}_-$ & $h^{1,1}_-$ \\
+complex structure      & $h^{2,1}_-$ & $h^{2,1}_+$ \\
+vector multiplets      & $h^{2,1}_+$ & $h^{2,1}_-$ \\
+remaining chiral       & axio-dilaton & dilaton with the dual of $C_{\mu\nu}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The K\"ahler moduli stay in $h^{1,1}_+$ either way, because the K\"ahler form
+is invariant under an isometry regardless of the sign. What swaps is the
+three-form sector, and it swaps for the reason in \cref{sec:hodgesplit}: the
+deformations live in $H^1(T_X)$ and $\sigma$ acts on $H^{3,0}$ by the
+$\Omega$ sign, so which half of $H^{2,1}$ is matter and which is gauge follows
+the sign. There is no axio-dilaton in the second column: $C_0$ is odd under
+worldsheet parity and there is no $\sigma$-odd zero-form for it to survive on.
+One chiral multiplet either way, but not the same one.
+
+On the quintic the two involutions above give
+$\SFQuinticChiral$ chiral and $\SFQuinticVectors$ vector multiplets in the
+O3/O7 case, and $\SFQuinticFiveChiral$ chiral and $\SFQuinticFiveVectors$
+vector in the O5/O9 case, from the split
+$(\SFQuinticFiveHtwoPlus, \SFQuinticFiveHtwoMinus)$.
+
+The open string sector is absent throughout. The gauge group is a choice of
+D7-brane divisor classes subject to
+$\sum_a N_a ([D_a] + [D_a']) = 8[O7]$, not a consequence of the involution,
+and the condition is stated rather than solved.
+
+% =====================================================================
+
+\section{Sen's limit, where the two halves meet}
+\label{sec:sen}
+
+Tuning the Weierstrass coefficients to
+$f = -3h^2 + \epsilon\,\eta$ and $g = -2h^3 + \epsilon\,h\eta -
+\epsilon^2 \psi$ and taking $\epsilon \to 0$ drives the axio-dilaton to weak
+coupling almost everywhere~\cite{Sen1997}. The discriminant degenerates to
+$\epsilon^2 h^2 (\eta^2 - h\psi)$, a double zero on the O7-plane $\{h = 0\}$
+and a single brane on the rest, and the physical space is the double cover of
+$B$ branched over the O7. Since $f$ is a section of $-4K_B$ and $h^2$ must be
+too, $[O7] = -2K_B$, and everything follows from that one fact.
+
+\begin{enumerate}[leftmargin=2em]
+\item \emph{The cover is always a K3.} A double cover branched over $C$ has
+$\chi = 2\chi(B) - \chi(C)$, and for a rational base $\chi(B) = 3 + T$ while
+$\chi(C) = -2(9-T)$, so
+%
+\begin{equation}
+\chi \;=\; 2(3+T) + 2(9-T) \;=\; 24 ,
+\label{eq:k3}
+\end{equation}
+%
+the tensor multiplet count cancelling because $K^2 = 9 - T$ on a rational
+surface. Over the \SFSenBases{} bases tested the cover has
+$\chi \in \{\SFSenCoverChi\}$. The genus of the branch curve does vary ---
+\SFSenGenusPTwo{} on $\PP^2$, \SFSenGenusDPEight{} on $dP_8$ --- but the cover
+does not.
+
+\item \emph{The D7 tadpole closes for every base at once.} The brane at
+$\eta^2 = h\psi$ lies in $|-8K|$, and with its orientifold image that is
+$-16K = 8[O7]$. Both sides are multiples of the same canonical class
+(\SFSenTadpoleAll).
+
+\item \emph{The brane rules reproduce Kodaira.} This is the sharpest check
+in the package.
+\end{enumerate}
+
+Perturbatively a stack of $n$ D7-branes gives $\g{u}(n)$, or $\g{so}(2n)$ when
+it sits on the O7-plane and its images coincide with it --- Chan--Paton
+bookkeeping and nothing more. Non-perturbatively the same configuration is a
+degeneration of the elliptic fibration with a fibre type read off the
+vanishing orders of $f$, $g$ and $\Delta$:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+configuration & Chan--Paton & Kodaira \\
+\midrule
+$n$ branes, away from the O7 & $\g{u}(n)$    & $I_n$ carries $\g{su}(n)$ \\
+four branes, on the O7       & $\g{so}(8)$   & $I_0^*$ carries $\g{so}(8)$ \\
+$n$ branes, on the O7        & $\g{so}(2n)$  & $I_{n-4}^*$ carries $\g{so}(2n)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The shift by four is the content: it takes four D7-branes to cancel the charge
+of an O7-plane locally, which is why $n$ branes on it give $I_{n-4}^*$ rather
+than $I_n^*$, and why four give the smooth $I_0^*$. One side is a count of
+Chan--Paton factors and the other is the vanishing order of a discriminant;
+neither computation knows about the other, and they agree
+(\SFBraneKodairaAgree).
+
+% =====================================================================
+
+\section{The boundary, restated}
+\label{sec:boundary}
+
+The companion paper distinguishes three ways a quantity can fail to be
+available~\cite{SuppMath}. These constructions need a fourth, and it belongs
+at the head of the list rather than the tail, because it is not a failure.
+
+\begin{enumerate}[leftmargin=2em]
+\item \emph{Does not exist.} The Yukawa couplings of a six-dimensional
+F-theory compactification. $\mathcal{N}=(1,0)$ supersymmetry forbids a
+superpotential: hypermultiplets are quaternionic and there is no
+gauge-invariant holomorphic cubic coupling to write down. Returning zero would
+be numerically right and conceptually wrong, and blaming the metric would
+blame it for an absence it has nothing to do with. The implementation raises a
+distinct exception, \texttt{NoSuchTheory}, and the tests require that it is
+\emph{not} the metric exception.
+
+\item \emph{Not implemented, but exact in principle.} The Yukawa couplings of
+a four-dimensional orientifold, which come from triple overlaps of open string
+wavefunctions on intersecting D7-brane divisors together with worldsheet
+instantons. These exist; they are simply not computed. The distinction from
+the previous item is the whole point of keeping the two exceptions apart.
+
+\item \emph{Not determined by the data carried.} The chiral spectrum of a
+four-dimensional F-theory model, which is an index twisted by the $G$-flux;
+the decomposition of the D3 tadpole; the gauge group of an orientifold, which
+is a choice of D7-brane classes subject to a stated condition. In each case
+the constraints are exact and the choice is absent, and the constraints are
+reported.
+
+\item \emph{Obstructed by the metric.} The hypermultiplet moduli space metric
+and the normalisation of the kinetic terms. Nothing in
+\crefrange{sec:kodaira}{sec:sen} depends on these, which is why so much of the
+above is exact.
+\end{enumerate}
+
+\noindent
+The reason the third category is large here and small in~\cite{SuppMath} is
+structural. A heterotic model on a CICY is specified by data the configuration
+matrix and a bundle already contain; an F-theory or orientifold model is
+specified by a base together with choices --- fluxes, brane stacks, sections
+--- that live outside the geometry. What the anomaly conditions do is make
+those choices finite and checkable rather than open-ended: a bound of
+$\SFPThreeFluxBound$ on $\int G \wedge G$ is not a spectrum, but it is a box,
+and a box is what an exhaustive method needs.
+
+% =====================================================================
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+Where the companion paper found that a configuration matrix determines more
+than one expects, this one finds that consistency does. The six-dimensional
+anomaly conditions are usually presented as a filter applied to a spectrum
+obtained some other way; used as equations rather than inequalities they
+produce the spectrum outright, and they are restrictive enough that the
+answers come out unique. The matter content of every gauge algebra on every
+divisor, the six algebras that need no charged matter, the half-hypermultiplet
+of $\g{e}_7$, the trace coefficients of the $\g{so}(N)$ spinors, the way the
+multi-curve clusters share their matter: all of it is linear algebra over
+$\mathbb{Q}$, and all of it is checkable against a table nobody had to type
+in.
+
+The recurring methodological point is that a quantity computed once is a
+result and a quantity computed twice is a test. The moduli count of
+\cref{sec:bases}, the Euler characteristics of \cref{sec:chi,sec:four}, the
+equivariant Hodge numbers of \cref{sec:hodgesplit} and the brane rules of
+\cref{sec:sen} are each obtained by two routes that share no code and,
+usually, no branch of mathematics. Every one of the errors found during this
+work was found by one of those pairs disagreeing --- a normalisation dropped
+from \cref{eq:mixed}, a twist by $\Omega$ applied the wrong way, a fibre type
+assigned to vanishing orders \cref{eq:deltabound} forbids --- and none of them
+would have been visible to a single computation, however carefully written.
+
+% =====================================================================
+
+\section{Source code and limitations}
+\label{sec:source}
+
+Everything above is implemented in \texttt{pyCICY.theories.ftheory} and
+\texttt{pyCICY.theories.orientifold}, with
+\texttt{tests/test\_ftheory.py} and \texttt{tests/test\_orientifold.py}
+executing the cross-checks quoted here. The numbers in this document are
+emitted by \texttt{paper/make\_strings\_facts.py}. The repository is at
+\url{https://github.com/brentharts/CICY}.
+
+Known limitations, stated so that the scope is not mistaken:
+%
+\begin{itemize}[leftmargin=2em,itemsep=1pt]
+\item Orientifold involutions are restricted to coordinate sign flips.
+Involutions permuting ambient factors act non-trivially on $H^{1,1}$ and
+permute the defining polynomials, and the restriction of a permuted polynomial
+to the fixed locus depends on a sign the configuration matrix does not fix.
+\item Multi-curve non-Higgsable clusters are handled locally, from curves and
+their intersections; the automatic detection of forced gauge algebras on a
+given base covers only the single-curve case.
+\item Spinor coefficients are tabulated for $\g{so}(N)$ only; the $\g{sp}$ and
+exceptional matter beyond the representations listed is not covered.
+\item The Mordell--Weil sector handles the rank and the abelian conditions
+with two distinct charges, and declines models mixing abelian and non-abelian
+charged matter.
+\item $G$-flux is bounded, not enumerated.
+\end{itemize}
+
+% =====================================================================
+
+\begin{thebibliography}{99}
+\setlength{\itemsep}{1pt plus 0.5pt}
+
+\bibitem{SuppMath}
+B.S.~Hartshorn,
+\emph{What a configuration matrix determines, and what it does not: exact
+methods for heterotic compactifications on CICYs},
+companion document (Pre-print 2026),
+\url{https://doi.org/10.5281/zenodo.21844007}.
+
+\bibitem{SuppFigures}
+B.S.~Hartshorn,
+\emph{Supplementary material: figures for the pyCICY-X package},
+companion document (Pre-print 2026),
+\url{https://doi.org/10.5281/zenodo.21843383}.
+
+\bibitem{Vafa1996}
+C.~Vafa,
+\emph{Evidence for F-theory},
+Nucl.\ Phys.\ B \textbf{469} (1996) 403,
+\href{https://arxiv.org/abs/hep-th/9602022}{arXiv:hep-th/9602022}.
+
+\bibitem{MorrisonVafaI}
+D.~R.~Morrison and C.~Vafa,
+\emph{Compactifications of F-theory on Calabi--Yau threefolds I},
+Nucl.\ Phys.\ B \textbf{473} (1996) 74,
+\href{https://arxiv.org/abs/hep-th/9602114}{arXiv:hep-th/9602114}.
+
+\bibitem{MorrisonVafaII}
+D.~R.~Morrison and C.~Vafa,
+\emph{Compactifications of F-theory on Calabi--Yau threefolds II},
+Nucl.\ Phys.\ B \textbf{476} (1996) 437,
+\href{https://arxiv.org/abs/hep-th/9603161}{arXiv:hep-th/9603161}.
+
+\bibitem{Kodaira1963}
+K.~Kodaira,
+\emph{On compact analytic surfaces II},
+Ann.\ Math.\ \textbf{77} (1963) 563.
+
+\bibitem{BIKMSV1996}
+M.~Bershadsky, K.~Intriligator, S.~Kachru, D.~R.~Morrison, V.~Sadov and
+C.~Vafa,
+\emph{Geometric singularities and enhanced gauge symmetries},
+Nucl.\ Phys.\ B \textbf{481} (1996) 215,
+\href{https://arxiv.org/abs/hep-th/9605200}{arXiv:hep-th/9605200}.
+
+\bibitem{GSW1985}
+M.~B.~Green, J.~H.~Schwarz and P.~C.~West,
+\emph{Anomaly free chiral theories in six dimensions},
+Nucl.\ Phys.\ B \textbf{254} (1985) 327.
+
+\bibitem{Sagnotti1992}
+A.~Sagnotti,
+\emph{A note on the Green--Schwarz mechanism in open string theories},
+Phys.\ Lett.\ B \textbf{294} (1992) 196,
+\href{https://arxiv.org/abs/hep-th/9210127}{arXiv:hep-th/9210127}.
+
+\bibitem{Erler1994}
+J.~Erler,
+\emph{Anomaly cancellation in six dimensions},
+J.\ Math.\ Phys.\ \textbf{35} (1994) 1819,
+\href{https://arxiv.org/abs/hep-th/9304104}{arXiv:hep-th/9304104}.
+
+\bibitem{KumarMorrisonTaylor2010}
+V.~Kumar, D.~R.~Morrison and W.~Taylor,
+\emph{Global aspects of the space of 6D $\mathcal{N}=1$ supergravities},
+JHEP \textbf{11} (2010) 118,
+\href{https://arxiv.org/abs/1008.1062}{arXiv:1008.1062}.
+
+\bibitem{MorrisonTaylor2012}
+D.~R.~Morrison and W.~Taylor,
+\emph{Classifying bases for 6D F-theory models},
+Cent.\ Eur.\ J.\ Phys.\ \textbf{10} (2012) 1072,
+\href{https://arxiv.org/abs/1201.1943}{arXiv:1201.1943}.
+
+\bibitem{Taylor2011}
+W.~Taylor,
+\emph{TASI lectures on supergravity and string vacua in various dimensions},
+\href{https://arxiv.org/abs/1104.2051}{arXiv:1104.2051}.
+
+\bibitem{Weigand2018}
+T.~Weigand,
+\emph{F-theory},
+PoS \textbf{TASI2017} (2018) 016,
+\href{https://arxiv.org/abs/1806.01854}{arXiv:1806.01854}.
+
+\bibitem{GrassiMorrison2011}
+A.~Grassi and D.~R.~Morrison,
+\emph{Anomalies and the Euler characteristic of elliptic Calabi--Yau
+threefolds},
+Commun.\ Num.\ Theor.\ Phys.\ \textbf{6} (2012) 51,
+\href{https://arxiv.org/abs/1109.0042}{arXiv:1109.0042}.
+
+\bibitem{KLRY1998}
+A.~Klemm, B.~Lian, S.-S.~Roan and S.-T.~Yau,
+\emph{Calabi--Yau fourfolds for M- and F-theory compactifications},
+Nucl.\ Phys.\ B \textbf{518} (1998) 515,
+\href{https://arxiv.org/abs/hep-th/9701023}{arXiv:hep-th/9701023}.
+
+\bibitem{SethiVafaWitten1996}
+S.~Sethi, C.~Vafa and E.~Witten,
+\emph{Constraints on low-dimensional string compactifications},
+Nucl.\ Phys.\ B \textbf{480} (1996) 213,
+\href{https://arxiv.org/abs/hep-th/9606122}{arXiv:hep-th/9606122}.
+
+\bibitem{Witten1996flux}
+E.~Witten,
+\emph{On flux quantization in M-theory and the effective action},
+J.\ Geom.\ Phys.\ \textbf{22} (1997) 1,
+\href{https://arxiv.org/abs/hep-th/9609122}{arXiv:hep-th/9609122}.
+
+\bibitem{MorrisonPark2012}
+D.~R.~Morrison and D.~S.~Park,
+\emph{F-theory and the Mordell--Weil group of elliptically-fibered
+Calabi--Yau threefolds},
+JHEP \textbf{10} (2012) 128,
+\href{https://arxiv.org/abs/1208.2695}{arXiv:1208.2695}.
+
+\bibitem{Sen1997}
+A.~Sen,
+\emph{Orientifold limit of F-theory vacua},
+Phys.\ Rev.\ D \textbf{55} (1997) R7345,
+\href{https://arxiv.org/abs/hep-th/9702165}{arXiv:hep-th/9702165}.
+
+\bibitem{GrimmLouis2004}
+T.~W.~Grimm and J.~Louis,
+\emph{The effective action of $\mathcal{N}=1$ Calabi--Yau orientifolds},
+Nucl.\ Phys.\ B \textbf{699} (2004) 387,
+\href{https://arxiv.org/abs/hep-th/0403067}{arXiv:hep-th/0403067}.
+
+\bibitem{BKLS2007}
+R.~Blumenhagen, B.~K\"ors, D.~L\"ust and S.~Stieberger,
+\emph{Four-dimensional string compactifications with D-branes, orientifolds
+and fluxes},
+Phys.\ Rept.\ \textbf{445} (2007) 1,
+\href{https://arxiv.org/abs/hep-th/0610327}{arXiv:hep-th/0610327}.
+
+\bibitem{CollinucciDenefEsole2009}
+A.~Collinucci, F.~Denef and M.~Esole,
+\emph{D-brane deconstructions in IIB orientifolds},
+JHEP \textbf{02} (2009) 005,
+\href{https://arxiv.org/abs/0805.1573}{arXiv:0805.1573}.
+
+\bibitem{AndersonGaoGrayLee2017}
+L.~B.~Anderson, X.~Gao, J.~Gray and S.-J.~Lee,
+\emph{Fibrations in CICY threefolds},
+JHEP \textbf{10} (2017) 077,
+\href{https://arxiv.org/abs/1708.07907}{arXiv:1708.07907}.
+
+\bibitem{Candelas1988}
+P.~Candelas, A.~M.~Dale, C.~A.~L\"utken and R.~Schimmrigk,
+\emph{Complete intersection Calabi--Yau manifolds},
+Nucl.\ Phys.\ B \textbf{298} (1988) 493.
+
+\bibitem{Green1987}
+P.~Green and T.~H\"ubsch,
+\emph{Calabi--Yau manifolds as complete intersections in products of complex
+projective spaces},
+Commun.\ Math.\ Phys.\ \textbf{109} (1987) 99.
+
+\bibitem{GrayHauptLukas2013}
+J.~Gray, A.~S.~Haupt and A.~Lukas,
+\emph{All complete intersection Calabi--Yau four-folds},
+JHEP \textbf{07} (2013) 070,
+\href{https://arxiv.org/abs/1303.1832}{arXiv:1303.1832}.
+
+\bibitem{Larfors2022}
+M.~Larfors, A.~Lukas, F.~Ruehle and R.~Schneider,
+\emph{Learning size and shape of Calabi--Yau spaces},
+\href{https://arxiv.org/abs/2111.01436}{arXiv:2111.01436};
+code at \url{https://github.com/pythoncymetric/cymetric}.
+
+\bibitem{Butbaia2024}
+G.~Butbaia, D.~Mayorga Pe\~na, J.~Tan, P.~Berglund, T.~H\"ubsch,
+V.~Jejjala and C.~Mishra,
+\emph{Physical Yukawa couplings in heterotic string compactifications},
+\href{https://arxiv.org/abs/2401.15078}{arXiv:2401.15078};
+code at \url{https://github.com/Justin-Tan/cymyc}.
+
+\end{thebibliography}
+
+\end{document}
