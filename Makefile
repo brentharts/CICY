@@ -55,7 +55,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper figures test survey toric-survey ftheory ftheory-fibrations orientifold knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
+.PHONY: all paper strings-paper strings-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
 
 all: paper
 
@@ -89,6 +89,36 @@ $(PDF): $(PAPERDIR)/$(TEX) $(FIGDIR)/.stamp
 	fi
 
 # ------------------------------------------------------------------ other
+
+# ------------------------------------------------------------ strings paper
+#
+# The strings paper has no figures; its numbers come from
+# paper/make_strings_facts.py, which recomputes every quantity the text
+# quotes. pdflatex is run twice for the same reason as above.
+
+STRINGSTEX  := supplementary_material_strings.tex
+STRINGSPDF  := $(PAPERDIR)/supplementary_material_strings.pdf
+STRINGSFACTS := $(FIGDIR)/strings_facts.tex
+
+strings-paper: $(STRINGSPDF)
+
+strings-facts: $(STRINGSFACTS)
+
+$(STRINGSFACTS): $(wildcard pyCICY/theories/*.py) $(PAPERDIR)/make_strings_facts.py
+	@echo "==> recomputing the numbers quoted in the strings paper"
+	@mkdir -p $(FIGDIR)
+	$(PYTHON) $(PAPERDIR)/make_strings_facts.py --outdir $(FIGDIR)
+
+$(STRINGSPDF): $(PAPERDIR)/$(STRINGSTEX) $(STRINGSFACTS)
+	@echo "==> pdflatex pass 1/2 (strings)"
+	cd $(PAPERDIR) && $(PDFLATEX) -interaction=nonstopmode -halt-on-error $(STRINGSTEX) >/dev/null
+	@echo "==> pdflatex pass 2/2 (strings)"
+	cd $(PAPERDIR) && $(PDFLATEX) -interaction=nonstopmode -halt-on-error $(STRINGSTEX) >/dev/null
+	@echo "==> wrote $(STRINGSPDF)"
+	@if grep -q 'Reference.*undefined' $(PAPERDIR)/supplementary_material_strings.log; then \
+	    echo "WARNING: undefined references remain:"; \
+	    grep 'Reference.*undefined' $(PAPERDIR)/supplementary_material_strings.log | sort -u; \
+	fi
 
 test:
 	$(PYTHON) run_tests.py
@@ -194,15 +224,16 @@ cache-clear:
 	print('removed', cache.clear_cache(), 'entries')"
 
 clean:
-	rm -f $(PAPERDIR)/*.aux $(PAPERDIR)/*.log $(PAPERDIR)/*.out \
+	rm -f $(PAPERDIR)/*.aux $(PAPERDIR)/*.log $(PAPERDIR)/*.toc $(PAPERDIR)/*.out \
 	      $(PAPERDIR)/*.toc $(PAPERDIR)/*.fls $(PAPERDIR)/*.fdb_latexmk
 	find . -name '__pycache__' -type d -prune -exec rm -rf {} +
 	rm -rf build *.egg-info
 
 distclean: clean
-	rm -f $(PDF) $(FIGURES) $(FIGDIR)/.stamp
+	rm -f $(PDF) $(STRINGSPDF) $(FIGURES) $(FIGDIR)/.stamp
+	rm -f $(STRINGSFACTS) $(FIGDIR)/strings_facts.json
 	-rmdir $(FIGDIR) 2>/dev/null || true
 
 help:
-	@echo "targets: all paper figures test survey toric-survey knot-chirality chirality hyperbolic aj bundles hofstadter polytope new-figures supplement clean distclean cache-info cache-clear"
+	@echo "targets: all paper strings-paper strings-facts figures test survey toric-survey knot-chirality chirality hyperbolic aj bundles hofstadter polytope new-figures supplement clean distclean cache-info cache-clear"
 	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) CHARGE=$(CHARGE) ORDER=$(ORDER) BUDGET=$(BUDGET) FLUX=$(FLUX) HFLUX=$(HFLUX) PYTHON=$(PYTHON)"
