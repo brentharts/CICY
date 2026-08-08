@@ -337,6 +337,77 @@ is a choice this package does not carry, so spectrum() raises rather than
 returning a number that would look like a prediction.""")
 
 
+def clusters_and_sections():
+    banner("10. Clusters that span several curves, and extra sections")
+
+    print("""\
+A curve too shallow to force anything on its own can still be part of a
+cluster that forces something collectively, because the intersections tie the
+Weierstrass model on one curve to its neighbour's. There are three such
+clusters, and the matter is derived rather than tabulated.
+
+The normalisation of the mixed condition is what they test. It is
+b_i . b_j = lam_i lam_j sum x A A, and the lambdas are not decoration: on the
+(-3, -2) cluster the g2's own conditions give it exactly one 7, while a full
+(7, 2) would need two. With the lambdas the multiplicity is one half, needing
+exactly the one 7 there is.
+""")
+    for c in FT.NON_HIGGSABLE_CLUSTERS:
+        r = FT.cluster(c["curves"], c["edges"])
+        print("  %-14s %s" % (c["name"],
+                              " + ".join(a or "(nothing)"
+                                         for _, a in c["curves"])))
+        for k, (n, alg) in enumerate(c["curves"]):
+            m = ", ".join("%s x %s" % (v, kk)
+                          for kk, v in sorted(r["matter"][k].items()))
+            print("      curve %d, self-intersection %3d: %s"
+                  % (k, n, m or "no matter"))
+        for sh in r["shared"]:
+            print("      shared: %s x (%s, %s) between %s and %s"
+                  % (sh["multiplicity"], sh["reps"][0], sh["reps"][1],
+                     sh["algebras"][0], sh["algebras"][1]))
+        print("      V = %d, rank = %d, charged = %s, closes: %s\n"
+              % (r["dim_V"], r["rank"], r["charged"], r["consistent"]))
+
+    print("""\
+The three-curve cluster is the sharper case, because the middle curve's matter
+is claimed twice. so(7) on a -3 curve is given two spinors by its own
+conditions and each su(2) neighbour claims one, exactly. Note also which
+representation carries the shared matter: the spinor, not the vector, because
+on a -3 curve so(7) has no vectors at all. Both have index one, so the choice
+is made by what the curve carries.
+""")
+
+    banner("   extra sections")
+    print("""\
+A rational section beyond the zero section adds a U(1) and a divisor. The
+abelian conditions are the non-abelian ones with the adjoint dropped and
+lam A_R replaced by q^2:
+
+    sum_q x_q q^2 = 6 c_1 . b ,      sum_q x_q q^4 = 3 b . b
+
+with b the height pairing. Two conditions, so two charges are determined and
+more are not. Setting every multiplicity to zero forces b = 0, which is to say
+a U(1) with no charged matter is not there.
+""")
+    print("  %-10s %-28s %s" % ("height", "charged matter", "model"))
+    for h in range(2, 14, 2):
+        try:
+            mm = FT.FTheory6D("P2", abelian=[{"height": [h]}])
+            u = mm.abelian[0]["matter"]
+            text = ", ".join("%s of charge %d" % (v, q)
+                             for q, v in sorted(u.items()))
+            print("  %-10s %-28s (h11, h21) = %s"
+                  % ("%dH" % h, text, mm.hodge_numbers()))
+        except ValueError:
+            print("  %-10s %-28s -" % ("%dH" % h, "no integer spectrum"))
+    print("""
+Only some height pairings admit a spectrum at all; the rest want fractional
+numbers of states and are refused. Against the model with no extra section,
+(h11, h21) = (2, 272), the section shows up in both entries: one more divisor,
+and the charged states removed from the neutral count.""")
+
+
 def missing():
     banner("7. Three ways a number can be unavailable")
 
@@ -399,17 +470,18 @@ def main():
     p.add_argument("--only", default=None,
                    choices=["clusters", "matter", "counts", "survey",
                             "model", "kodaira", "spinors",
-                            "fourfolds", "missing"],
+                            "fourfolds", "clusters2", "missing"],
                    help="run one section instead of all of them")
     a = p.parse_args()
 
     sections = {"clusters": derivation, "matter": matter,
                 "spinors": spinors_and_intersections, "fourfolds": fourfolds,
+                "clusters2": clusters_and_sections,
                 "counts": base_counts, "survey": survey,
                 "model": lambda: chosen(a.base, a.gauge, a.divisor),
                 "kodaira": kodaira, "missing": missing}
     order = ["clusters", "matter", "counts", "survey", "model", "kodaira",
-             "spinors", "fourfolds", "missing"]
+             "spinors", "fourfolds", "clusters2", "missing"]
     for key in ([a.only] if a.only else order):
         sections[key]()
     print()
