@@ -38,6 +38,7 @@ BUDGET ?= 20
 MAX_CONFIGS ?= 1200
 FIB_LIMIT   ?= 7890
 ORI_CONF    ?= [[4,5]]
+TWISTOR_N   ?= 6
 
 # The figure script writes these; facts.json carries the scalars quoted in
 # the prose so the text and the plots cannot drift apart.
@@ -55,7 +56,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper strings-paper strings-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
+.PHONY: all paper strings-paper strings-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
 
 all: paper
 
@@ -163,6 +164,11 @@ ftheory-fibrations:
 # weak coupling limit of the F-theory models.
 orientifold:
 	$(PYTHON) examples/orientifold.py --conf '$(ORI_CONF)' --scan
+
+# Twistor theory: exact rational scattering amplitudes, BCFW against
+# Parke-Taylor, and the positive Grassmannian.
+twistor:
+	$(PYTHON) examples/twistor.py --n $(TWISTOR_N)
 
 # Chirality of K15n81556 and the failure of additivity of the unknotting
 # number (arXiv:2506.24088, arXiv:2507.14265). SEARCH=N also runs the

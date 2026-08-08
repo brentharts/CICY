@@ -2043,6 +2043,111 @@ python3 examples/orientifold.py --only sen --scan
 make orientifold
 ```
 
+## Twistor theory and scattering amplitudes
+
+`pyCICY.twistor` is the module where the package's habit of exact arithmetic
+pays off most directly. Witten's point is that perturbative gauge theory,
+a swamp in Feynman diagrams, is simple in twistor space. The point *here* is
+narrower: a tree amplitude is a rational function of spinor brackets, so with
+rational spinors it is a rational number and every claim about it is
+decidable. Nothing in the module is checked to within a tolerance.
+
+```python
+from pyCICY import twistor as TW
+
+k = TW.Kinematics.random(6, seed=6)
+TW.parke_taylor(k, (1, 2))                              # Fraction(-121, 648)
+TW.tree_amplitude(k.lam, k.lamt, [-1,-1,1,1,1,1])       # the same, via BCFW
+TW.u1_decoupling_residual(k, (1, 2))                    # exactly 0
+```
+
+### Momentum conservation as a linear condition
+
+With λ and λ̃ taken independent — complexified, or split signature — momentum
+conservation says each column of λ̃ lies in the kernel of the 2×n matrix of
+λ's. So a kinematic configuration is *constructed*, not solved for, and
+`check()` tests the code rather than the numbers. The Schouten identity and
+`Σ_i ⟨ki⟩[il] = 0` then come out zero without being imposed anywhere.
+
+### BCFW against Parke–Taylor
+
+The main cross-check: BCFW builds every tree amplitude from the three-point
+ones, which Lorentz invariance alone fixes; Parke–Taylor is a closed formula.
+They share no code and agree exactly for n = 4…8, and the conjugate amplitudes
+agree too. Beyond MHV there is nothing to compare against, so the six-point
+NMHV amplitudes are checked by cyclicity and reflection — not free, since the
+BCFW sum is over channels chosen *after* rotating the ordering.
+
+Writing this turned up one sign error, in the three-point MHV-bar amplitude.
+It showed as BCFW/Parke–Taylor = (−1)ⁿ across all n, which is the signature of
+a per-recursion-step convention rather than a bug in any one place.
+
+### Three points need complex momenta
+
+At n = 3 the kernel momentum conservation leaves is one-dimensional, so both
+columns of λ̃ are proportional to one vector and **every square bracket
+vanishes identically**. There is no configuration with both sets of brackets
+nonzero, over any field. The two three-point amplitudes therefore live at
+different kinematic points, and `Kinematics.random(3, kind=...)` selects
+which. This is exactly the degeneracy that makes BCFW need complex momenta,
+and it is a theorem rather than an artefact of working over ℚ.
+
+### What a rank computation can and cannot see
+
+The (n−1)! colour orderings satisfy two families of relations. Taking the rank
+of the matrix of all orderings evaluated at many kinematic points gives
+**(n−2)!**, the Kleiss–Kuijf count — not the (n−3)! that BCJ gives.
+
+That is a property of the method, not a failure of BCJ. A rank across
+kinematic points detects only relations with *constant* coefficients;
+Kleiss–Kuijf coefficients are ±1, so they hold everywhere at once. BCJ
+coefficients are built from Mandelstam invariants and vary point to point, so
+no single linear relation holds across the matrix. The relation itself holds
+exactly at each point, as `bcj_residual` shows. Reporting (n−3)! here would
+require feeding the relations in as input, making the check circular;
+reporting (n−2)! and saying why is the honest result.
+
+### The positive Grassmannian
+
+Postnikov's bijection sends cells of G(k,n)≥0 to decorated permutations of [n]
+with k anti-exceedances — the same objects that label on-shell diagrams. The
+counts are symmetric under k → n−k, G(2,4) has 33 cells, and the total over
+all k matches the closed form Σⱼ n!/j!, an identity with nothing obviously to
+do with coloured fixed points.
+
+| n | cells by k | total | Σⱼ n!/j! |
+| --- | --- | --- | --- |
+| 3 | 1, 7, 7, 1 | 16 | 16 |
+| 4 | 1, 15, 33, 15, 1 | 65 | 65 |
+| 5 | 1, 31, 131, 131, 31, 1 | 326 | 326 |
+
+### The geometry, in the package's own terms
+
+Twistor space is P³; compactified complexified Minkowski space is G(2,4),
+which the Plücker embedding realises as the Klein quadric — a single quadric
+in P⁵, hence a configuration matrix `[[5,2]]`. So the complete-intersection
+Chern class routine written for orientifold fixed loci applies unchanged:
+
+| space | configuration | χ |
+| --- | --- | --- |
+| twistor space PT | `[[3]]` | 4 |
+| incidence F(1,3;4) | `[[3,1],[3,1]]` | 12 |
+| Minkowski G(2,4) | `[[5,2]]` | 6 |
+
+The 6 is the number of Schubert cells of G(2,4). Neither number was put in.
+
+`penrose_helicity` records the transform sending helicity h to `O(−2h−2)`,
+together with the caveat that `H¹(P³, O(m))` vanishes for every m by Bott — so
+the transform lives on P³ minus a line, an open space this package's
+cohomology does not cover. Loops are absent throughout: the trees are exact
+and complete, and no loop amplitude is computed.
+
+```console
+python3 examples/twistor.py
+python3 examples/twistor.py --only relations
+make twistor
+```
+
 ## Chirality across domains
 
 `pyCICY.chirality` puts one interface over the mirror operations of the other
