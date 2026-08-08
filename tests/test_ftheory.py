@@ -823,6 +823,157 @@ def test_fourfolds_over_a_base():
                _raises(NotImplementedError, m2.hodge_numbers))
 
 
+def test_clusters():
+    print("\n[13] non-Higgsable clusters spanning several curves")
+
+    # The normalisation of the mixed condition is what these clusters test.
+    # It is b_i . b_j = lam_i lam_j sum x A A, and the lambdas are not
+    # decoration: on the (-3, -2) cluster the g2's own conditions give it
+    # exactly one 7, while a full (7, 2) bifundamental would need two. With
+    # the lambdas the multiplicity is one half, which needs exactly one.
+    r = FT.cluster([(-3, "g2"), (-2, "su(2)")], {(0, 1): 1})
+    check("g2 on the -3 curve carries one 7", r["matter"][0],
+          {"7": Fraction(1)})
+    check("su(2) on the -2 carries four doublets", r["matter"][1],
+          {"fund": Fraction(4)})
+    check("and they share half a (7, 2)", r["shared"][0]["multiplicity"],
+          Fraction(1, 2))
+    check_true("which is pseudo-real, so a half exists",
+               FT._pair_reality("g2", "7", "su(2)", "fund") == "pseudoreal")
+    check_true("the cluster closes", r["consistent"])
+    check("half a (7,2) uses exactly the one 7 there is",
+          r["shared"][0]["multiplicity"] * 2, Fraction(1))
+
+    # The three-curve cluster is the sharper test, because the middle curve's
+    # matter is claimed twice and has to come out exactly right. so(7) on a
+    # -3 curve is given two spinors by its own conditions, and each su(2)
+    # neighbour claims one of them.
+    r = FT.cluster([(-2, "su(2)"), (-3, "so(7)"), (-2, "su(2)")],
+                   {(0, 1): 1, (1, 2): 1})
+    check("so(7) on the -3 curve carries two spinors", r["matter"][1],
+          {"spinor": Fraction(2)})
+    check("and no vectors", r["matter"][1].get("vector"), None)
+    check("each su(2) shares half a (2, 8)",
+          [sh["multiplicity"] for sh in r["shared"]],
+          [Fraction(1, 2), Fraction(1, 2)])
+    check("so both spinors are used and no more",
+          sum(sh["multiplicity"] * 2 for sh in r["shared"]), Fraction(2))
+    check_true("the cluster closes", r["consistent"])
+
+    # The bifundamental sits in the spinor, not the vector, because on a -3
+    # curve so(7) has no vectors at all. Both have index one, so which one
+    # appears is decided by the matter and not by the algebra.
+    check("so(7) has two index-one representations",
+          FT.index_one_reps("so(7)"), ["spinor", "vector"])
+    check("so(10) has only the vector", FT.index_one_reps("so(10)"),
+          ["vector"])
+    check("the shared representation here is the spinor",
+          r["shared"][0]["reps"][1], "spinor")
+
+    # Every tabulated cluster closes.
+    for c in FT.NON_HIGGSABLE_CLUSTERS:
+        r = FT.cluster(c["curves"], c["edges"])
+        check_true("%s closes" % c["name"], r["consistent"])
+        check("   with no leftover notes", r["notes"], [])
+    check("there are three multi-curve clusters",
+          len(FT.NON_HIGGSABLE_CLUSTERS), 3)
+
+    # A curve inside a cluster may carry no algebra at all, which is why the
+    # two- and three-curve versions of the g2 cluster have the same content.
+    a = FT.cluster([(-3, "g2"), (-2, "su(2)")], {(0, 1): 1})
+    b = FT.cluster([(-3, "g2"), (-2, "su(2)"), (-2, None)],
+                   {(0, 1): 1, (1, 2): 1})
+    check("the extra -2 carries nothing", b["matter"][2], {})
+    check("so the two clusters have the same gauge content",
+          (a["dim_V"], a["rank"], a["charged"]),
+          (b["dim_V"], b["rank"], b["charged"]))
+
+    # And the same correction applies to models built on a base. Two divisors
+    # of F_0 with an so and an su meeting once share half a bifundamental.
+    B = FT.Base.hirzebruch(0)
+    m = FT.FTheory6D(B, gauge=[("so(10)", [1, 0]), ("su(2)", [0, 1])])
+    bif = m.bifundamentals()[0]
+    check("so(10) x su(2) on F_0: intersection number", bif["intersection"], 1)
+    check("   but multiplicity one half", bif["multiplicity"],
+          Fraction(1, 2))
+    check("   so ten shared states, not twenty", bif["total"], Fraction(10))
+    check_true("   and it is anomaly free", m.check_anomalies()["ok"])
+    # Two so factors would want a quarter, which is nothing.
+    check_true("so(10) x so(12) is refused",
+               _raises(ValueError, lambda: FT.FTheory6D(
+                   B, gauge=[("so(10)", [1, 0]),
+                             ("so(12)", [0, 1])]).bifundamentals()))
+
+
+def test_mordell_weil():
+    print("\n[14] extra sections and the U(1)s they carry")
+
+    # The abelian conditions are the non-abelian ones with the adjoint
+    # dropped and lam A_R replaced by q^2. Setting all multiplicities to zero
+    # forces the height pairing to vanish, which is the statement that a U(1)
+    # with no charged matter is not there -- the abelian counterpart of
+    # matter_free_algebras finding nothing.
+    check("no matter forces a trivial height pairing",
+          FT.u1_matter((1, 2), 0, 0)["matter"], {})
+
+    # Two conditions determine two charges. On P^2 only some height pairings
+    # give an integer spectrum, and the rest are refused rather than rounded.
+    B = FT.Base.P2()
+    def hmat(h):
+        return FT.u1_matter((1, 2), -B.dot(B.K, [h]), B.dot([h], [h]))["matter"]
+    check("height 6H: 108 states of charge one", hmat(6), {1: Fraction(108)})
+    check("height 8H", hmat(8), {1: Fraction(128), 2: Fraction(4)})
+    check("height 12H", hmat(12), {1: Fraction(144), 2: Fraction(18)})
+    for h in (1, 3, 5, 7, 9, 11):
+        check_true("height %dH is refused" % h,
+                   _raises(ValueError, hmat, h))
+    check_true("three distinct charges are underdetermined",
+               _raises(ValueError, FT.u1_matter, (1, 2, 3), 18, 36))
+    check_true("repeated charges are refused",
+               _raises(ValueError, FT.u1_matter, (1, 1), 18, 36))
+
+    # A whole model. The U(1) is a vector multiplet, so it enters V, and its
+    # section is an extra divisor, so it enters h^{1,1}.
+    m = FT.FTheory6D("P2", abelian=[{"height": [6]}])
+    s = m.spectrum()
+    check("Mordell-Weil rank", m.abelian_rank(), 1)
+    check("one abelian vector multiplet", s["V"], 1)
+    check("charged under it", s["H_charged"], 108)
+    check("the gravitational anomaly still cancels",
+          s["gravitational_anomaly"], 0)
+    # h^{1,1} = h^{1,1}(B) + 1 + rank, and the rank now includes the section.
+    check("h^{1,1} counts the extra section", m.hodge_numbers()[0], 3)
+    check("Hodge numbers", m.hodge_numbers(), (3, 165))
+
+    # Without the section it is the plain (2, 272), so the extra divisor and
+    # the charged matter are both visible in the difference.
+    plain = FT.FTheory6D("P2")
+    check("against the model with no section", plain.hodge_numbers(),
+          (2, 272))
+    check("h^{1,1} rose by the Mordell-Weil rank",
+          m.hodge_numbers()[0] - plain.hodge_numbers()[0], 1)
+
+    # Rank two.
+    m2 = FT.FTheory6D("P2", abelian=[{"height": [6]}, {"height": [6]}])
+    check("rank two", m2.abelian_rank(), 2)
+    check("h^{1,1} rises again", m2.hodge_numbers()[0], 4)
+    check("and V is two", m2.spectrum()["V"], 2)
+
+    # Explicit matter, bypassing the solver, must give the same answer.
+    m3 = FT.FTheory6D("P2", abelian=[{"height": [6],
+                                      "matter": {1: 108}}])
+    check("explicit matter agrees with the solved matter",
+          m3.hodge_numbers(), m.hodge_numbers())
+
+    # Abelian and non-abelian together are refused rather than double
+    # counted: a state charged under both would be counted by its gauge
+    # divisor and again by the U(1).
+    mix = FT.FTheory6D("F3", abelian=[{"height": [4, 4],
+                                       "matter": {1: 10}}])
+    check_true("mixed abelian and non-abelian is refused",
+               _raises(NotImplementedError, mix.spectrum))
+
+
 def main():
     t0 = time.time()
     test_kodaira()
@@ -837,6 +988,8 @@ def main():
     test_spinors()
     test_bifundamentals()
     test_fourfolds_over_a_base()
+    test_clusters()
+    test_mordell_weil()
 
     print("\n" + "=" * 72)
     if FAILURES:

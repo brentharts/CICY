@@ -372,13 +372,50 @@ def test_spectrum():
     check("the axio-dilaton is one of them", s["axio-dilaton"], 1)
     check("O-planes", sorted(s["oplanes"]), ["O3", "O7"])
 
-    # An O5/O9 involution has a different multiplet assignment, which is not
-    # implemented. It declines rather than reporting the O3/O7 answer.
+    check("the axio-dilaton is there in the O3/O7 case", s["axio-dilaton"], 1)
+
+    # The O5/O9 case. The projection is Omega_p sigma without the left-moving
+    # fermion number, so C_0, C_2 and C_4 all flip parity relative to the
+    # O3/O7 case. Running the reduction again, the Kahler moduli stay in
+    # h^{1,1}_+ -- the Kahler form is invariant under an isometry either way
+    # -- and what swaps is the three-form sector: complex structure and
+    # vectors exchange halves of h^{2,1}.
     o5 = O.Orientifold(O.SignInvolution(QUINTIC, [[3, 4]]))
-    check_true("O5/O9 declines to give a spectrum",
-               _raises(NotImplementedError, o5.spectrum))
-    check_true("but the Hodge split is still there",
-               o5.involution.hodge_split()["h21"] == (53, 48))
+    s5 = o5.spectrum()
+    check("O5/O9 h^{2,1} split", (s5["h21_plus"], s5["h21_minus"]), (53, 48))
+    check("complex structure moduli are the invariant half",
+          s5["complex structure moduli"], 53)
+    check("and the vectors the anti-invariant half", s5["vectors"], 48)
+    # chiral = h11_+ + h11_- + h21_+ + 1 = 1 + 0 + 53 + 1
+    check("chiral multiplets", s5["chiral"], 55)
+    check("the Kahler moduli are still h^{1,1}_+", s5["kahler moduli"], 1)
+
+    # The swap is exactly the swap, and nothing else moves. Compare the two
+    # cases on the same manifold: whichever half of h^{2,1} is matter in one
+    # is gauge in the other.
+    check("O3/O7 takes the anti-invariant half as matter",
+          s["complex structure moduli"], s["h21_minus"])
+    check("O5/O9 takes the invariant half",
+          s5["complex structure moduli"], s5["h21_plus"])
+    check("and the vectors are the other half each time",
+          (s["vectors"], s5["vectors"]),
+          (s["h21_plus"], s5["h21_minus"]))
+
+    # C_0 is odd under worldsheet parity and there is no sigma-odd zero-form
+    # for it to survive on, so there is no axio-dilaton in the O5/O9 case;
+    # the dilaton pairs with the dual of the four-dimensional two-form
+    # instead. One chiral multiplet either way, but not the same one.
+    check("no axio-dilaton in the O5/O9 case", s5["axio-dilaton"], 0)
+    check("a plain dilaton instead", s5["dilaton"], 1)
+    check("and one of them in the O3/O7 case", s["dilaton"], 0)
+
+    # The reason for the swap is the twist by Omega that runs through the
+    # whole module: deformations live in H^1(T_X), and H^{2,1} is that
+    # tensored with H^{3,0}.
+    check_true("the swap follows the Omega sign",
+               (s["oplane_type"], s5["oplane_type"]) == ("O3/O7", "O5/O9"))
+    check_true("describe() reports the O5/O9 spectrum",
+               "55 chiral multiplets" in o5.describe())
 
     # The gauge group is an open string question and is not determined by the
     # involution; the tadpole is stated rather than solved.
