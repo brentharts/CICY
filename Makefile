@@ -163,12 +163,12 @@ ftheory-fibrations:
 # Type IIB orientifolds: involutions of a CICY computed two ways, and Sen's
 # weak coupling limit of the F-theory models.
 orientifold:
-	$(PYTHON) examples/example_orientifold.py --conf '$(ORI_CONF)' --scan
+	$(PYTHON) examples/orientifold.py --conf '$(ORI_CONF)' --scan
 
 # Twistor theory: exact rational scattering amplitudes, BCFW against
 # Parke-Taylor, and the positive Grassmannian.
 twistor:
-	$(PYTHON) examples/example_twistor.py --n $(TWISTOR_N)
+	$(PYTHON) examples/twistor.py --n $(TWISTOR_N)
 
 # Chirality of K15n81556 and the failure of additivity of the unknotting
 # number (arXiv:2506.24088, arXiv:2507.14265). SEARCH=N also runs the
