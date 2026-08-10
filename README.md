@@ -19,7 +19,8 @@ at the Ricci-flat metric, at cohomology representatives, at moduli
 stabilisation — it stops explicitly, with an exception rather than an
 estimate.
 
-## Papers and figures
+## pyCICY-X Papers and figures
+- What Anomaly Cancellation Determines, and What Does Not Exist: Exact Methods for F-theory and Type IIB Orientifolds https://doi.org/10.5281/zenodo.21865768
 - What a Configuration Matrix Determines, and What It Does Not: Exact Methods for Heterotic Compactifications on CICYs https://doi.org/10.5281/zenodo.21844007
 - Supplementary material: figures for the pyCICY-X package —
   [https://doi.org/10.5281/zenodo.21798923](https://doi.org/10.5281/zenodo.21843383)
