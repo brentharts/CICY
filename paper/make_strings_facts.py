@@ -26,6 +26,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pyCICY import CICY
+from pyCICY import monotile as MT
 from pyCICY import twistor as TW
 from pyCICY.theories import ftheory as FT
 from pyCICY.theories import orientifold as OR
@@ -290,6 +291,131 @@ def collect_twistor():
     return f
 
 
+def collect_monotile():
+    """Numbers quoted in paper/supplementary_material_monotile.tex.
+
+    Everything here is an exact element of Q(sqrt3) or Q(sqrt5), or an
+    integer signature; the only floating point below is the independent
+    numpy eigenvalue count that the exact signature is checked against.
+    LaTeX macro names cannot contain digits, so keys spell numbers out.
+    """
+    from fractions import Fraction as F
+    import numpy as np
+    from pyCICY.monotile import Quad, SQRT3
+
+    def tex(x):
+        """A Quad as LaTeX: (7/2 + 3/2 sqrt5) -> \\tfrac{7}{2}+\\tfrac{3}{2}\\sqrt{5}."""
+        def frac(v, lead=False):
+            v = F(v)
+            sgn = "-" if v < 0 else ("" if lead else "+")
+            v = abs(v)
+            if v.denominator == 1:
+                return sgn + str(v.numerator)
+            return sgn + r"\tfrac{%d}{%d}" % (v.numerator, v.denominator)
+        if x.q == 0:
+            return frac(x.p, lead=True)
+        root = r"\sqrt{%d}" % x.d
+        qpart = frac(x.q, lead=(x.p == 0))
+        if abs(x.q) == 1:
+            qpart = qpart[:-1]                 # drop the "1"
+        if x.p == 0:
+            return qpart + root
+        return frac(x.p, lead=True) + qpart + root
+
+    f = {}
+
+    # --- the family --------------------------------------------------------
+    t = MT.named_tiles()
+    f["HatEll"] = tex(t["Hat"])
+    f["TurtleEll"] = tex(t["Turtle"])
+    f["SpectreEll"] = tex(t["Spectre"])
+    f["HatPlusTurtle"] = tex(t["Hat"] + t["Turtle"])
+    f["SpectreFixed"] = "yes" if MT.mirror_ell(t["Spectre"]) == t["Spectre"]         else "NO"
+    f["HatEllFloat"] = "%.6f" % float(t["Hat"])
+
+    # --- inflation ---------------------------------------------------------
+    r = MT.inflation_factor()
+    f["CharPoly"] = ", ".join(str(c) for c in r["charpoly"])
+    f["PhiFour"] = tex(r["value"])
+    f["PhiFourFloat"] = "%.6f" % float(r["value"])
+    f["PhiFourIsRoot"] = "yes" if r["is_root"] else "NO"
+    f["PhiFourQuadratic"] = "yes" if r["is_phi4"] else "NO"
+    f["SubTrace"] = sum(MT.SUBSTITUTION[i][i] for i in range(4))
+
+    # --- frequencies, chirality, aperiodicity ------------------------------
+    fr = MT.metatile_frequencies()
+    for name in MT.METATILES:
+        f["Freq" + name] = tex(fr[name])
+    f["FreqHRational"] = "yes" if fr["H"] == Quad(F(1, 3), 0, 5) else "NO"
+    one5 = Quad(1, 0, 5)
+    f["FreqSum"] = tex(fr["H"] + fr["T"] + fr["P"] + fr["F"])
+    c = MT.hat_chirality()
+    f["ChiralRatio"] = tex(c["ratio"])
+    f["ChiralIsPhiFour"] = "yes" if c["is_phi4"] else "NO"
+    f["ReflectedFraction"] = tex(c["reflected_fraction"])
+    f["ReflectedTimesOnePlus"] = tex(
+        c["reflected_fraction"] * (one5 + MT.PHI4))
+    def frac_str(v):
+        v = F(v)
+        sgn = "-" if v < 0 else ""
+        v = abs(v)
+        if v.denominator == 1:
+            return sgn + str(v.numerator)
+        return sgn + r"\tfrac{%d}{%d}" % (v.numerator, v.denominator)
+
+    a = MT.is_aperiodic()
+    f["Aperiodic"] = "yes" if a["aperiodic"] else "NO"
+    f["Witness"] = a["witness"]
+    f["WitnessIrr"] = frac_str(a["irrational_part"])
+
+    # --- the substrate -----------------------------------------------------
+    f["SitesGeneric"] = len(MT.laves_patch(rings=0)["sites"])
+    ph = MT.laves_patch(a=SQRT3, b=1, rings=0)
+    f["SitesHat"] = len(ph["sites"])
+    f["SitesOff"] = len(MT.laves_patch(a=Quad(F(17, 10), 0, 3), b=1,
+                                       rings=0)["sites"])
+    f["BondsHex"] = len(ph["bonds"])
+    f["OffRatio"] = "17/10"
+
+    # --- the signature machinery on hand-checkable matrices ----------------
+    Z = lambda: Quad(0, 0, 3)                                    # noqa: E731
+    Q = lambda v: Quad(v, 0, 3)                                  # noqa: E731
+    f["HypSig"] = "(%d, %d)" % MT._signature([[Z(), Q(1)], [Q(1), Z()]])
+    f["ClosePivot"] = str(Quad(26, -15, 3).sign())
+    f["ClosePivotRatio"] = "676/675"
+
+    # --- the localizer -----------------------------------------------------
+    patch = MT.laves_patch(rings=0)
+    n = 2 * len(patch["sites"])
+    f["LocSize"] = 4 * n                   # real doubled localizer dimension
+    f["Kappa"] = "1/2"
+    scan = MT.phase_scan([F(-4), F(-1), F(1, 2), F(4)], rings=0)
+    f["ScanIndices"] = ", ".join(str(i) for _, i in scan)
+    f["IdxAtomic"] = scan[0][1]
+    f["IdxNegOne"] = scan[1][1]
+    f["IdxHalf"] = scan[2][1]
+
+    # the independent float route: numpy eigenvalues of the same localizer
+    agree = True
+    for M in (F(-1), F(1, 2), F(4)):
+        Hre, Him = MT.qwz_hamiltonian(patch, M)
+        r = MT.localizer_signature(Hre, Him, patch, kappa=F(1, 2))
+        Hn = np.array([[complex(float(Hre[i][j]), float(Him[i][j]))
+                        for j in range(n)] for i in range(n)])
+        X = np.zeros(n)
+        Y = np.zeros(n)
+        for si, (px, py) in enumerate(patch["sites"]):
+            X[2 * si] = X[2 * si + 1] = float(px)
+            Y[2 * si] = Y[2 * si + 1] = float(py)
+        Lc = np.block([[Hn, .5 * (np.diag(X) - 1j * np.diag(Y))],
+                       [.5 * (np.diag(X) + 1j * np.diag(Y)), -Hn]])
+        ev = np.linalg.eigvalsh(Lc)
+        sig = int((ev > 1e-9).sum() - (ev < -1e-9).sum())
+        agree = agree and (r["signature"] == 2 * sig)
+    f["NumpyAgree"] = "yes" if agree else "NO"
+    return f
+
+
 def _fact(k):
     out = 1
     for i in range(2, k + 1):
@@ -321,8 +447,8 @@ def _key(name):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n")[1])
-    p.add_argument("--sections", default="both",
-                   choices=["strings", "twistor", "both"])
+    p.add_argument("--sections", default="all",
+                   choices=["strings", "twistor", "monotile", "both", "all"])
     p.add_argument("--outdir", default=os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "figures"))
     p.add_argument("--list", default=os.path.join(
@@ -332,10 +458,12 @@ def main():
     os.makedirs(a.outdir, exist_ok=True)
 
     jobs = []
-    if a.sections in ("strings", "both"):
+    if a.sections in ("strings", "both", "all"):
         jobs.append(("strings_facts", "SF", collect(a.list)))
-    if a.sections in ("twistor", "both"):
+    if a.sections in ("twistor", "both", "all"):
         jobs.append(("twistor_facts", "TF", collect_twistor()))
+    if a.sections in ("monotile", "all"):
+        jobs.append(("monotile_facts", "MT", collect_monotile()))
 
     for stem, prefix, facts in jobs:
         with open(os.path.join(a.outdir, stem + ".json"), "w") as fh:
