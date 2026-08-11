@@ -56,7 +56,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper strings-paper strings-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
+.PHONY: all paper papers strings-paper strings-facts twistor-paper twistor-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
 
 all: paper
 
@@ -120,6 +120,38 @@ $(STRINGSPDF): $(PAPERDIR)/$(STRINGSTEX) $(STRINGSFACTS)
 	    echo "WARNING: undefined references remain:"; \
 	    grep 'Reference.*undefined' $(PAPERDIR)/supplementary_material_strings.log | sort -u; \
 	fi
+
+# ------------------------------------------------------------ twistor paper
+#
+# Same discipline as the strings paper: no figures, and every number comes
+# from make_strings_facts.py, which recomputes it from pyCICY.twistor.
+
+TWISTORTEX   := supplementary_material_twistor.tex
+TWISTORPDF   := $(PAPERDIR)/supplementary_material_twistor.pdf
+TWISTORFACTS := $(FIGDIR)/twistor_facts.tex
+
+twistor-paper: $(TWISTORPDF)
+
+twistor-facts: $(TWISTORFACTS)
+
+$(TWISTORFACTS): pyCICY/twistor.py $(PAPERDIR)/make_strings_facts.py
+	@echo "==> recomputing the numbers quoted in the twistor paper"
+	@mkdir -p $(FIGDIR)
+	$(PYTHON) $(PAPERDIR)/make_strings_facts.py --sections twistor --outdir $(FIGDIR)
+
+$(TWISTORPDF): $(PAPERDIR)/$(TWISTORTEX) $(TWISTORFACTS)
+	@echo "==> pdflatex pass 1/2 (twistor)"
+	cd $(PAPERDIR) && $(PDFLATEX) -interaction=nonstopmode -halt-on-error $(TWISTORTEX) >/dev/null
+	@echo "==> pdflatex pass 2/2 (twistor)"
+	cd $(PAPERDIR) && $(PDFLATEX) -interaction=nonstopmode -halt-on-error $(TWISTORTEX) >/dev/null
+	@echo "==> wrote $(TWISTORPDF)"
+	@if grep -q 'Reference.*undefined' $(PAPERDIR)/supplementary_material_twistor.log; then \
+	    echo "WARNING: undefined references remain:"; \
+	    grep 'Reference.*undefined' $(PAPERDIR)/supplementary_material_twistor.log | sort -u; \
+	fi
+
+# All three papers.
+papers: paper strings-paper twistor-paper
 
 test:
 	$(PYTHON) run_tests.py
@@ -236,10 +268,11 @@ clean:
 	rm -rf build *.egg-info
 
 distclean: clean
-	rm -f $(PDF) $(STRINGSPDF) $(FIGURES) $(FIGDIR)/.stamp
+	rm -f $(PDF) $(STRINGSPDF) $(TWISTORPDF) $(FIGURES) $(FIGDIR)/.stamp
 	rm -f $(STRINGSFACTS) $(FIGDIR)/strings_facts.json
+	rm -f $(TWISTORFACTS) $(FIGDIR)/twistor_facts.json
 	-rmdir $(FIGDIR) 2>/dev/null || true
 
 help:
-	@echo "targets: all paper strings-paper strings-facts figures test survey toric-survey knot-chirality chirality hyperbolic aj bundles hofstadter polytope new-figures supplement clean distclean cache-info cache-clear"
+	@echo "targets: all paper papers strings-paper strings-facts twistor-paper twistor-facts figures test survey toric-survey knot-chirality chirality hyperbolic aj bundles hofstadter polytope new-figures supplement clean distclean cache-info cache-clear"
 	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) CHARGE=$(CHARGE) ORDER=$(ORDER) BUDGET=$(BUDGET) FLUX=$(FLUX) HFLUX=$(HFLUX) PYTHON=$(PYTHON)"
