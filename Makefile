@@ -56,7 +56,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper papers strings-paper strings-facts twistor-paper twistor-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor monotile knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
+.PHONY: all paper papers strings-paper strings-facts twistor-paper twistor-facts monotile-paper monotile-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor monotile knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
 
 all: paper
 
@@ -108,7 +108,7 @@ strings-facts: $(STRINGSFACTS)
 $(STRINGSFACTS): $(wildcard pyCICY/theories/*.py) $(PAPERDIR)/make_strings_facts.py
 	@echo "==> recomputing the numbers quoted in the strings paper"
 	@mkdir -p $(FIGDIR)
-	$(PYTHON) $(PAPERDIR)/make_strings_facts.py --outdir $(FIGDIR)
+	$(PYTHON) $(PAPERDIR)/make_strings_facts.py --sections strings --outdir $(FIGDIR)
 
 $(STRINGSPDF): $(PAPERDIR)/$(STRINGSTEX) $(STRINGSFACTS)
 	@echo "==> pdflatex pass 1/2 (strings)"
@@ -150,8 +150,38 @@ $(TWISTORPDF): $(PAPERDIR)/$(TWISTORTEX) $(TWISTORFACTS)
 	    grep 'Reference.*undefined' $(PAPERDIR)/supplementary_material_twistor.log | sort -u; \
 	fi
 
-# All three papers.
-papers: paper strings-paper twistor-paper
+# ---------------------------------------------------------- monotile paper
+#
+# Same discipline again: every number recomputed from pyCICY.monotile. This
+# one is slower to regenerate (~2 min) because the localizer signatures are
+# exact LDL^T eliminations over Q(sqrt3).
+
+MONOTILETEX   := supplementary_material_monotile.tex
+MONOTILEPDF   := $(PAPERDIR)/supplementary_material_monotile.pdf
+MONOTILEFACTS := $(FIGDIR)/monotile_facts.tex
+
+monotile-paper: $(MONOTILEPDF)
+
+monotile-facts: $(MONOTILEFACTS)
+
+$(MONOTILEFACTS): pyCICY/monotile.py $(PAPERDIR)/make_strings_facts.py
+	@echo "==> recomputing the numbers quoted in the monotile paper"
+	@mkdir -p $(FIGDIR)
+	$(PYTHON) $(PAPERDIR)/make_strings_facts.py --sections monotile --outdir $(FIGDIR)
+
+$(MONOTILEPDF): $(PAPERDIR)/$(MONOTILETEX) $(MONOTILEFACTS)
+	@echo "==> pdflatex pass 1/2 (monotile)"
+	cd $(PAPERDIR) && $(PDFLATEX) -interaction=nonstopmode -halt-on-error $(MONOTILETEX) >/dev/null
+	@echo "==> pdflatex pass 2/2 (monotile)"
+	cd $(PAPERDIR) && $(PDFLATEX) -interaction=nonstopmode -halt-on-error $(MONOTILETEX) >/dev/null
+	@echo "==> wrote $(MONOTILEPDF)"
+	@if grep -q 'Reference.*undefined' $(PAPERDIR)/supplementary_material_monotile.log; then \
+	    echo "WARNING: undefined references remain:"; \
+	    grep 'Reference.*undefined' $(PAPERDIR)/supplementary_material_monotile.log | sort -u; \
+	fi
+
+# All four papers.
+papers: paper strings-paper twistor-paper monotile-paper
 
 test:
 	$(PYTHON) run_tests.py
@@ -273,11 +303,12 @@ clean:
 	rm -rf build *.egg-info
 
 distclean: clean
-	rm -f $(PDF) $(STRINGSPDF) $(TWISTORPDF) $(FIGURES) $(FIGDIR)/.stamp
+	rm -f $(PDF) $(STRINGSPDF) $(TWISTORPDF) $(MONOTILEPDF) $(FIGURES) $(FIGDIR)/.stamp
 	rm -f $(STRINGSFACTS) $(FIGDIR)/strings_facts.json
 	rm -f $(TWISTORFACTS) $(FIGDIR)/twistor_facts.json
+	rm -f $(MONOTILEFACTS) $(FIGDIR)/monotile_facts.json
 	-rmdir $(FIGDIR) 2>/dev/null || true
 
 help:
-	@echo "targets: all paper papers strings-paper strings-facts twistor-paper twistor-facts figures test survey toric-survey knot-chirality chirality hyperbolic aj bundles hofstadter polytope new-figures supplement clean distclean cache-info cache-clear"
+	@echo "targets: all paper papers strings-paper strings-facts twistor-paper twistor-facts monotile-paper monotile-facts figures test survey toric-survey knot-chirality chirality hyperbolic aj bundles hofstadter polytope new-figures supplement clean distclean cache-info cache-clear"
 	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) CHARGE=$(CHARGE) ORDER=$(ORDER) BUDGET=$(BUDGET) FLUX=$(FLUX) HFLUX=$(HFLUX) PYTHON=$(PYTHON)"
