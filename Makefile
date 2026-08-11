@@ -56,7 +56,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper papers strings-paper strings-facts twistor-paper twistor-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
+.PHONY: all paper papers strings-paper strings-facts twistor-paper twistor-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor monotile knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
 
 all: paper
 
@@ -201,6 +201,11 @@ orientifold:
 # Parke-Taylor, and the positive Grassmannian.
 twistor:
 	$(PYTHON) examples/twistor.py --n $(TWISTOR_N)
+
+# The Hat-Spectre aperiodic monotile family: exact substitution combinatorics
+# and real-space topology over Q(sqrt3).
+monotile:
+	$(PYTHON) examples/monotile.py
 
 # Chirality of K15n81556 and the failure of additivity of the unknotting
 # number (arXiv:2506.24088, arXiv:2507.14265). SEARCH=N also runs the
