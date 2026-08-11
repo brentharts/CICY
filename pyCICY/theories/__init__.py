@@ -21,6 +21,11 @@ Currently implemented:
     type-iib-orientifold           a holomorphic involution of X, O3/O7 or
                                    O5/O9, equivariant Hodge numbers and the
                                    closed string spectrum exact
+    m-theory-cy3-5d                five dimensions with eight supercharges,
+                                   spectrum and cubic prepotential exact
+    m-theory-g2                    four dimensions N=1 on a barely G_2
+                                   quotient, Betti numbers and spectrum exact
+    m-theory-cy4-3d                three dimensions N=2, chi/24 tadpole exact
 
 The Yukawa side is layered by how much of the class each step needs: `yukawa`
 decides the texture from dimensions, `representatives` labels the Koszul origin
@@ -41,23 +46,46 @@ that rather than returning zero or blaming the metric.
 weak coupling limit, where the D7-brane rules of the orientifold have to
 reproduce the Kodaira fibre types of the fibration. They do.
 
-Type IIA orientifolds and M-theory compactifications would go here too. They
-are not implemented.
+`mtheory` is the third module to need a category beyond exact and
+needs-a-metric, and it needs two. A five-dimensional theory with eight
+supercharges has no superpotential, so :class:`~pyCICY.theories.mtheory.
+MTheory5D` raises :exc:`~pyCICY.theories.ftheory.NoSuchTheory` exactly as the
+six-dimensional F-theory case does. And M-theory on a *smooth* G_2 manifold
+has no charged chiral matter at all -- gauge symmetry needs codimension-four
+ADE singularities, chirality needs isolated conical ones --- so the zero that
+:exc:`~pyCICY.theories.mtheory.NoChiralMatter` reports is a theorem rather
+than a gap.
+
+It meets `ftheory` from the other side too, and this is the second place two
+constructions in this package check each other: M-theory on an elliptic
+threefold is F-theory on the base on a circle, so the five-dimensional
+multiplet counts read off the Hodge numbers must equal the ones read off the
+six-dimensional anomaly conditions. :func:`~pyCICY.theories.mtheory.
+circle_reduction_of_6d` compares them. They agree.
+
+Type IIA orientifolds would go here too. They are not implemented.
 """
 
 from .base import Theory, NeedsMetric, registry, register, get
 from .heterotic import StandardEmbedding, LineBundleModel
 from .ftheory import Base, FTheory6D, FTheory4D, NoSuchTheory
 from .orientifold import Orientifold, SignInvolution, SenLimit
+from .mtheory import (MTheory5D, MTheoryG2, MTheory3D, BarelyG2,
+                      NoChiralMatter, circle_reduction_of_6d,
+                      horava_witten_scales)
 from . import yukawa
 from . import representatives
 from . import cocycles
 from . import differentials
 from . import ftheory
 from . import orientifold
+from . import mtheory
 
 __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "StandardEmbedding", "LineBundleModel", "yukawa",
            "representatives", "cocycles", "differentials",
            "Base", "FTheory6D", "FTheory4D", "NoSuchTheory", "ftheory",
-           "Orientifold", "SignInvolution", "SenLimit", "orientifold"]
+           "Orientifold", "SignInvolution", "SenLimit", "orientifold",
+           "MTheory5D", "MTheoryG2", "MTheory3D", "BarelyG2",
+           "NoChiralMatter", "circle_reduction_of_6d",
+           "horava_witten_scales", "mtheory"]

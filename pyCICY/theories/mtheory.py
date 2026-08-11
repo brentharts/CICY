@@ -169,27 +169,48 @@ def prepotential(X, t=None):
 
 
 def gauge_couplings(X, t):
-    r"""The vector multiplet gauge kinetic matrix ``a_rs = d_rst t^t``.
+    r"""The matrix ``a_rs = d_rst t^t``, and its signature.
 
-    Up to normalisation this is ``1/g^2`` for the abelian vector fields, and
-    positivity of the matrix is the physical form of the statement that ``t``
-    lies inside the Kahler cone. The eigenvalues are returned with it so that
-    a caller can check.
+    This is the intersection form of the divisors restricted by ``t``, and it
+    is *not* positive definite -- a point worth stating, because the obvious
+    guess is that a gauge kinetic matrix ought to be. By the Hodge index
+    theorem, for ``t`` inside the Kahler cone ``a_rs`` has signature
+
+        (1, h^{1,1} - 1) ,
+
+    one positive direction and the rest negative. The positive direction is
+    the overall volume; the genuine gauge kinetic term for the ``h^{1,1} - 1``
+    physical vector multiplets is the *restriction* of ``-a_rs`` to the
+    surface of fixed volume, and that restriction is positive definite. So
+    Lorentzian signature here is the healthy case, and anything else means
+    ``t`` is outside the cone.
 
     Returns
     -------
     dict
-        ``matrix``, ``eigenvalues``, ``volume`` (the prepotential value, which
-        is the Calabi-Yau volume), and ``positive``.
+        ``matrix``, ``eigenvalues``, ``volume`` (the prepotential, which is
+        the Calabi-Yau volume), ``signature`` as a ``(positive, negative)``
+        pair, and ``lorentzian``, the Hodge index condition.
+
+    Notes
+    -----
+    Lorentzian signature is necessary for ``t`` to be in the Kahler cone but
+    not sufficient; the cone is cut out by the effective curves and divisors,
+    which this package does not compute. A ``True`` here is evidence, not a
+    certificate, and :meth:`MTheory5D.enhancement_note` says what finding the
+    actual walls would take.
     """
     d = prepotential_coefficients(X)
     t = np.asarray(t, dtype=float)
     a = np.einsum("rst,t->rs", d, t)
     eig = np.linalg.eigvalsh(a)
+    pos = int(np.sum(eig > 1e-9))
+    neg = int(np.sum(eig < -1e-9))
     return {"matrix": a,
             "eigenvalues": eig,
             "volume": prepotential(X, t),
-            "positive": bool(np.all(eig > 0))}
+            "signature": (pos, neg),
+            "lorentzian": pos == 1 and neg == len(eig) - 1}
 
 
 def m5_string_tension(X, divisor, t):
@@ -438,7 +459,18 @@ class BarelyG2(object):
                 "That is an O3/O7 orientifold involution, not a G_2 one; see "
                 "pyCICY.theories.orientifold. A G_2 quotient needs "
                 "omega_sign() == +1.")
-        self._split = involution.hodge_split()
+        try:
+            self._split = involution.hodge_split()
+        except ValueError as e:
+            # A different refusal, and worth not conflating with the sign
+            # test above. Some sign involutions force X to contain a whole
+            # ambient subspace, so X is not the generic complete intersection
+            # its configuration matrix describes and the Hodge numbers on the
+            # cover are wrong before any quotient is taken. The G_2 side has
+            # nothing to add to that; it just must not paper over it.
+            raise ValueError(
+                "the eigenvalue split of this involution is unavailable, so "
+                "the Betti numbers of the quotient are too: %s" % e)
 
     def __repr__(self):
         b = self.betti()
@@ -870,8 +902,11 @@ def _demo():
         d = m.chern_simons_levels()
         n = d.shape[0]
         t = np.ones(n)
-        print("  at t = (1,...,1):  volume = %.4f, couplings positive: %s"
-              % (prepotential(m.X, t), gauge_couplings(m.X, t)["positive"]))
+        g = gauge_couplings(m.X, t)
+        print("  at t = (1,...,1):  volume = %.4f, signature of d_rst t^t = "
+              "%s, Hodge index: %s"
+              % (g["volume"], g["signature"],
+                 "ok" if g["lorentzian"] else "t is outside the Kahler cone"))
         print("  c_2 . J_r        = %s" % m.higher_derivative_coefficient())
         try:
             m.holomorphic_yukawa()
