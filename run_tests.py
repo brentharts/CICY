@@ -23,6 +23,8 @@ SUITES = ["tests/test_viz.py", "tests/test_pycicy.py",
           "tests/test_theories.py",
           "tests/test_ftheory.py",
           "tests/test_orientifold.py",
+          "tests/test_mtheory.py",
+          "tests/test_nariai.py",
           "tests/test_twistor.py",
           "tests/test_monotile.py"]
 
