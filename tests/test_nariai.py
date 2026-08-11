@@ -393,6 +393,37 @@ def test_ratio_law():
     check_true("-> 0 for deep squeezes",
                N.universal_negativity_ratio(5.0) < 1e-3)
 
+    # The sharp bound from I_2 = 0 alone: D(W) <= e^{-2r} * positive part,
+    # by the convex-majorant argument. Strictly above the phase-average
+    # value, respected by every packet and angle, and exponentially
+    # stronger than the paper's budget D <= P.
+    for r in (0.3, 0.5, 1.0, 1.5):
+        check_true("bound e^{-2r} lies above the phase-average value r=%.1f"
+                   % r,
+                   N.negativity_bound(r) > N.universal_negativity_ratio(r))
+        for theta in (0.0, 1.0, math.pi):
+            b = N.squeezed_flux_budget(r, theta, N.ContourPacket(s=0.7))
+            check_true("D <= e^{-2r} P at r=%.1f th=%.2f" % (r, theta),
+                       b["funded_depth"]
+                       <= N.negativity_bound(r) * b["positive_part"])
+
+    # The mechanism: I_2 = 0 is the vanishing of the first circular moment
+    # of the phase distribution; the contour packet additionally has its
+    # low harmonics killed by the 6-fold winding (sum_k cos^4(x + k pi/3)
+    # is constant), so its phase distribution is exactly uniform and its
+    # ratio is exactly the phase-average value.
+    p = N.ContourPacket(s=0.8)
+    u = np.linspace(-300.0, 300.0, 600001)
+    moms = N.circular_moments(p.dchi(u), u, mmax=4)
+    check_true("first circular moment vanishes (= the vanishing theorem)",
+               moms[0] < 1e-10)
+    check_true("higher moments vanish too (exact uniformity)",
+               max(moms[1:]) < 1e-8)
+    x = np.linspace(0.0, 2.0 * math.pi, 4001)
+    ident = sum(np.cos(x + k * math.pi / 3.0) ** 4 for k in range(3))
+    check_true("sum_k cos^4(x + k pi/3) = 9/8 identically",
+               float(np.max(np.abs(ident - 9.0 / 8.0))) < 1e-12)
+
 
 # ---------------------------------------------------------------------------
 # [9] the one-mode sum rule and the tower
