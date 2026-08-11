@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Emit every number quoted in paper/supplementary_material_strings.tex.
+Emit every number quoted in the strings and twistor papers.
 
     python3 paper/make_strings_facts.py --outdir paper/figures
+    python3 paper/make_strings_facts.py --sections twistor
 
 The strings paper contains no figures, only numbers, and the point of this
 script is the same as the point of make_figures.py: the prose and the code
@@ -25,6 +26,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pyCICY import CICY
+from pyCICY import twistor as TW
 from pyCICY.theories import ftheory as FT
 from pyCICY.theories import orientifold as OR
 
@@ -178,6 +180,123 @@ def collect(cicy_list=None):
     return f
 
 
+def collect_twistor():
+    """Numbers quoted in paper/supplementary_material_twistor.tex.
+
+    A tree amplitude is a rational function of spinor brackets, so with
+    rational spinors every quantity below is an exact rational number and the
+    agreements reported are equalities rather than tolerances. The seeds are
+    fixed so the paper quotes reproducible values.
+    """
+    f = {}
+
+    # --- BCFW against the closed forms ------------------------------------
+    mhv_ok, anti_ok = [], []
+    for n in range(4, 10):
+        k = TW.Kinematics.random(n, seed=n)
+        b = TW.tree_amplitude(k.lam, k.lamt, [-1, -1] + [1] * (n - 2))
+        p = TW.parke_taylor(k, (1, 2))
+        mhv_ok.append(b == p and p != 0)
+        if n <= 7:
+            b2 = TW.tree_amplitude(k.lam, k.lamt, [1, 1] + [-1] * (n - 2))
+            anti_ok.append(b2 == TW.anti_mhv(k, (1, 2)))
+    f["BcfwMax"] = 9
+    f["BcfwAgree"] = "yes" if all(mhv_ok) else "NO"
+    f["BcfwAntiAgree"] = "yes" if all(anti_ok) else "NO"
+
+    # A displayed value, with a fixed seed so the paper can quote it.
+    k6 = TW.Kinematics.random(6, seed=6)
+    a6 = TW.parke_taylor(k6, (1, 2))
+    f["SixPointMHV"] = "%d/%d" % (a6.numerator, a6.denominator)
+    f["SixPointBCFW"] = "%d/%d" % tuple(
+        (lambda x: (x.numerator, x.denominator))(
+            TW.tree_amplitude(k6.lam, k6.lamt, [-1, -1, 1, 1, 1, 1])))
+
+    # --- the three-point degeneracy ---------------------------------------
+    kh = TW.Kinematics.random(3, seed=2, kind="holomorphic")
+    ka = TW.Kinematics.random(3, seed=2, kind="antiholomorphic")
+    f["ThreePtSquares"] = sum(
+        1 for i, j in [(1, 2), (2, 3), (1, 3)] if kh.square(i, j) != 0)
+    f["ThreePtAngles"] = sum(
+        1 for i, j in [(1, 2), (2, 3), (1, 3)] if kh.angle(i, j) != 0)
+    f["ThreePtHol"] = str(TW.tree_amplitude(kh.lam, kh.lamt, [-1, -1, 1]))
+    f["ThreePtAnti"] = str(TW.tree_amplitude(ka.lam, ka.lamt, [-1, 1, 1]))
+
+    # --- NMHV, checked by symmetry ----------------------------------------
+    kn = TW.Kinematics.random(6, seed=11)
+    hel = [-1, -1, -1, 1, 1, 1]
+    A = TW.tree_amplitude(kn.lam, kn.lamt, hel)
+    f["NmhvValue"] = "%d/%d" % (A.numerator, A.denominator)
+
+    def rot(v, r):
+        return [v[(i + r) % 6] for i in range(6)]
+    f["NmhvCyclic"] = "yes" if all(
+        TW.tree_amplitude(rot(kn.lam, r), rot(kn.lamt, r),
+                          rot(hel, r)) == A for r in range(6)) else "NO"
+    f["NmhvReflect"] = "yes" if TW.tree_amplitude(
+        kn.lam[::-1], kn.lamt[::-1], hel[::-1]) == A else "NO"
+
+    # --- relations ---------------------------------------------------------
+    u1, bcj = [], []
+    for n in range(4, 10):
+        k = TW.Kinematics.random(n, seed=n)
+        u1.append(TW.u1_decoupling_residual(k, (1, 2)) == 0)
+        bcj.append(TW.bcj_residual(k, (1, 2)) == 0)
+    f["RelationMax"] = 9
+    f["UoneZero"] = "yes" if all(u1) else "NO"
+    f["BcjZero"] = "yes" if all(bcj) else "NO"
+
+    for n in (5, 6):
+        pts = [TW.Kinematics.random(n, seed=300 + i) for i in range(40)]
+        r = TW.ordering_rank(pts, (1, 2))
+        key = {5: "Five", 6: "Six"}[n]
+        f["Rank" + key] = r["rank"]
+        f["Orderings" + key] = r["orderings"]
+        f["KK" + key] = _fact(n - 2)
+        f["BCJcount" + key] = _fact(n - 3)
+        f["RankAgrees" + key] = "yes" if r["agrees"] else "NO"
+
+    # --- the positive Grassmannian ----------------------------------------
+    # LaTeX macro names cannot contain digits, so the suffixes are spelled.
+    for n, word in ((3, "three"), (4, "four"), (5, "five")):
+        row = [TW.positroid_cells(k, n) for k in range(n + 1)]
+        f["Cells" + word] = ", ".join(str(x) for x in row)
+        counted, closed = TW.positroid_total_check(n)
+        f["CellTotal" + word] = counted
+        f["CellClosed" + word] = closed
+    f["CellsGTwoFour"] = TW.positroid_cells(2, 4)
+    f["CellsSymmetric"] = "yes" if all(
+        [TW.positroid_cells(k, n) for k in range(n + 1)]
+        == [TW.positroid_cells(n - k, n) for k in range(n + 1)]
+        for n in range(1, 7)) else "NO"
+    f["TopCellGTwoFour"] = TW.cell_dimension(2, 4)
+
+    # --- the double fibration ----------------------------------------------
+    g = {x["name"]: x for x in TW.twistor_geometry()}
+    f["ChiPT"] = g["twistor space PT"]["euler"]
+    f["ChiIncidence"] = g["incidence F(1,3;4)"]["euler"]
+    f["ChiMinkowski"] = g["Minkowski G(2,4)"]["euler"]
+    f["KleinConfig"] = str(g["Minkowski G(2,4)"]["configuration"])
+
+    # --- twistor-space degrees and the Penrose transform -------------------
+    f["DegreeMHV"] = TW.mhv_degree(2)["degree"]
+    f["DegreeNMHV"] = TW.mhv_degree(3)["degree"]
+    f["DegreeNMHVLoop"] = TW.mhv_degree(3, 1)["degree"]
+    f["PenroseGraviton"] = TW.penrose_helicity(2)["bundle"]
+    f["PenrosePhoton"] = TW.penrose_helicity(1)["bundle"]
+    f["PenroseScalar"] = TW.penrose_helicity(0)["bundle"]
+    f["PenroseHOne"] = TW.penrose_helicity(1)["h1_on_P3"]
+
+    return f
+
+
+def _fact(k):
+    out = 1
+    for i in range(2, k + 1):
+        out *= i
+    return out
+
+
 def _u1_ok(base, h):
     try:
         FT.u1_matter((1, 2), -base.dot(base.K, [h]), base.dot([h], [h]))
@@ -202,6 +321,8 @@ def _key(name):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__.split("\n")[1])
+    p.add_argument("--sections", default="both",
+                   choices=["strings", "twistor", "both"])
     p.add_argument("--outdir", default=os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "figures"))
     p.add_argument("--list", default=os.path.join(
@@ -210,18 +331,24 @@ def main():
     a = p.parse_args()
     os.makedirs(a.outdir, exist_ok=True)
 
-    facts = collect(a.list)
+    jobs = []
+    if a.sections in ("strings", "both"):
+        jobs.append(("strings_facts", "SF", collect(a.list)))
+    if a.sections in ("twistor", "both"):
+        jobs.append(("twistor_facts", "TF", collect_twistor()))
 
-    with open(os.path.join(a.outdir, "strings_facts.json"), "w") as fh:
-        json.dump(facts, fh, indent=2, sort_keys=True)
-    with open(os.path.join(a.outdir, "strings_facts.tex"), "w") as fh:
-        fh.write("% Generated by paper/make_strings_facts.py. Do not edit.\n")
+    for stem, prefix, facts in jobs:
+        with open(os.path.join(a.outdir, stem + ".json"), "w") as fh:
+            json.dump(facts, fh, indent=2, sort_keys=True)
+        with open(os.path.join(a.outdir, stem + ".tex"), "w") as fh:
+            fh.write("% Generated by paper/make_strings_facts.py. "
+                     "Do not edit.\n")
+            for k in sorted(facts):
+                fh.write("\\renewcommand{\\%s%s}{%s}\n"
+                         % (prefix, k, facts[k]))
+        print("wrote %d facts to %s/%s.tex" % (len(facts), a.outdir, stem))
         for k in sorted(facts):
-            fh.write("\\renewcommand{\\SF%s}{%s}\n" % (k, facts[k]))
-
-    print("wrote %d facts to %s" % (len(facts), a.outdir))
-    for k in sorted(facts):
-        print("  %-24s %s" % (k, facts[k]))
+            print("  %-24s %s" % (k, facts[k]))
     return 0
 
 

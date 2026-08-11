@@ -1,0 +1,737 @@
+% supplementary_material_twistor.tex
+%
+% Build with:  make twistor-paper     (from the repository root)
+% or:          python3 paper/make_strings_facts.py --sections twistor
+%              && pdflatex supplementary_material_twistor.tex (x2)
+%
+% Every number quoted here is recomputed from the pyCICY source by
+% paper/make_strings_facts.py and written to figures/twistor_facts.tex, which
+% is \input{} below. The prose and the code cannot drift apart silently.
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink,capitalize]{cleveref}
+\usepackage{framed}
+\usepackage{orcidlink}
+
+\graphicspath{{figures/}}
+
+% Numbers computed by paper/make_strings_facts.py --sections twistor.
+% Declared here as fallbacks so the document typesets before the script has
+% run; the \input below overrides every one with the computed value.
+\newcommand{\TFBcfwMax}{?}\newcommand{\TFBcfwAgree}{?}
+\newcommand{\TFBcfwAntiAgree}{?}\newcommand{\TFSixPointMHV}{?}
+\newcommand{\TFSixPointBCFW}{?}\newcommand{\TFThreePtSquares}{?}
+\newcommand{\TFThreePtAngles}{?}\newcommand{\TFThreePtHol}{?}
+\newcommand{\TFThreePtAnti}{?}\newcommand{\TFNmhvValue}{?}
+\newcommand{\TFNmhvCyclic}{?}\newcommand{\TFNmhvReflect}{?}
+\newcommand{\TFRelationMax}{?}\newcommand{\TFUoneZero}{?}
+\newcommand{\TFBcjZero}{?}\newcommand{\TFRankFive}{?}
+\newcommand{\TFRankSix}{?}\newcommand{\TFOrderingsFive}{?}
+\newcommand{\TFOrderingsSix}{?}\newcommand{\TFKKFive}{?}
+\newcommand{\TFKKSix}{?}\newcommand{\TFBCJcountFive}{?}
+\newcommand{\TFBCJcountSix}{?}\newcommand{\TFRankAgreesFive}{?}
+\newcommand{\TFRankAgreesSix}{?}\newcommand{\TFCellsthree}{?}
+\newcommand{\TFCellsfour}{?}\newcommand{\TFCellsfive}{?}
+\newcommand{\TFCellTotalthree}{?}\newcommand{\TFCellTotalfour}{?}
+\newcommand{\TFCellTotalfive}{?}\newcommand{\TFCellClosedthree}{?}
+\newcommand{\TFCellClosedfour}{?}\newcommand{\TFCellClosedfive}{?}
+\newcommand{\TFCellsGTwoFour}{?}\newcommand{\TFCellsSymmetric}{?}
+\newcommand{\TFTopCellGTwoFour}{?}\newcommand{\TFChiPT}{?}
+\newcommand{\TFChiIncidence}{?}\newcommand{\TFChiMinkowski}{?}
+\newcommand{\TFKleinConfig}{?}\newcommand{\TFDegreeMHV}{?}
+\newcommand{\TFDegreeNMHV}{?}\newcommand{\TFDegreeNMHVLoop}{?}
+\newcommand{\TFPenroseGraviton}{?}\newcommand{\TFPenrosePhoton}{?}
+\newcommand{\TFPenroseScalar}{?}\newcommand{\TFPenroseHOne}{?}
+\IfFileExists{figures/twistor_facts.tex}{\input{figures/twistor_facts.tex}}{}
+
+\newcommand{\PP}{\mathbb{P}}
+\newcommand{\cO}{\mathcal{O}}
+\newcommand{\QQ}{\mathbb{Q}}
+\newcommand{\ket}[1]{\langle #1 \rangle}
+
+\theoremstyle{definition}
+\newtheorem{remark}{Remark}
+
+\title{\vspace{-1cm}\textbf{What Holomorphy Determines,\\
+and What a Rank Cannot See:\\[2pt]
+\large Exact Methods for Twistor Geometry and Tree Amplitudes}}
+\author{B.S. Hartshorn \orcidlink{0009-0004-2853-655X} \small \url{https://github.com/brentharts/CICY}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A tree-level scattering amplitude is a rational function of spinor brackets, 
+so with rational spinors it is a rational number, and every assertion about it is decidable. 
+We construct momentum-conserving kinematics over $\QQ$ --- 
+momentum conservation is a linear condition once the two spinors are
+taken independent, so a configuration is built rather than solved for --- and
+use it to check the Britto--Cachazo--Feng--Witten recursion against the
+Parke--Taylor formula as an exact equality of rationals, for all
+$n \leq \TFBcfwMax$ and for the conjugate amplitudes as well. Beyond the
+maximally-helicity-violating sector there is no closed form to compare
+against, and the amplitudes are instead pinned by symmetries that the construction does not manifest.
+
+The $(n-1)!$ colour orderings of a tree amplitude
+obey two families of linear relations. Computing the rank of the matrix of all
+orderings evaluated at many kinematic points returns $(n-2)!$, the
+Kleiss--Kuijf count, and never $(n-3)!$, the Bern--Carrasco--Johansson count
+--- although the BCJ relation itself is verified to vanish exactly at every point tested. 
+The reason is structural: a rank taken across kinematic points
+can only detect relations whose coefficients are constant, and the BCJ
+coefficients are Mandelstam invariants. The blind spot is a property of the
+method rather than a failure of the physics, and stating it is more useful than engineering around it. 
+Finally, the twistor double fibration is computed:
+compactified complexified Minkowski space is the Klein quadric, a
+configuration matrix, and its Euler characteristic
+$\TFChiMinkowski$ counts the Schubert cells of $G(2,4)$ without anything being supplied.
+\end{abstract}
+
+\tableofcontents
+
+% =====================================================================
+
+\section{Introduction}
+\label{sec:intro}
+
+The first paper in this series~\cite{SuppMath} asked which quantities in a
+heterotic compactification follow from the configuration matrix alone; the
+second~\cite{SuppStrings} asked the same of F-theory and Type IIB
+orientifolds, where the determining structure turned out to be anomaly
+cancellation rather than geometry. Both were organized around a boundary: the
+quantities that are exact, and the several distinguishable ways in which the
+rest fail to be.
+
+Scattering amplitudes sit differently. There is no compactification, no
+metric to be obstructed by, and --- at tree level --- no integral. Penrose's
+twistor correspondence replaces a point of spacetime by a line in
+$\PP^3$~\cite{Penrose1967,Penrose1969}, and Witten's observation is that the
+perturbative expansion of gauge theory, which in Feynman diagrams grows
+faster than exponentially, becomes a statement about holomorphic curves in
+that $\PP^3$~\cite{Witten2004}. The consequence exploited here is narrower and
+more mundane than the twistor-string programme it launched: an $n$-gluon tree
+amplitude is a rational function of the spinor brackets, so if the spinors are
+rational the amplitude is a rational number.
+
+That is what makes this paper possible in the same style as the earlier two.
+Every equality below is an equality of elements of $\QQ$, computed with
+\texttt{fractions.Fraction}, and every ``agrees'' is exact. There is no
+floating point anywhere in \texttt{pyCICY.twistor}.
+
+\Cref{sec:kinematics} sets up exact kinematics and explains why momentum
+conservation is a linear condition rather than a constraint to be solved
+numerically. \Cref{sec:pt,sec:bcfw} give the Parke--Taylor formula and check
+the BCFW (Britto--Cachazo--Feng--Witten) recursion against it; \cref{sec:threepoint} isolates the three-point
+degeneracy, which is a theorem rather than an inconvenience.
+\Cref{sec:nmhv} goes beyond the closed forms. \Cref{sec:relations} is the
+negative result. \Cref{sec:positroid,sec:geometry} treat the positive
+Grassmannian and the twistor double fibration, the latter reusing the
+complete-intersection machinery of the earlier papers unchanged.
+\Cref{sec:boundary} restates the boundary for this setting, where it looks
+different again.
+
+% =====================================================================
+
+\section{Exact kinematics}
+\label{sec:kinematics}
+
+A massless momentum in four dimensions is a rank-one bispinor,
+$p^{a\dot b} = \lambda^a \tilde\lambda^{\dot b}$, and the Lorentz invariants
+are the two brackets
+%
+\begin{equation}
+\ket{ij} = \lambda_i^1 \lambda_j^2 - \lambda_i^2 \lambda_j^1 ,
+\qquad
+[ij] = \tilde\lambda_i^1 \tilde\lambda_j^2
+     - \tilde\lambda_i^2 \tilde\lambda_j^1 .
+\label{eq:brackets}
+\end{equation}
+%
+Momentum conservation is
+$\sum_i \lambda_i^a \tilde\lambda_i^{\dot b} = 0$.
+
+Everything in this paper takes $\tilde\lambda$ \emph{independent} of
+$\lambda$ rather than its complex conjugate. That is not a convenience. Real
+Lorentzian three-point kinematics is degenerate --- see
+\cref{sec:threepoint} --- so a recursion built from three-point amplitudes
+exists only after complexification, and complexified kinematics with
+independent spinors is precisely split signature. Over $\QQ$ it costs
+nothing.
+
+With the spinors independent, momentum conservation is linear. Choosing the
+$\lambda_i$ freely, the condition says that each of the two columns of
+$\tilde\lambda$ lies in the kernel of the $2 \times n$ matrix whose columns
+are the $\lambda_i$. That kernel has dimension $n - 2$, and a rational vector
+in it is computed by exact Gaussian elimination. A configuration is therefore
+\emph{constructed} to conserve momentum, not fitted to; the method
+\texttt{Kinematics.check} is a test of the implementation rather than of the
+numbers, and it is one of the few checks in this paper that could not fail
+for an interesting reason.
+
+Two identities follow and neither is imposed anywhere. The Schouten identity
+%
+\begin{equation}
+\ket{ij}\ket{kl} + \ket{ik}\ket{lj} + \ket{il}\ket{jk} = 0
+\label{eq:schouten}
+\end{equation}
+%
+holds because there is no antisymmetric three-index tensor in two dimensions;
+it tests the bracket \cref{eq:brackets} rather than the kinematics. The
+identity $\sum_i \ket{ki}[il] = 0$, which every amplitude manipulation uses,
+is momentum conservation contracted with two spinors. Both come out exactly
+zero, as does the Mandelstam invariant of the full set of momenta, and
+$s_{ij}$ computed as the determinant of the summed bispinor agrees with
+$\ket{ij}[ij]$ --- two routes to the same rational number.
+
+Generic position matters and is enforced rather than hoped for: an amplitude
+has poles wherever a consecutive bracket vanishes, so the constructor rejects
+and redraws any configuration with a vanishing bracket rather than dividing by
+zero later.
+
+% =====================================================================
+
+\section{Parke--Taylor}
+\label{sec:pt}
+
+For a colour-ordered tree amplitude with exactly two negative-helicity gluons
+$i$ and $j$, Parke and Taylor's formula~\cite{ParkeTaylor1986}, proved by
+Berends and Giele~\cite{BerendsGiele1988}, is
+%
+\begin{equation}
+A(1, \dots, n) \;=\;
+\frac{\ket{ij}^4}{\ket{12}\ket{23}\cdots\ket{n1}} .
+\label{eq:pt}
+\end{equation}
+%
+One line, replacing a number of Feynman diagrams that grows faster than
+exponentially in $n$.
+
+Three features of \cref{eq:pt} are checked rather than assumed. It is cyclic,
+because the colour ordering is a cycle; it is invariant under reversal up to
+$(-1)^n$; and its little-group weights are correct. Scaling $\lambda_i$ by
+$t$ must scale the amplitude by $t^{-2h_i}$, so by $t^2$ on a
+negative-helicity leg and $t^{-2}$ on a positive one. That is what fixes the
+fourth power in the numerator: the denominator carries weight $-2$ on every
+leg, so the numerator must supply $+4$ on each negative-helicity leg and
+nothing anywhere else.
+
+The formula depends on $\lambda$ alone. That is the geometric content, and is
+Witten's starting point: an MHV amplitude \cite{CSW2004} is supported on a curve of degree
+$\TFDegreeMHV$ in twistor space, which is to say on a line. On the fixed
+kinematic point the module uses for six points, \cref{eq:pt} evaluates to
+$\TFSixPointMHV$.
+
+% =====================================================================
+
+\section{BCFW, checked against the closed form}
+\label{sec:bcfw}
+
+The Britto--Cachazo--Feng--Witten recursion~\cite{BCF2005,BCFW2005} deforms
+two of the external momenta by a complex parameter $z$,
+%
+\begin{equation}
+\tilde\lambda_i \to \tilde\lambda_i - z \tilde\lambda_j ,
+\qquad
+\lambda_j \to \lambda_j + z \lambda_i ,
+\label{eq:shift}
+\end{equation}
+%
+which preserves both masslessness and momentum conservation, uses the fact
+that the deformed amplitude vanishes as $z \to \infty$ for a suitable choice
+of legs, and reconstructs the amplitude from its poles \cite{Hodges2009}. Each residue
+factorizes into two amplitudes with fewer legs, so the whole tree expansion
+follows from the three-point amplitudes, which Lorentz invariance alone fixes.
+
+Over $\QQ$ this is entirely exact. The location $z_*$ of each pole is
+rational, because the on-shell condition on the deformed internal momentum is
+linear in $z$; the deformed internal momentum is then a rank-one bispinor and
+factorizes into rational spinors. Nothing leaves the field at any stage.
+
+The implementation shifts a cyclically adjacent pair with helicities
+$(-,+)$, rotating the ordering to bring such a pair to the ends. Such a pair
+always exists once both helicities are present, and rotating costs nothing
+because the amplitude is cyclic.
+
+\begin{framed}
+\noindent
+\textbf{The check.} BCFW and Parke--Taylor share no code: one is a recursion
+seeded by three-point amplitudes, the other a closed formula. They agree
+exactly for every $n$ up to $\TFBcfwMax$ (\TFBcfwAgree), and the conjugate
+amplitudes --- $n-2$ negative helicities, obtained through the other
+three-point amplitude --- agree with the parity-conjugate formula as well
+(\TFBcfwAntiAgree). At the fixed six-point kinematic point of \cref{sec:pt},
+the recursion returns $\TFSixPointBCFW$ against Parke--Taylor's
+$\TFSixPointMHV$.
+\end{framed}
+
+\noindent
+Writing this produced exactly one error, and the shape of the error is worth
+recording because it is characteristic of sign conventions. An initial
+version disagreed with \cref{eq:pt} by $(-1)^n$ for every $n$ tested. A
+disagreement tracking the number of legs rather than the number of recursion
+steps or the helicity configuration is the signature of a convention applied
+once per amplitude, not of a mistake in any particular branch; it was traced
+to a spurious sign on the anti-holomorphic three-point amplitude. A single
+numerical evaluation would not have located it, and a floating-point
+comparison would have shown a mismatch without showing the pattern.
+
+The only input beyond the three-point amplitudes is that amplitudes with
+fewer than two legs of either helicity vanish for $n \geq 4$. This is returned
+rather than derived.
+
+% =====================================================================
+
+\section{Why three points need complex momenta}
+\label{sec:threepoint}
+
+At $n = 3$ the kernel that momentum conservation leaves is one-dimensional.
+Both columns of $\tilde\lambda$ are then proportional to a single vector, so
+every square bracket vanishes identically: on the holomorphic three-point
+configuration the module builds, $\TFThreePtAngles$ of the three angle
+brackets are non-zero and $\TFThreePtSquares$ of the three square brackets
+are.
+
+This is not an artifact of working over $\QQ$, and not a failure of the
+generic-position constructor. It holds over any field: there is no three-point
+configuration with both sets of brackets non-zero. The two three-point
+amplitudes therefore live at \emph{different} kinematic points, and the module
+exposes the choice explicitly rather than papering over it. On the
+holomorphic point $A(1^-,2^-,3^+) = \TFThreePtHol$; on the anti-holomorphic
+one $A(1^-,2^+,3^+) = \TFThreePtAnti$.
+
+This degeneracy is exactly why BCFW requires complex momenta. With real
+Lorentzian three-point kinematics every bracket vanishes and there is nothing
+to recurse from. It is the one place in this paper where a computation
+failing was the correct outcome, and the response was to make the failure a
+documented feature rather than to route around it.
+
+% =====================================================================
+
+\section{Beyond the closed forms}
+\label{sec:nmhv}
+
+Three negative helicities at six points is the first amplitude with no closed
+form, so there is nothing to compare a computation against. It is instead
+pinned by symmetries that the construction does not make manifest.
+
+The BCFW result is a sum over factorization channels selected \emph{after}
+rotating the colour ordering to place a suitable shifted pair at the ends.
+Nothing in that procedure makes the answer cyclic; each rotation produces a
+genuinely different sum of genuinely different rational numbers. That the
+totals agree is therefore a real check, and they do: the six-point NMHV
+amplitude evaluates to $\TFNmhvValue$, is invariant under all six cyclic
+rotations (\TFNmhvCyclic), and satisfies the reflection identity
+(\TFNmhvReflect). The alternating-helicity configuration and a seven-point
+$\mathrm{N}^2$MHV amplitude behave the same way.
+
+Witten's degree formula records where these live. An
+$\mathrm{N}^{k-2}\mathrm{MHV}$ amplitude at $\ell$ loops is supported on a
+curve in twistor space of degree $d = k - 1 + \ell$ and genus at most $\ell$:
+MHV on a line ($d = \TFDegreeMHV$), NMHV on a conic
+($d = \TFDegreeNMHV$), and a loop raising the degree by one
+($d = \TFDegreeNMHVLoop$ for NMHV at one loop). This is recorded rather than
+derived; nothing else in the module uses it, and no loop amplitude is
+computed anywhere.
+
+% =====================================================================
+
+\section{What a rank cannot see}
+\label{sec:relations}
+
+The $(n-1)!$ cyclically inequivalent colour orderings of a tree amplitude are
+not independent. Two families of relations reduce them, and the two behave
+completely differently under the obvious computational test.
+
+The photon decoupling identity is the simplest. Summing over the cyclic
+insertions of one leg into the ordering of the others gives zero:
+%
+\begin{equation}
+A(1,2,\dots,n) + A(2,1,3,\dots,n) + \cdots
++ A(2,3,\dots,n-1,1,n) \;=\; 0 ,
+\label{eq:u1}
+\end{equation}
+%
+with $n-1$ terms rather than $n$, since inserting leg $1$ after leg $n$
+returns the first ordering. The Kleiss--Kuijf relations~\cite{KleissKuijf1989}
+generalise it, and all of them have coefficients $\pm 1$. The
+Bern--Carrasco--Johansson relations~\cite{BCJ2008} go further; the
+fundamental one is
+%
+\begin{equation}
+\sum_{i=2}^{n-1} \Bigl( \sum_{j=2}^{i} s_{1j} \Bigr)\,
+A(2, \dots, i, 1, i+1, \dots, n) \;=\; 0 ,
+\label{eq:bcj}
+\end{equation}
+%
+and its coefficients are Mandelstam invariants.
+
+Both hold exactly. \Cref{eq:u1,eq:bcj} evaluate to zero for every $n$ up to
+$\TFRelationMax$ tested, at every kinematic point
+(\TFUoneZero{} and \TFBcjZero{} respectively). Counting independent orderings
+should therefore be a matter of taking a rank: evaluate all $(n-1)!$ orderings
+at many independent kinematic points and compute the rank of the resulting
+matrix over $\QQ$.
+
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+$n$ & orderings & rank & $(n-2)!$ & $(n-3)!$ \\
+\midrule
+$5$ & \TFOrderingsFive & \TFRankFive & \TFKKFive & \TFBCJcountFive \\
+$6$ & \TFOrderingsSix  & \TFRankSix  & \TFKKSix  & \TFBCJcountSix  \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The rank is $(n-2)!$, and it is never $(n-3)!$.
+
+The explanation is structural rather than numerical, and it is the point of
+this section. A rank taken across kinematic points detects only those linear
+relations that hold \emph{simultaneously at every point}, which is to say only
+relations with constant coefficients. Kleiss--Kuijf relations have
+coefficients $\pm 1$, so they apply at every point at once and the rank
+collapses to $(n-2)!$. The BCJ coefficients in \cref{eq:bcj} vary from point
+to point, so no single linear combination of the columns annihilates the whole
+matrix, and the further reduction is invisible --- even though, as the
+residual shows, the relation holds exactly at each point separately.
+
+Reporting $(n-3)!$ here would require supplying the relations as input, which
+would make the computation a restatement of its own assumption rather than a
+check on it. Reporting $(n-2)!$ and saying why is the informative outcome. It
+is also a warning about a class of numerical experiment: a rank over sampled
+parameter values measures the constant-coefficient part of a relation ideal
+and nothing else, and an absent reduction is evidence about the coefficients,
+not about the relations.
+
+The implementation reports whether enough kinematic points were supplied for
+the rank to have saturated, so a rank bounded by the sample size is visible
+rather than mistaken for a result.
+
+% =====================================================================
+
+\section{The positive Grassmannian}
+\label{sec:positroid}
+
+Postnikov's classification~\cite{Postnikov2006} puts the cells of the totally
+non-negative Grassmannian $G(k,n)_{\geq 0}$ in bijection with decorated
+permutations of $[n]$ --- permutations with each fixed point coloured --- that
+have $k$ anti-exceedances. The same objects label the on-shell diagrams of
+planar $\mathcal{N}=4$ super Yang--Mills~\cite{ABCGPT2016, RSV2004}, and the
+amplituhedron~\cite{ArkaniHamedTrnka2013} is built from them, which is why the
+combinatorics belongs beside the amplitudes rather than in an appendix.
+
+Counting directly:
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+$n$ & cells by $k$ & total & $\sum_j n!/j!$ \\
+\midrule
+$3$ & \TFCellsthree & \TFCellTotalthree
+& \TFCellClosedthree \\
+$4$ & \TFCellsfour & \TFCellTotalfour
+& \TFCellClosedfour \\
+$5$ & \TFCellsfive & \TFCellTotalfive
+& \TFCellClosedfive \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The rows are symmetric under $k \mapsto n-k$ (\TFCellsSymmetric), as duality
+of Grassmannians requires; $G(2,4)$ has $\TFCellsGTwoFour$ cells and its top
+cell has dimension $\TFTopCellGTwoFour = k(n-k)$.
+
+The total is the check worth making. Summed over $k$ the count matches
+$\sum_{j=0}^{n} n!/j!$, the number of arrangements of $n$ objects, and the two
+sides have nothing obviously to do with one another: one counts permutations
+with coloured fixed points graded by anti-exceedances, the other counts
+ordered selections. The agreement tests the anti-exceedance statistic, which
+is the part of the bijection easiest to get subtly wrong.
+
+% =====================================================================
+
+\section{The double fibration, as complete intersections}
+\label{sec:geometry}
+
+Twistor space is $\PP^3$. Compactified complexified Minkowski space is the
+Grassmannian of two-planes in $\mathbb{C}^4$, which the Pl\"ucker embedding
+realises as a single quadric in $\PP^5$ --- the Klein quadric. That is a
+configuration matrix, $\TFKleinConfig$, so the complete-intersection machinery
+of the earlier papers applies to it unchanged: the Euler characteristics below
+come from the same Chern class routine written for orientifold fixed
+loci~\cite{SuppStrings}.
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+space & configuration & $\dim$ & $\chi$ \\
+\midrule
+twistor space $PT$          & $[[3]]$              & 3 & \TFChiPT \\
+incidence $F(1,3;4)$        & $[[3,1],[3,1]]$      & 5 & \TFChiIncidence \\
+Minkowski $G(2,4)$          & $\TFKleinConfig$     & 4 & \TFChiMinkowski \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The $\TFChiMinkowski$ is the number of Schubert cells of $G(2,4)$, indexed by
+the partitions fitting in a two-by-two box, and the $\TFChiIncidence$ is the
+cell count of the flag manifold, the $(1,1)$ hypersurface expressing the
+incidence $Z^\alpha W_\alpha = 0$. Neither was supplied.
+
+The Penrose transform~\cite{Penrose1969,PenroseMacCallum1972, ADM2017} sends a free
+massless field of helicity $h$ to a class in $H^1$ of twistor space valued in
+$\cO(-2h-2)$: $\TFPenroseScalar$ for a scalar, $\TFPenrosePhoton$ for a
+photon, $\TFPenroseGraviton$ for a graviton. The twist is the content ---
+helicity is the homogeneity degree of a function on twistor space, so the
+entire spectrum of massless free fields is one sheaf cohomology with a varying
+line bundle.
+
+The caveat the module records is that the cohomology cannot be taken on
+$\PP^3$. By Bott's formula $H^1(\PP^3, \cO(m)) = \TFPenroseHOne$ for every
+$m$ \cite{Bott1957}, so the transform on compact twistor space would produce nothing at all.
+It is taken on $\PP^3$ minus a line, or on a neighbourhood of a real slice,
+and that open space is outside what this package's cohomology covers.
+
+% =====================================================================
+
+\section{The boundary}
+\label{sec:boundary}
+
+The two earlier papers each ended by classifying the ways a quantity can fail
+to be available. Here the classification looks different again, and the
+difference is informative about all three.
+
+\begin{enumerate}[leftmargin=2em]
+\item \emph{Exact and complete.} Every tree amplitude, for any number of legs
+and any helicity assignment. There is no approximation, no metric and no
+choice of data left open. This category is far larger here than in either
+earlier paper, and the reason is that a tree amplitude is a rational function
+and nothing else.
+
+\item \emph{Exact but invisible to the method used.} The BCJ (Bern--Carrasco--Johansson) reduction of
+\cref{sec:relations}. The relations are exact and are verified exactly; the
+particular computation applied to them --- a rank over sampled kinematics ---
+provably cannot see them. This is a category the earlier papers had no
+occasion to name, and it is not the same as ``not implemented'': the obstacle
+is a property of the question asked, not of the effort spent.
+
+\item \emph{Not computed.} Loops. The tree expansion is exact and complete;
+the loop expansion requires integrals over regions not determined by the
+rational data here, and no loop amplitude is computed yet. The amplituhedron
+appears only through the combinatorics of its cells, not its geometry.
+
+\item \emph{On the wrong space.} The Penrose transform, which needs an open
+twistor space that the package's cohomology machinery does not describe yet.
+\end{enumerate}
+
+\noindent
+The second category is the one to carry forward. In~\cite{SuppMath} the
+boundary was between what a configuration matrix contains and what it does
+not; in~\cite{SuppStrings} between what consistency forces and what a choice
+of flux or brane leaves open. Both are boundaries of the \emph{data}. Here the
+data is complete --- the amplitudes are known exactly --- and the boundary is
+of the \emph{method}. A rank computation is a perfectly good instrument that
+measures one specific thing, and mistaking what it measures for what one
+wanted to know is an error no amount of exactness protects against.
+
+% =====================================================================
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+The first paper found that a configuration matrix determines more than one
+expects \cite{SuppMath}. The second found that consistency does \cite{SuppStrings}. 
+This one finds that holomorphy does: once an amplitude is known to be a rational function of
+spinor brackets, working over $\QQ$ makes every question about it decidable,
+and the resulting checks are equalities rather than agreements to some number of digits.
+
+The methodological thread of the series holds here too. A quantity computed
+once is a result; computed twice, by routes sharing no code, it is a test.
+BCFW against Parke--Taylor, the cell counts against $\sum_j n!/j!$, the
+Mandelstam invariant as a determinant against its bracket form, the Euler
+characteristic of the Klein quadric against the Schubert cells of $G(2,4)$:
+each pair is a check, and the one error made in writing this module was found
+by such a pair disagreeing in a pattern --- $(-1)^n$ --- that identified the
+convention responsible.
+
+What is new here is the fourth item on that list of pairs never disagreeing
+where it was expected to. The rank computation of \cref{sec:relations} does
+not reproduce the BCJ count, and no amount of additional kinematic points will
+make it. Exact arithmetic guarantees that a computed answer is the right
+answer to the question posed; it says nothing about whether that was the
+question one meant to ask.
+
+% =====================================================================
+
+\section{Source code and limitations}
+\label{sec:source}
+\footnotesize
+Everything above is implemented in \texttt{pyCICY.twistor}, with
+\texttt{tests/test\_twistor.py} executing the cross-checks quoted here and
+\texttt{examples/twistor.py} reproducing the tables. The numbers in this
+document are emitted by \texttt{paper/make\_strings\_facts.py} with
+\texttt{--sections twistor}. The repository is at
+\url{https://github.com/brentharts/CICY}.
+
+Limitations:
+%
+\begin{itemize}[leftmargin=2em,itemsep=1pt]
+\item Tree level only. No loop amplitude is computed, and the twistor-string
+degree formula is recorded rather than derived or used.
+\item Gluons only: colour-ordered pure Yang--Mills amplitudes, with no
+supersymmetric multiplet structure, no fermions and no gravity.
+\item The BCJ reduction is verified as an identity but not used to construct
+a basis of orderings, for the reason given in \cref{sec:relations}.
+\item The positive Grassmannian appears only combinatorially. Boundary
+stratification, plabic graph moves \cite{Affolter} and the amplituhedron's geometry \cite{ArkaniHamedTrnka2013} are
+absent.
+\item The Penrose transform is recorded as a correspondence, not implemented;
+the relevant cohomology is on an open twistor space.
+\end{itemize}
+
+% =====================================================================
+
+\begin{thebibliography}{99}
+\setlength{\itemsep}{1pt plus 0.5pt}
+
+\bibitem{SuppMath}
+B.S.~Hartshorn,
+\emph{What a configuration matrix determines, and what it does not: exact
+methods for heterotic compactifications on CICYs},
+Pre-print (2026), \url{https://doi.org/10.5281/zenodo.21844007}.
+
+\bibitem{SuppStrings}
+B.S.~Hartshorn,
+\emph{What anomaly cancellation determines, and what does not exist: exact
+methods for F-theory and Type IIB orientifolds},
+Pre-print (2026), \url{https://doi.org/10.5281/zenodo.21865768}.
+
+
+\bibitem{Penrose1967}
+R.~Penrose,
+\emph{Twistor algebra},
+J.\ Math.\ Phys.\ \textbf{8} (1967) 345.
+
+\bibitem{Penrose1969}
+R.~Penrose,
+\emph{Solutions of the zero-rest-mass equations},
+J.\ Math.\ Phys.\ \textbf{10} (1969) 38.
+
+\bibitem{Witten2004}
+E.~Witten,
+\emph{Perturbative gauge theory as a string theory in twistor space},
+Commun.\ Math.\ Phys.\ \textbf{252} (2004) 189,
+\href{https://arxiv.org/abs/hep-th/0312171}{arXiv:hep-th/0312171}.
+
+\bibitem{ParkeTaylor1986}
+S.~J.~Parke and T.~R.~Taylor,
+\emph{An amplitude for $n$-gluon scattering},
+Phys.\ Rev.\ Lett.\ \textbf{56} (1986) 2459.
+
+\bibitem{BerendsGiele1988}
+F.~A.~Berends and W.~T.~Giele,
+\emph{Recursive calculations for processes with $n$ gluons},
+Nucl.\ Phys.\ B \textbf{306} (1988) 759. \url{https://doi.org/10.1016/0550-3213(88)90442-7}
+
+\bibitem{CSW2004}
+F.~Cachazo, P.~Svrcek and E.~Witten,
+\emph{MHV vertices and tree amplitudes in gauge theory},
+JHEP \textbf{09} (2004) 006,
+\href{https://arxiv.org/abs/hep-th/0403047}{arXiv:hep-th/0403047}.
+
+\bibitem{BCF2005}
+R.~Britto, F.~Cachazo and B.~Feng,
+\emph{New recursion relations for tree amplitudes of gluons},
+Nucl.\ Phys.\ B \textbf{715} (2005) 499,
+\href{https://arxiv.org/abs/hep-th/0412308}{arXiv:hep-th/0412308}.
+
+\bibitem{BCFW2005}
+R.~Britto, F.~Cachazo, B.~Feng and E.~Witten,
+\emph{Direct proof of tree-level recursion relation in Yang--Mills theory},
+Phys.\ Rev.\ Lett.\ \textbf{94} (2005) 181602,
+\href{https://arxiv.org/abs/hep-th/0501052}{arXiv:hep-th/0501052}.
+
+\bibitem{Hodges2009}
+A.~Hodges,
+\emph{Eliminating spurious poles from gauge-theoretic amplitudes},
+JHEP \textbf{05} (2013) 135,
+\href{https://arxiv.org/abs/0905.1473}{arXiv:0905.1473}.
+
+
+\bibitem{KleissKuijf1989}
+R.~Kleiss and H.~Kuijf,
+\emph{Multigluon cross-sections and 5-jet production at hadron colliders},
+Nucl.\ Phys.\ B \textbf{312} (1989) 616. \url{https://doi.org/10.1016/0550-3213(89)90574-9}
+
+\bibitem{BCJ2008}
+Z.~Bern, J.~J.~M.~Carrasco and H.~Johansson,
+\emph{New relations for gauge-theory amplitudes},
+Phys.\ Rev.\ D \textbf{78} (2008) 085011,
+\href{https://arxiv.org/abs/0805.3993}{arXiv:0805.3993}.
+
+\bibitem{Postnikov2006}
+A.~Postnikov,
+\emph{Total positivity, Grassmannians, and networks},
+\href{https://arxiv.org/abs/math/0609764}{arXiv:math/0609764}.
+
+\bibitem{ABCGPT2016}
+N.~Arkani-Hamed, J.~Bourjaily, F.~Cachazo, A.~Goncharov, A.~Postnikov and
+J.~Trnka,
+\emph{Grassmannian Geometry of Scattering Amplitudes},
+Cambridge University Press (2016),
+\href{https://arxiv.org/abs/1212.5605}{arXiv:1212.5605}.
+
+\bibitem{ArkaniHamedTrnka2013}
+N.~Arkani-Hamed and J.~Trnka,
+\emph{The amplituhedron},
+JHEP \textbf{10} (2014) 030,
+\href{https://arxiv.org/abs/1312.2007}{arXiv:1312.2007}.
+
+\bibitem{RSV2004}
+R.~Roiban, M.~Spradlin and A.~Volovich,
+\emph{On the tree-level S-matrix of Yang--Mills theory},
+Phys.\ Rev.\ D \textbf{70} (2004) 026009,
+\href{https://arxiv.org/abs/hep-th/0403190}{arXiv:hep-th/0403190}.
+
+
+
+
+\bibitem{PenroseMacCallum1972}
+R.~Penrose and M.~A.~H.~MacCallum,
+\emph{Twistor theory: an approach to the quantisation of fields and space-time},
+Phys.\ Rept.\ \textbf{6} (1972) 241.
+
+\bibitem{ADM2017}
+M.~Atiyah, M.~Dunajski and L.~J.~Mason,
+\emph{Twistor theory at fifty: from contour integrals to twistor strings},
+Proc.\ Roy.\ Soc.\ A \textbf{473} (2017) 20170530,
+\href{https://arxiv.org/abs/1704.07464}{arXiv:1704.07464}.
+
+
+\bibitem{Bott1957}
+R.~Bott,
+\emph{Homogeneous vector bundles},
+Ann.\ Math.\ \textbf{66} (1957) 203.
+
+\bibitem{Affolter}
+N.~Affolter, M.~Glick, P.~Pylyavskyy, S.~Ramassamy
+\emph{Vector-relation configurations and plabic graphs} (version2 2023)
+\url{https://arxiv.org/abs/1908.06959v2}
+
+\end{thebibliography}
+
+\end{document}
