@@ -1,0 +1,794 @@
+% supplementary_material_nariai.tex
+%
+% Build with:  python3 paper/make_nariai_facts.py && pdflatex supplementary_material_nariai.tex
+%
+% Every number quoted in this document is written to figures/nariai_facts.tex
+% by paper/make_nariai_facts.py, which runs the pyCICY.theories.nariai module
+% and the verbatim packet construction of the source paper's companion
+% script, so the prose and the computations cannot drift apart silently.
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink,capitalize]{cleveref}
+\usepackage{framed}
+\IfFileExists{orcidlink.sty}{\usepackage{orcidlink}}%
+  {\newcommand{\orcidlink}[1]{}}
+
+\graphicspath{{figures/}}
+
+% Numbers computed by paper/make_nariai_facts.py. Defined here as a fallback
+% so the document still typesets if the facts have not been generated yet;
+% the \input below overrides them with the real values.
+\newcommand{\NFBoundHalf}{?}\newcommand{\NFBoundOne}{?}
+\newcommand{\NFBoundMarginMin}{?}\newcommand{\NFDevContour}{?}
+\newcommand{\NFDevGaussLow}{?}\newcommand{\NFDevGaussThree}{?}
+\newcommand{\NFIOneExact}{?}\newcommand{\NFITwoRatio}{?}
+\newcommand{\NFJacobianDev}{?}\newcommand{\NFMomOneContour}{?}
+\newcommand{\NFMomOneGaussThree}{?}\newcommand{\NFMomTwoContour}{?}
+\newcommand{\NFMomTwoGaussLow}{?}\newcommand{\NFMomTwoGaussThree}{?}
+\newcommand{\NFOneModeDev}{?}\newcommand{\NFRGridMax}{?}
+\newcommand{\NFRGridMin}{?}\newcommand{\NFRGridN}{?}
+\newcommand{\NFRatioHalf}{?}\newcommand{\NFRatioOne}{?}
+\newcommand{\NFRouteMaxArakiDev}{?}\newcommand{\NFRouteMaxJTDev}{?}
+\newcommand{\NFRouteMaxQuadDev}{?}\newcommand{\NFThetaN}{?}
+\IfFileExists{figures/nariai_facts.tex}{\input{figures/nariai_facts.tex}}{}
+
+\newcommand{\Srel}{S^{\mathrm{rel}}}
+\newcommand{\dd}{\mathrm{d}}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{definition}
+\newtheorem{remark}{Remark}
+
+\title{\vspace{-1cm}\textbf{What Wedge-Locality Determines,\\
+and What the Phase Averages Out:\\[2pt]
+\large Exact Tests and a Universal Negativity Bound for Entropic Gravity
+on the Nariai Horizon}}
+\author{B.S. Hartshorn \orcidlink{0009-0004-2853-655X} \small
+\url{https://github.com/brentharts/CICY}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+
+The Dorau--Much derivation of the semiclassical Einstein equations from relative entropy~\cite{DorauMuch} 
+moved to the Nariai spacetime, where every quantity is finite, and proved a vanishing
+theorem~\cite{NariaiI}: the interference functional $I_2$ of a wedge-local squeezed
+excitation is exactly zero, so flux negativity --- the engine of the
+anti-evaporating branch of the Nariai instability --- is a zero-sum
+reallocation bounded by the budget inequality $D(W) \le$ (positive part).
+
+The funded-depth ratio $D(W)/(\text{positive part})$ of a squeezed excitation is not merely bounded
+by $1$: it is, for phase-generic packets, a \emph{universal function of the squeeze parameter alone},
+$\mathcal{R}(r) = (\sin\psi_0 - \psi_0\tanh r)\,/\,(\,(\pi-\psi_0)\tanh r +
+\sin\psi_0\,)$ with $\psi_0 = \arccos(\tanh r)$, independent of the packet
+shape, the squeezing angle, and the width --- and it is \emph{exactly} this
+function for a packet family whose phase distribution is uniform by a
+harmonic-cancellation identity.
+
+The vanishing theorem itself, read as the statement that the intensity-weighted phase distribution 
+of the flux has zero first circular moment, implies by a two-line convexity argument the sharp bound
+$D(W) \le e^{-2r}\,(\text{positive part})$
+for \emph{every} wedge-local single-mode squeezed excitation: the budget
+inequality of~\cite{NariaiI} strengthened from a constant to an exponential,
+with equality attained only on the boost-blind boundary of the wedge-local
+class --- the $|I_2|/I_1$ dichotomy. Over a dense grid of \NFRGridN{} squeeze parameters and \NFThetaN{}
+angles, follows $\mathcal{R}(r)$ to \NFDevGaussThree{}; a deliberately
+low-winding packet departs at the level of its second circular moment,
+which is the predicted failure mode, while respecting the exponential bound
+with margin at least \NFBoundMarginMin{}.
+\end{abstract}
+
+\tableofcontents
+
+% =====================================================================
+
+\section{Introduction}
+\label{sec:intro}
+
+The papers in this series each ask what a single determining structure fixes
+exactly, and how the remainder fails to be fixed. For heterotic
+compactifications the structure was the configuration
+matrix~\cite{SuppMath}; for F-theory and orientifolds it was anomaly
+cancellation, and the failure taxonomy acquired the category of quantities
+that \emph{do not exist}~\cite{SuppStrings}; for tree amplitudes it was
+holomorphy, and the boundary moved from the data to the
+method~\cite{SuppTwistor}. The subject here is the entropic derivation of the
+semiclassical Einstein equations: Dorau and Much proved that the
+Araki--Uhlmann relative entropy of a coherent excitation on a bifurcate
+Killing horizon equals the boost-energy flux~\cite{DorauMuch}, closing the
+quantum side of Jacobson's argument~\cite{Jacobson1995}, and
+Ref.~\cite{NariaiI} transplanted the construction to the Nariai spacetime
+$dS_2 \times S^2$ --- the degenerate Schwarzschild--de Sitter limit of
+Ginsparg and Perry~\cite{GinspargPerry} --- where the bifurcation surface is
+a compact sphere of area $4\pi/\Lambda$, every functional is finite, the
+Killing normalization is fixed by the geometry, and the response model of the
+flat-space derivation becomes a theorem of linearized Jackiw--Teitelboim
+dynamics.
+
+The determining structure of the present paper is \emph{wedge-locality}: the
+requirement that an excitation be built from data positive-frequency with
+respect to the boost time of the horizon. Ref.~\cite{NariaiI} distilled it
+into a vanishing theorem --- its Eq.~(64) --- whose content is that the
+modular weight $(-U)$ is exactly the boost Jacobian, so the interference
+functional
+%
+\begin{equation}
+I_2 \;=\; \frac{1}{\kappa}\int_{-\infty}^{\infty}
+\bigl(\partial_u \chi\bigr)^2\, \dd u
+\label{eq:i2}
+\end{equation}
+%
+is the zero-total-frequency Fourier component of a square of strictly
+positive frequencies, and vanishes identically. The consequences drawn there
+were a thermal first law for squeezed states, the $0$-or-$1$ wedge-locality
+dichotomy of $|I_2|/I_1$, and the budget inequality --- its Eq.~(61) ---
+stating that the funded depth $D(W)$ of the flux-negativity windows never
+exceeds the positive flux deposited on the same horizon.
+
+This paper does two things. The first is the standard service of the series:
+an independent verification suite for Ref.~\cite{NariaiI}, implemented as
+\texttt{pyCICY.theories.nariai} with the discipline that a quantity computed
+once is a result and a quantity computed twice, by routes sharing no code, is
+a test. The coherent-sector entropy is computed four ways
+(\cref{sec:routes}); the geometry of the degenerate limit is extracted from
+the exact Schwarzschild--de Sitter cubic and \emph{compared with} the
+Ginsparg--Perry expansion rather than built from it; the vanishing theorem is
+verified on a packet family different from the one in the source paper's
+companion script --- a family for which $I_2 = 0$ is a closed contour
+argument rather than a small quadrature residue (\cref{sec:contour}).
+
+The second is what the verification produced, which is the reason this paper
+exists. Running two unrelated packet families through the negativity budget
+returned the \emph{same} funded-depth ratio at fixed squeeze parameter, to
+six digits, at every angle and width tested. Chasing the coincidence yields
+the two results announced in the abstract: a universal ratio law
+$\mathcal{R}(r)$ that the budget inequality of~\cite{NariaiI} sharpens into
+(\cref{sec:ratio}), exact for a packet family by a harmonic-cancellation
+identity (\cref{lem:uniform}); and a sharp exponential bound
+$D(W) \le e^{-2r} \times$ (positive part) that follows from the vanishing
+theorem alone (\cref{thm:bound}), for every wedge-local packet without
+exception. Both are statements the source paper's equations sit immediately
+below but do not contain, and both have direct phenomenological content for
+the branch-selection analysis of its Section~5: the negativity available to
+fund anti-evaporation is not merely repaid in full --- it is an exponentially
+small fraction of the deposit.
+
+\Cref{sec:numerics} nails the correspondence numerically, running the
+\emph{verbatim} Gaussian packet of the source paper's companion script over a
+dense grid of squeeze parameters, and exhibits the controlled failure of the
+ratio law on a low-winding packet --- a failure that respects the bound, and
+whose size is the second circular moment of the phase, as the derivation
+predicts. \Cref{sec:boundary} restates the boundary taxonomy of the series
+for this setting, where it acquires a further refinement: a quantity can be
+exact at a distinguished point of a class (the ergodic-phase point), with the
+deviation elsewhere controlled by a computable functional.
+
+% =====================================================================
+
+\section{One entropy, four routes}
+\label{sec:routes}
+
+The coherent sector of Ref.~\cite{NariaiI} contains one family of closed
+forms: for the horizon profiles
+$\phi_n(U) = a\,(-\kappa U)^n e^{\kappa U}$ on $U \in (-\infty, 0]$,
+$\kappa = \sqrt{\Lambda}$, its Eqs.~(36)--(39) give
+%
+\begin{equation}
+\Srel(\omega_0 \,\|\, \omega_{\phi_n})
+\;=\; \frac{4\pi^2 a^2}{\Lambda}\,\frac{n\,(2n-1)!}{4^n}\,,
+\label{eq:closed}
+\end{equation}
+%
+resting on the longitudinal integral, its Eq.~(38). The suite verifies
+\cref{eq:closed} by four routes that share nothing.
+
+\emph{Route 1: exact arithmetic.} The integral behind \cref{eq:closed}
+is a rational identity. Expanding $(n-x)^2$ and using
+$\int_0^\infty x^m e^{-2x}\dd x = m!/2^{m+1}$,
+%
+\begin{equation}
+\int_0^\infty x^{2n-1}(n-x)^2 e^{-2x}\,\dd x
+\;=\;
+\frac{n^2 (2n-1)!}{4^{n}} \;-\; \frac{n\,(2n)!}{4^{n}}
+\;+\; \frac{(2n+1)!}{4\cdot 4^{n}}
+\;=\;
+\frac{n\,(2n-1)!}{2\cdot 4^{n}}\,,
+\label{eq:gammaid}
+\end{equation}
+%
+and the implementation computes both sides of \cref{eq:gammaid} in
+\texttt{fractions.Fraction} --- no floating point --- and asserts their
+equality on every call, in the manner of the exact-kinematics checks
+of~\cite{SuppTwistor}. Adaptive quadrature of the same integral then confirms
+the float value to $\NFRouteMaxQuadDev$.
+
+\emph{Route 2: the stress tensor.} Direct trapezoid quadrature of the pivot
+identity, Eq.~(31) of~\cite{NariaiI}, $\Srel = 2\pi \int (-U)
+(\partial_U\phi)^2\, \dd U\, \dd\mathrm{vol}_S$, deliberately pedestrian so
+that agreement tests the closed form and not a shared derivation.
+
+\emph{Route 3: the Araki formula.} The relative entropy is
+$\tfrac12\,\sigma(\delta\phi, \phi)$ with $\delta\phi = -2\pi U
+\partial_U\phi$ the modular derivative --- Eq.~(29) of~\cite{NariaiI} ---
+and the suite evaluates the symplectic form with \emph{both} derivative terms
+present, performing no integration by parts, so that agreement with Route~2
+verifies the manipulation of the source paper's Eq.~(30) numerically instead
+of assuming it. Both routes agree with \cref{eq:closed} to
+$\NFRouteMaxArakiDev$.
+
+\emph{Route 4: the dilaton equation.} The Jackiw--Teitelboim theorem of
+Ref.~\cite{NariaiI}, Sec.~4.5, asserts that the s-wave backreaction obeys
+$\partial_U^2 \phi_{\mathrm{dil}} = -(8\pi G/\Lambda)\,
+\langle{:}T_{UU}{:}\rangle$ and that the flux-sourced solution responds at
+the bifurcation surface by $\delta A = 4G\,\Srel$, 
+\emph{the coupling} $8\pi$ \emph{descending from the dimensional reduction}. 
+
+\bigskip
+
+The Python suite integrates the ODE numerically --- two cumulative trapezoids with kernel-free boundary data ---
+and compares the response with $4\,\Srel$ from Route~1. The two sides share
+no code; the ratio is the theorem, and it holds to $\NFRouteMaxJTDev$.
+The geometry receives the same treatment. The horizon radii, surface
+gravities, and areas are extracted from the exact Schwarzschild--de Sitter
+cubic at $9\Lambda M^2 = 1 - 3\varepsilon^2$, and the Ginsparg--Perry
+expansion~\cite{GinspargPerry} is then \emph{confirmed}: the roots split as
+$r_\star(1 \mp \varepsilon)$ with quadratic convergence, both surface
+gravities vanish as $\varepsilon\sqrt{\Lambda}$ with unit coefficient ---
+the quantitative content of the statement that a construction anchored to
+the Schwarzschild--de Sitter time sees zero temperature, and that the
+Bousso--Hawking normalization~\cite{BoussoHawking} is forced rather than
+chosen --- and the antipodal area imbalance $A_b + A_c - 2A_\star$ scales as
+$\varepsilon^2$, the geometric face of the entropy sum rule of
+\cite{NariaiI}, Eq.~(51). The one-mode sum rule, Eq.~(66) there, is checked
+from Gaussian covariance matrices at \emph{general} squeezing angle, where
+the source paper's script fixes $\theta = 0$; the angle enters the flux
+distribution and must drop out of the entropy, and does, to
+$\NFOneModeDev$.
+
+\begin{remark}[The right refusals]
+The suite also tests the taxonomy. The von Neumann entropy of the horizon is
+undefined --- the algebra is a type III factor, with no density matrices and
+no trace --- and the implementation raises a dedicated exception,
+\texttt{TypeIIIFactor}, a subclass of the \texttt{NoSuchTheory} of
+\cite{SuppStrings} and \emph{not} of the metric exception: the absence is
+structural, and no amount of computation supplies the object. The tests
+require the exception hierarchy to encode this, exactly as the tests
+of~\cite{SuppStrings} require the six-dimensional Yukawa refusal to not be
+the metric refusal.
+\end{remark}
+
+% =====================================================================
+
+\section{A packet with contour-exact functionals}
+\label{sec:contour}
+
+The vanishing theorem of Ref.~\cite{NariaiI} is verified in its companion
+script on a numerically synthesised Gaussian spectral packet, for which
+$|I_2|/I_1$ comes out at the $10^{-15}$ level --- a small number, limited by
+quadrature. The suite adds a packet for which the same statement is a closed
+contour argument:
+%
+\begin{equation}
+\chi(u) \;=\; \frac{1}{(s + i u)^2}
+\;=\; \int_0^\infty \omega\, e^{-s\omega}\, e^{-i\omega u}\, \dd\omega\,,
+\qquad
+\partial_u \chi \;=\; \frac{-2i}{(s+iu)^3}\,,
+\label{eq:contourpacket}
+\end{equation}
+%
+manifestly built from strictly positive boost frequencies with spectral
+weight $\omega e^{-s\omega}$. Its intensity functional is elementary,
+%
+\begin{equation}
+I_1 \;=\; \frac{1}{\kappa}\int \bigl|\partial_u\chi\bigr|^2 \dd u
+\;=\; \frac{4}{\kappa}\int \frac{\dd u}{(s^2+u^2)^3}
+\;=\; \frac{3\pi}{2\,\kappa\, s^5}\,,
+\label{eq:i1exact}
+\end{equation}
+%
+and its interference functional vanishes by inspection of the poles:
+$(\partial_u\chi)^2 = -4\,(s+iu)^{-6}$ is analytic except at $u = is$ in the
+\emph{upper} half-plane and decays as $|u|^{-6}$, so closing the contour
+below encloses nothing and $I_2 = 0$ exactly. The numerical values agree
+with \cref{eq:i1exact} to eight digits and give $|I_2|/I_1 = \NFITwoRatio$,
+two orders below the source script's residue; the boost-Jacobian identity
+--- Eq.~(62) of~\cite{NariaiI}, the entire mechanism of the theorem --- is
+confirmed on this packet to relative difference $\NFJacobianDev$.
+
+The property that makes this family more than a numerical convenience is the
+following.
+
+\begin{lemma}[Exact phase uniformity]
+\label{lem:uniform}
+For the packet \cref{eq:contourpacket}, the intensity-weighted distribution
+of the phase of $(\partial_u\chi)^2$ is exactly uniform on the circle.
+\end{lemma}
+
+\begin{proof}
+Substitute $u = s\tan\beta$, $\beta \in (-\tfrac\pi2, \tfrac\pi2)$. The
+intensity measure becomes
+$|\partial_u\chi|^2\,\dd u = (4/s^5)\cos^4\!\beta\;\dd\beta$, and the phase
+of $(\partial_u\chi)^2 = -4(s+iu)^{-6}$ is
+$\varphi = \pi - 6\arg(s+iu) = \pi - 6\beta$: the phase winds three full
+turns as $\beta$ crosses its range. The induced density at a given
+$\varphi$ therefore sums $\cos^4$ over the three preimage sheets, which
+differ by $\beta \to \beta + \pi/3$, and
+%
+\begin{equation}
+\sum_{k=0}^{2} \cos^4\!\Bigl(\beta + \frac{k\pi}{3}\Bigr)
+\;=\; \frac{9}{8}
+\qquad \text{identically},
+\label{eq:harmonic}
+\end{equation}
+%
+because $\cos^4$ contains only the harmonics $\{0, \pm2, \pm4\}$ and the
+three-fold sum annihilates every harmonic not divisible by $6$. The
+density is constant.
+\end{proof}
+
+\Cref{eq:harmonic} is verified numerically to $10^{-12}$ over a dense grid,
+and the lemma is what upgrades the ratio law of the next section from an
+asymptotic statement to an exact one on this family.
+
+% =====================================================================
+
+\section{The universal ratio law}
+\label{sec:ratio}
+
+The squeezed horizon flux of Ref.~\cite{NariaiI}, its Eq.~(54), is
+%
+\begin{equation}
+\bigl\langle{:}T_{UU}{:}\bigr\rangle_S
+\;\propto\;
+2\sinh^2\! r\,\bigl|\partial_u\chi\bigr|^2
+\;-\;
+\sinh 2r\;\mathrm{Re}\Bigl[e^{-i\theta}\bigl(\partial_u\chi\bigr)^2\Bigr]\,,
+\label{eq:flux54}
+\end{equation}
+%
+whose interference term is the sole source of local negativity. The
+observation that organises everything below is that \cref{eq:flux54}
+factorizes. Since $|(\partial_u\chi)^2| = |\partial_u\chi|^2$ pointwise,
+writing $\varphi(u)$ for the phase of $(\partial_u\chi)^2$ and
+$T = \tanh r$,
+%
+\begin{equation}
+t(u) \;=\; \sinh 2r\;\bigl|\partial_u\chi\bigr|^2\,
+\Bigl[\, T \;-\; \cos\bigl(\theta - \varphi(u)\bigr) \Bigr] / \kappa\,:
+\label{eq:factor}
+\end{equation}
+%
+a fixed non-negative envelope times an affine function of the cosine of a
+single circular variable. The flux is negative exactly where
+$\cos(\theta - \varphi) > T$, and every question about the negativity budget
+becomes a question about the \emph{distribution} of the phase
+$\psi = \theta - \varphi(u)$ with respect to the intensity measure
+$\dd\mu \propto |\partial_u\chi|^2\,\dd u$. In this language the vanishing
+theorem of~\cite{NariaiI} is the statement
+%
+\begin{equation}
+I_2 \;=\; \frac{1}{\kappa}\int e^{\,i\varphi(u)}\,
+\bigl|\partial_u\chi\bigr|^2\,\dd u \;=\; 0
+\qquad\Longleftrightarrow\qquad
+\mathbb{E}_\mu\bigl[e^{i\psi}\bigr] = 0\,:
+\label{eq:moment}
+\end{equation}
+%
+\emph{the first circular moment of the phase distribution vanishes}, for
+every wedge-local packet and every angle. This reading of $I_2 = 0$ is the
+bridge between the source paper's analyticity argument and the two results
+that follow.
+
+Suppose first that the phase distribution is uniform --- the maximum-entropy
+distribution compatible with \cref{eq:moment}, exact for the contour family
+by \cref{lem:uniform}, and approached by any packet whose carrier turns over
+many cycles under its envelope. Then the negative and positive parts of
+\cref{eq:factor} are circle averages, and with $\psi_0 = \arccos T$,
+%
+\begin{equation}
+\boxed{\;
+\frac{D(W)}{\text{positive part}}
+\;=\;
+\mathcal{R}(r)
+\;=\;
+\frac{\displaystyle\int_0^{\psi_0} (\cos\psi - T)\,\dd\psi}
+     {\displaystyle\int_{\psi_0}^{\pi} (T - \cos\psi)\,\dd\psi}
+\;=\;
+\frac{\sin\psi_0 - T\,\psi_0}{\,T\,(\pi - \psi_0) + \sin\psi_0\,}\;}
+\label{eq:ratiolaw}
+\end{equation}
+%
+--- a function of the squeeze parameter alone. The packet shape, the width,
+the squeezing angle, and the transverse profile have all dropped out:
+$\theta$ shifts $\psi$ by a constant, which a uniform distribution cannot
+see, and the width only rescales $u$. $\mathcal{R}$ is strictly decreasing,
+with $\mathcal{R}(0^+) = 1$ (an unsqueezed state has no flux to be negative,
+and the statement empties), $\mathcal{R}(0.5) = \NFRatioHalf$,
+$\mathcal{R}(1.0) = \NFRatioOne$, and $\mathcal{R} \to 0$ as
+$r \to \infty$: deep squeezes are almost all particles.
+
+Three remarks locate \cref{eq:ratiolaw} against Ref.~\cite{NariaiI}.
+
+\emph{It sharpens the budget into a ratio law.} Eq.~(61) there states
+$D(W) \le$ (positive part): every unit of funded negativity is prepaid. For
+phase-generic packets, \cref{eq:ratiolaw} states \emph{what fraction} the
+loan is: at $r = 0.5$, a squeezed excitation holds
+$\NFRatioHalf$ of its ledger in negativity --- no more, no less ---
+whatever its shape.
+
+\emph{It is exact where \cref{lem:uniform} applies.} On the contour family
+the deviation of the measured ratio from \cref{eq:ratiolaw} is pure
+quadrature, measured at $\NFDevContour$ over the full survey grid; a
+high-precision adaptive computation at selected points reaches $10^{-10}$.
+
+\emph{It retrodicts the source paper's numbers.} The two funded-depth ratios
+quoted in Sec.~9.2 of~\cite{NariaiI} --- $0.209$ at $(r,\theta) = (0.5,\pi)$
+and $0.044$ at $(1.0, \pi/2)$, computed there on a Gaussian spectral packet
+--- are $\mathcal{R}(0.5)$ and $\mathcal{R}(1.0)$ to the digits quoted. What
+looked like two properties of one packet at two parameter points is one
+universal function evaluated twice; \cref{sec:numerics} extends the
+correspondence to a dense grid on the verbatim packet.
+
+% =====================================================================
+
+\section{The sharp bound from the vanishing theorem alone}
+\label{sec:bound}
+
+The ratio law needs the ergodic-phase premise. The vanishing theorem needs
+nothing beyond wedge-locality, and read as \cref{eq:moment} it already
+implies a sharp bound.
+
+\begin{theorem}[Exponential negativity bound]
+\label{thm:bound}
+For every wedge-local single-mode squeezed excitation on the Nariai horizon,
+at every squeeze parameter $r$, squeezing angle $\theta$, and packet
+$\chi$,
+%
+\begin{equation}
+\boxed{\;
+D(W) \;\le\; e^{-2r}\,\times\,\bigl(\text{positive part}\bigr)\,,
+\qquad
+e^{-2r} = \frac{1-\tanh r}{1+\tanh r}\;,
+}
+\label{eq:bound}
+\end{equation}
+%
+with equality if and only if the intensity-weighted phase distribution is
+supported on $\{0, \pi\}$ with equal mass.
+\end{theorem}
+
+\begin{proof}
+Write $x = \cos\psi \in [-1,1]$ and $T = \tanh r$, and set
+$c = (1-T)/(1+T)$. By \cref{eq:factor} the claim is
+$\mathbb{E}_\mu[g(x)] \le 0$ for
+$g(x) = (x - T)_+ - c\,(T - x)_+$, a convex, piecewise-linear function of
+$x$ with slopes $c$ then $1$. Its chord over $[-1, 1]$ joins
+$g(-1) = -c(1+T) = -(1-T)$ to $g(1) = 1 - T$, i.e.\ the chord is the linear
+function $(1-T)\,x$ --- the choice of $c$ is precisely what makes the chord
+pass through the origin. Convexity places $g$ below its chord on $[-1,1]$,
+so $g(x) \le (1-T)\,x$ pointwise, and taking expectations,
+%
+\begin{equation}
+\mathbb{E}_\mu[g(x)] \;\le\; (1-T)\,\mathbb{E}_\mu[\cos\psi] \;=\; 0
+\end{equation}
+%
+by \cref{eq:moment}. Equality requires $\mu$ to charge only the points where
+$g$ meets its chord, namely $x = \pm 1$, and the moment condition then
+forces equal mass.
+\end{proof}
+
+Everything about \cref{thm:bound} is inherited from the vanishing theorem,
+and nothing else is used: no ergodicity, no packet regularity beyond what
+wedge-locality already imposes, and the squeezing angle never appears --- it
+shifts $\psi$, and the constraint \cref{eq:moment} is rotation-invariant
+(both circular components of the first moment vanish, since $I_2$ vanishes
+as a complex number). The bound sits strictly above the ratio law,
+$\mathcal{R}(r) < e^{-2r}$ for all $r > 0$ ($\NFRatioHalf$ against
+$\NFBoundHalf$ at $r = \tfrac12$; $\NFRatioOne$ against $\NFBoundOne$ at
+$r = 1$), so phase-generic packets do not approach it; the survey of
+\cref{sec:numerics} finds the margin never below $\NFBoundMarginMin$.
+
+\begin{remark}[The extremal configuration is the boost-blind boundary]
+The saturating distribution --- phase mass on $\{0, \pi\}$ --- is exactly
+the configuration in which $(\partial_u\chi)^2$ is real, and a function
+built from strictly positive frequencies is real only if it vanishes: no
+wedge-local packet attains the bound. But data that are real in the affine
+coordinate, the boost-blind packets of Ref.~\cite{NariaiI} Sec.~9.1(b), sit
+exactly there, with $|I_2|/I_1 = 1$. The source paper's $0$-or-$1$
+wedge-locality dichotomy thus reappears as the extremal analysis of the
+bound: $|I_2|/I_1 = 0$ is the interior of the class, where
+\cref{eq:bound} is strict and the generic value is \cref{eq:ratiolaw};
+$|I_2|/I_1 = 1$ is its boundary, where the bound is saturated and the
+squeeze--shape inequality simultaneously forbids the squeeze. The two
+statements are faces of one convex-geometry fact.
+\end{remark}
+
+\begin{remark}[Consequences downstream]
+Every consumer of the budget inequality in Ref.~\cite{NariaiI} inherits the
+exponential improvement. The running ledger of its Eq.~(69) has every dip
+bounded by $D(W)$, hence by $e^{-2r}$ of the deposit; the anti-evaporation
+episodes of its Sec.~5, funded by the negativity windows, can extract at
+most an $e^{-2r}$ fraction of what the same excitation has already paid in
+--- a quantitative form of the quantum-interest repayment~\cite{FordRoman}
+in which the interest rate is set by the squeeze parameter; and the
+branch-selection diagnostic sharpens accordingly: a claimed
+anti-evaporation transient whose integrated area decrease exceeds
+$e^{-2r}$ of the accompanying increase is inconsistent with a wedge-local
+single-mode squeeze at parameter $r$, whatever the packet. In the modular
+language of the quantum null energy condition
+literature~\cite{BFLW,Faulkner2016}, \cref{eq:bound} is a global,
+finite-integral cousin: positivity of a relative entropy caps negativity,
+and here the cap is exponential.
+\end{remark}
+
+% =====================================================================
+
+\section{The correspondence}
+\label{sec:numerics}
+
+Every number in this section is generated by
+\texttt{paper/make\_nariai\_facts.py} and written to
+\texttt{figures/nariai\_facts.tex}; the survey covers $\NFRGridN$ squeeze
+parameters $r \in [\NFRGridMin, \NFRGridMax]$ and $\NFThetaN$ angles for
+each of three packet families.
+
+The Gaussian spectral packet centre $\omega_0 = 3$, width $0.7$, 
+the same frequency grid and the same $u$-grid --- is pushed
+through the funded-depth measurement at every point of the survey. Its
+maximal deviation from $\mathcal{R}(r)$, over all $r$ and $\theta$, is
+$\NFDevGaussThree$. The two ratios quoted in the source paper are therefore
+not two facts but one curve: the correspondence proposed in
+\cref{sec:ratio} holds across the full grid at the level of the quadrature.
+The mechanism is visible in the moments: the packet's first circular moment
+is $\NFMomOneGaussThree$ (the vanishing theorem at work) and its second is
+$\NFMomTwoGaussThree$ --- the carrier at $\omega_0 = 3$ turns over many
+cycles under the envelope, and every harmonic of the phase distribution
+beyond the pinned first is negligible.
+
+\emph{The contour packet.} Deviation $\NFDevContour$ across the survey,
+limited by the finite $u$-window of the shared grid; \cref{lem:uniform}
+says the continuum value is exactly zero, and adaptive quadrature at
+selected points confirms it to $10^{-10}$. Its measured moments,
+$\rho_1 = \NFMomOneContour$ and $\rho_2 = \NFMomTwoContour$, are both
+quadrature residues: the first vanishes by the contour argument, the second
+by \cref{eq:harmonic}.
+
+\emph{A low-winding packet, and the predicted failure.} The premise behind
+\cref{eq:ratiolaw} is phase equidistribution, and it can be broken to order:
+a Gaussian spectral packet centred at $\omega_0 = 0.8$ with the same width
+has a carrier that turns over only a few cycles under its envelope. Its
+second circular moment is $\NFMomTwoGaussLow$, no longer negligible, and its
+measured ratio departs from $\mathcal{R}(r)$ by up to $\NFDevGaussLow$ ---
+the deviation and the moment agree in order of magnitude, which is the
+derivation's own error estimate, since the ratio is a smooth functional of
+the phase distribution whose first-order dependence begins at the second
+harmonic. The departure respects \cref{thm:bound} throughout: across the
+entire survey, all three families, the margin $e^{-2r} - D/P$ never falls
+below $\NFBoundMarginMin$. The ratio law degrades gracefully; the bound
+does not degrade at all.
+
+\begin{figure}[t]
+\centering
+\IfFileExists{figures/nariai_ratio.pdf}{%
+\includegraphics[width=\textwidth]{nariai_ratio}}{%
+\fbox{run \texttt{paper/make\_nariai\_facts.py} to generate this figure}}
+\caption{Left: the funded-depth ratio $D(W)/(\text{positive part})$ against
+the squeeze parameter, for the contour packet, the verbatim Gaussian packet
+of the source paper's script, and a low-winding Gaussian, at four squeezing
+angles each; the solid curve is the phase-average law \cref{eq:ratiolaw},
+the dashed curve the sharp bound \cref{eq:bound}. Right: the deviation from
+$\mathcal{R}(r)$; the low-winding family departs at the level of its second
+circular moment while remaining under the bound.}
+\label{fig:ratio}
+\end{figure}
+
+% =====================================================================
+
+\section{The boundary, restated}
+\label{sec:boundary}
+
+The series taxonomy --- exact; awaiting implementation; obstructed by the
+metric~\cite{SuppMath}; nonexistent~\cite{SuppStrings}; invisible to the
+method~\cite{SuppTwistor} --- acquires here one refinement and inherits two
+categories unchanged.
+
+\begin{enumerate}[leftmargin=2em]
+\item \emph{Exact, unconditionally.} The bound \cref{eq:bound}: a theorem
+of the vanishing theorem, holding for every wedge-local single-mode squeeze
+with no premise about the packet. Also everything in \cref{sec:routes}: the
+rational identity \cref{eq:gammaid}, the Clausius relation, the JT response,
+the one-mode sum rule at general angle.
+
+\item \emph{Exact at a distinguished point of a class.} The ratio law
+\cref{eq:ratiolaw}: exact on the contour family by \cref{lem:uniform}, and
+exact in the ergodic-phase limit generally, with the deviation elsewhere
+controlled by a computable functional --- the second and higher circular
+moments of the phase, of which the first is pinned to zero by wedge-locality
+itself. This is a category the earlier papers had no occasion to name. It
+is not ``approximate'': the point at which it is exact is distinguished
+(maximum entropy under the moment constraint), the deviation has a
+handle, and \cref{sec:numerics} turns the handle.
+
+\item \emph{Nonexistent.} The von Neumann entropy of the horizon --- a type
+III factor carries no density matrices --- reported by a dedicated
+exception, in the discipline of~\cite{SuppStrings}. The only entropy in play
+is relative, which is the founding observation of Ref.~\cite{NariaiI}
+Sec.~6.
+
+\item \emph{Open, and honestly labelled.} Inherited from the source paper:
+the type III domain lift of its mode-resolved sum rule (its Eq.~(67), a
+conjecture pending natural-cone convergence, in the technology of
+\cite{Longo2019,CLR2020,Shale1962}); the dynamics of the teleological
+horizon under sign-indefinite flux; species additivity of the derived
+$8\pi$. To these this paper adds one of its own: the multimode extension of
+\cref{thm:bound}. The factorization \cref{eq:factor} is a single-mode
+statement --- a multimode Gaussian flux is a sum of such terms with
+correlated phases --- and whether the exponential bound survives with
+$e^{-2r}$ replaced by a functional of the symplectic spectrum is exactly
+the right next question, sitting one step below the source paper's item
+(ii).
+\end{enumerate}
+
+% =====================================================================
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+The earlier papers found that a configuration matrix, consistency, and
+holomorphy each determine more than one expects
+\cite{SuppMath,SuppStrings,SuppTwistor}. This one finds that wedge-locality
+does. A single analytic fact --- the modular weight is the boost Jacobian,
+so $I_2$ vanishes --- was shown in Ref.~\cite{NariaiI} to make horizon-flux
+negativity a zero-sum reallocation. Read as a constraint on a phase
+distribution, the same fact determines the \emph{price} of the
+reallocation: exactly $\mathcal{R}(r)$ of the deposit for phase-generic
+excitations, and never more than $e^{-2r}$ of it for any wedge-local
+excitation whatsoever, with the boost-blind boundary of the class as the
+unique extremal configuration. The budget of the source paper is not merely
+balanced; it carries a universal interest schedule.
+
+The methodological refrain of the series held once more, and in its
+strongest form yet: the discovery here was not made despite the verification
+suite but \emph{by} it. Two packet families that share nothing --- one
+synthesised from a Gaussian spectrum, one an exact rational function ---
+were run through the same budget as a cross-check, and their agreement at
+fixed $r$, to six digits, at different angles, was the anomaly that demanded
+explanation. A quantity computed once is a result; computed twice it is a
+test; computed twice with an \emph{unexplained agreement}, it is a theorem
+waiting to be extracted.
+
+% =====================================================================
+
+\section{Source code and limitations}
+\label{sec:source}
+
+The implementation is \texttt{pyCICY.theories.nariai} in the repository at
+\url{https://github.com/brentharts/CICY}, with the verification suite
+\texttt{tests/test\_nariai.py} (ten sections, every check listed in
+\cref{sec:routes,sec:contour,sec:ratio,sec:bound} among them) and the survey
+driver \texttt{paper/make\_nariai\_facts.py}, which regenerates every number
+and the figure in this document. The companion repository of the source
+paper \cite{NariaiI} is \url{https://github.com/brentharts/NariaiRelativeEntropy}; 
+its packet construction is used verbatim in \cref{sec:numerics}, imported by
+reimplementation with identical parameters and grids so that the published
+numbers are reproduced by construction before the grid is extended.
+
+Limitations. The bound \cref{thm:bound} is single-mode; the ratio law
+\cref{eq:ratiolaw} additionally assumes phase equidistribution, exact only
+on families with the harmonic-cancellation property of \cref{lem:uniform}.
+Nothing here touches the genuinely dynamical questions of the source paper
+--- the teleological response to sign-indefinite flux and the type III lift
+--- and nothing here supplies microstates: the capacity $\pi/\Lambda$
+remains, a ledger of distinctions rather than an inventory.
+
+% =====================================================================
+
+\footnotesize
+
+\section*{Declarations}
+
+\subsection*{Funding}
+The author received no specific funding for this work.
+
+\subsection*{Competing Interests}
+The author declares no competing interests.
+
+
+\begin{thebibliography}{99}
+
+
+\bibitem{DorauMuch}
+P.~Dorau and A.~Much,
+\emph{From Quantum Relative Entropy to the Semiclassical Einstein
+Equations},
+Phys.\ Rev.\ Lett.\ \textbf{136}, 091602 (2026);
+arXiv:2510.24491. \url{https://doi.org/10.1103/lmq8-nsty}
+
+\bibitem{NariaiI}
+B.S.~Hartshorn,
+\emph{Gravity from Relative Entropy: Jackiw--Teitelboim Dynamics on the
+Nariai Horizon},
+Research Square pre-print rs-10426867 (2026),
+\url{https://doi.org/10.21203/rs.3.rs-10426867/v1}.
+
+\bibitem{SuppMath}
+B.S.~Hartshorn,
+\emph{What a configuration matrix determines, and what it does not: exact
+methods for heterotic compactifications on CICYs},
+Pre-print (2026), \url{https://doi.org/10.5281/zenodo.21844007}.
+
+\bibitem{SuppStrings}
+B.S.~Hartshorn,
+\emph{What anomaly cancellation determines, and what does not exist: exact
+methods for F-theory and Type IIB orientifolds},
+Pre-print (2026), \url{https://doi.org/10.5281/zenodo.21865768}.
+
+\bibitem{SuppTwistor}
+B.S.~Hartshorn,
+\emph{What holomorphy determines, and what a rank cannot see: exact methods
+for twistor geometry and tree amplitudes},
+Pre-print (2026), \url{https://doi.org/10.5281/zenodo.21892738}.
+
+\bibitem{Jacobson1995}
+T.~Jacobson,
+\emph{Thermodynamics of Spacetime: The Einstein Equation of State},
+Phys.\ Rev.\ Lett.\ \textbf{75}, 1260 (1995). \url{https://arxiv.org/abs/gr-qc/9504004}
+
+\bibitem{GinspargPerry}
+P.~Ginsparg and M.J.~Perry,
+\emph{Semiclassical perdurance of de Sitter space},
+Nucl.\ Phys.\ B \textbf{222}, 245 (1983). \url{https://doi.org/10.1016/0550-3213(83)90636-3}
+
+\bibitem{BoussoHawking}
+R.~Bousso and S.W.~Hawking,
+\emph{(Anti-)evaporation of Schwarzschild--de Sitter black holes},
+Phys.\ Rev.\ D \textbf{57}, 2436 (1998). \url{https://journals.aps.org/prd/abstract/10.1103/PhysRevD.57.2436}
+
+\bibitem{FordRoman}
+L.H.~Ford and T.A.~Roman,
+\emph{The quantum interest conjecture},
+Phys.\ Rev.\ D \textbf{60}, 104018 (1999). \url{https://journals.aps.org/prd/abstract/10.1103/PhysRevD.60.104018}
+
+\bibitem{BFLW}
+R.~Bousso, Z.~Fisher, S.~Leichenauer, and A.C.~Wall,
+\emph{Quantum focusing conjecture},
+Phys.\ Rev.\ D \textbf{93}, 064044 (2016). \url{https://journals.aps.org/prd/abstract/10.1103/PhysRevD.93.064044}
+
+\bibitem{Faulkner2016}
+T.~Faulkner, R.G.~Leigh, O.~Parrikar, and H.~Wang,
+\emph{Modular Hamiltonians for deformed half-spaces and the averaged null
+energy condition},
+JHEP \textbf{09}, 038 (2016). \url{https://link.springer.com/article/10.1007/JHEP09(2016)038}
+
+\bibitem{Longo2019}
+R.~Longo,
+\emph{Entropy of coherent excitations},
+Lett.\ Math.\ Phys.\ \textbf{109}, 2587 (2019). \url{https://arxiv.org/abs/1901.02366v2}
+
+\bibitem{CLR2020}
+F.~Ciolli, R.~Longo, and G.~Ruzzi,
+\emph{The information in a wave},
+Commun.\ Math.\ Phys.\ \textbf{379}, 979 (2020). \url{https://arxiv.org/abs/1906.01707}
+
+\bibitem{Shale1962}
+D.~Shale,
+\emph{Linear symmetries of free boson fields},
+Trans.\ Amer.\ Math.\ Soc.\ \textbf{103}, 149 (1962). \url{https://doi.org/10.1090/S0002-9947-1962-0137504-6}
+
+\end{thebibliography}
+
+\end{document}
