@@ -2148,6 +2148,92 @@ and complete, and no loop amplitude is computed.
 python3 examples/twistor.py
 python3 examples/twistor.py --only relations
 make twistor
+make twistor-paper      # the write-up, with every number recomputed
+```
+
+## The aperiodic monotile, exactly
+
+`pyCICY.monotile` takes the package's habit of exact arithmetic to the Hat —
+the single 13-sided shape that tiles the plane only aperiodically — and to its
+whole family Tile(a,b), whose shape parameter ℓ = a/(a+b) recent work uses as
+a control knob for the quantum geometric tensor. An aperiodic tiling has no
+Brillouin zone, so its topology must be computed in real space, and the
+real-space invariant of choice is *the signature of a matrix* — decidable
+exactly over an ordered field. The whole chain
+
+```
+tile geometry → vertex coordinates → Hamiltonian → localizer → index
+```
+
+stays inside ℚ(√3), and the topological index at the end is an integer
+computed with no floating point and no tolerance.
+
+```python
+from pyCICY import monotile as MT
+from fractions import Fraction as F
+
+MT.named_tiles()["Hat"]          # (-1/2 + 1/2 sqrt3), i.e. 1/(1+sqrt3) exactly
+MT.hat_chirality()["ratio"]      # (7/2 + 3/2 sqrt5) — phi^4, derived
+MT.localizer_index(F(1,2))["index"]   # +1, a quarter of an exact signature
+```
+
+### Derived, not tabulated
+
+The metatile substitution matrix (H, T, P, F) is quoted from Smith–Myers–
+Kaplan–Goodman-Strauss; everything after it is derived over ℚ(√5). The
+characteristic polynomial, computed by exact Leverrier–Faddeev, factors as
+(x²−7x+1)(x²−1), so the inflation factor is **φ⁴ = (7+3√5)/2** — verified as
+an exact root, not eigensolved. The Perron eigenvector gives the metatile
+frequencies (H is exactly 1/3; T is irrational), and weighting by the hat
+counts gives the ratio of unreflected to reflected hats:
+
+**unreflected : reflected = φ⁴ : 1**, exactly — one anti-hat per ≈6.854 hats.
+The Hat tiling is *almost* chiral, and the imbalance is an element of ℚ(√5).
+The Spectre sits at the fixed point of the mirror ℓ ↦ 1−ℓ (the Hat and the
+Turtle are the mirror pair, their ℓ values summing to 1), which is the
+parameter-space shadow of its strict chirality. This connects to the
+`chirality` module's mirror maps across domains.
+
+Aperiodicity itself falls out of the same eigenvector: a periodic tiling has
+a fundamental domain, hence rational tile frequencies, and these are
+irrational. The headline fact about the Hat is, at this level, the
+irrationality of an eigenvector.
+
+### The substrate detects the Hat
+
+Every Tile(a,b) is a union of eight kites whose two bond lengths *are* the
+parameters, meeting at right angles along 30°-multiple directions — so every
+coordinate is p + q√3. At generic proportions one hexagon's worth of kites has
+19 distinct sites; at **a : b = √3 : 1, the Hat's proportions and only there**,
+the twelve outer corners merge in pairs and the [3.4.6.4] Laves tiling is
+recovered with 13. Whether two exact coordinates coincide is decided by the
+order on ℚ(√3) — a ratio of 1.7 is close to √3 and does not merge.
+
+### Real-space topology with no floating point
+
+A Qi–Wu–Zhang model on the patch has exact Hermitian matrix entries, and the
+spectral localizer index — half the signature of the Loring–Schulz-Baldes
+matrix — is computed by LDLᵀ over ℚ(√3) with symmetric pivoting; a
+zero-diagonal block is handled by a congruence, which Sylvester's law says is
+safe. Scanning the mass: trivial at M = ±4, index −1 at M = −1, index +1 at
+M = ½ — each jump bracketing an exact topological transition, located without
+a band structure because there is none. The tests check the exact signature
+against a numpy eigenvalue count of the same matrix on every mass: one route
+is field arithmetic, the other is LAPACK, and they agree.
+
+### Declared limits
+
+The finite patches are cut from the (periodic) Laves substrate; generating
+genuine aperiodic vertex patches needs the substitution *geometry*, which is
+not implemented — the module says so rather than presenting the substrate as
+more than it is. Spectral functions, the quantum metric's numerical maps, and
+anything requiring a thermodynamic limit are absent. The substitution matrix
+and hats-per-metatile counts are the two quoted inputs, and the two published
+numbers they must reproduce — φ⁴ and φ⁴:1 — are reached without quoting them.
+
+```console
+python3 examples/monotile.py
+make monotile
 ```
 
 ## Chirality across domains
