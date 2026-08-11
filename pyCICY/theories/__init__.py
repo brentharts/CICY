@@ -26,6 +26,10 @@ Currently implemented:
     m-theory-g2                    four dimensions N=1 on a barely G_2
                                    quotient, Betti numbers and spectrum exact
     m-theory-cy4-3d                three dimensions N=2, chi/24 tadpole exact
+    nariai-entropic                entropic gravity on the Nariai horizon:
+                                   relative entropy, Clausius relation, and
+                                   the Einstein coupling 8pi exact; the von
+                                   Neumann entropy does not exist (type III)
 
 The Yukawa side is layered by how much of the class each step needs: `yukawa`
 decides the texture from dimensions, `representatives` labels the Koszul origin
@@ -80,6 +84,8 @@ from . import differentials
 from . import ftheory
 from . import orientifold
 from . import mtheory
+from .nariai import NariaiEntropic, TypeIIIFactor
+from . import nariai
 
 __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "StandardEmbedding", "LineBundleModel", "yukawa",
@@ -88,4 +94,5 @@ __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "Orientifold", "SignInvolution", "SenLimit", "orientifold",
            "MTheory5D", "MTheoryG2", "MTheory3D", "BarelyG2",
            "NoChiralMatter", "circle_reduction_of_6d",
-           "horava_witten_scales", "mtheory"]
+           "horava_witten_scales", "mtheory",
+           "NariaiEntropic", "TypeIIIFactor", "nariai"]
