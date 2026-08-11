@@ -1,0 +1,639 @@
+% supplementary_material_monotile.tex
+%
+% Build with:  make monotile-paper    (from the repository root)
+% or:          python3 paper/make_strings_facts.py --sections monotile
+%              && pdflatex supplementary_material_monotile.tex (x2)
+%
+% Every number quoted here is recomputed from the pyCICY source by
+% paper/make_strings_facts.py and written to figures/monotile_facts.tex,
+% which is \input{} below. The prose and the code cannot drift apart
+% silently.
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink,capitalize]{cleveref}
+\usepackage{framed}
+\usepackage{orcidlink}
+
+\graphicspath{{figures/}}
+
+% Numbers computed by paper/make_strings_facts.py --sections monotile.
+% Declared as fallbacks so the document typesets before the script has run;
+% the \input below overrides every one with the computed value.
+\newcommand{\MTHatEll}{?}\newcommand{\MTTurtleEll}{?}
+\newcommand{\MTSpectreEll}{?}\newcommand{\MTHatPlusTurtle}{?}
+\newcommand{\MTSpectreFixed}{?}\newcommand{\MTHatEllFloat}{?}
+\newcommand{\MTCharPoly}{?}\newcommand{\MTPhiFour}{?}
+\newcommand{\MTPhiFourFloat}{?}\newcommand{\MTPhiFourIsRoot}{?}
+\newcommand{\MTPhiFourQuadratic}{?}\newcommand{\MTSubTrace}{?}
+\newcommand{\MTFreqH}{?}\newcommand{\MTFreqT}{?}
+\newcommand{\MTFreqP}{?}\newcommand{\MTFreqF}{?}
+\newcommand{\MTFreqHRational}{?}\newcommand{\MTFreqSum}{?}
+\newcommand{\MTChiralRatio}{?}\newcommand{\MTChiralIsPhiFour}{?}
+\newcommand{\MTReflectedFraction}{?}\newcommand{\MTReflectedTimesOnePlus}{?}
+\newcommand{\MTAperiodic}{?}\newcommand{\MTWitness}{?}
+\newcommand{\MTWitnessIrr}{?}\newcommand{\MTSitesGeneric}{?}
+\newcommand{\MTSitesHat}{?}\newcommand{\MTSitesOff}{?}
+\newcommand{\MTBondsHex}{?}\newcommand{\MTOffRatio}{?}
+\newcommand{\MTHypSig}{?}\newcommand{\MTClosePivot}{?}
+\newcommand{\MTClosePivotRatio}{?}\newcommand{\MTLocSize}{?}
+\newcommand{\MTKappa}{?}\newcommand{\MTScanIndices}{?}
+\newcommand{\MTIdxAtomic}{?}\newcommand{\MTIdxNegOne}{?}
+\newcommand{\MTIdxHalf}{?}\newcommand{\MTNumpyAgree}{?}
+\IfFileExists{figures/monotile_facts.tex}{\input{figures/monotile_facts.tex}}{}
+
+\newcommand{\QQ}{\mathbb{Q}}
+\newcommand{\ZZ}{\mathbb{Z}}
+
+\theoremstyle{definition}
+\newtheorem{remark}{Remark}
+
+\title{\vspace{-1cm}\textbf{What Real-Space Geometry Determines,\\
+and What Has No Momentum Space:\\[2pt]
+\large Exact Methods for the Aperiodic Monotile Family}}
+\author{B.S. Hartshorn \orcidlink{0009-0004-2853-655X} \small \url{https://github.com/brentharts/CICY}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Three companion papers asked what a configuration matrix
+determines~\cite{SuppMath}, what anomaly cancellation
+determines~\cite{SuppStrings}, and what holomorphy
+determines~\cite{SuppTwistor}, each drawing a sharp line between the exact
+and the unavailable. This paper asks the question of the Hat --- the single
+13-sided shape that tiles the plane only aperiodically --- and of the
+continuous family Tile$(a,b)$ it belongs to, whose shape parameter recent
+work uses as a control knob for the quantum geometric tensor of electrons
+placed on its vertices. The answer has an unusual structure: the system's
+most famous property is the \emph{absence} of something. An aperiodic tiling
+has no Brillouin zone, so every band-structure method is not approximate but
+inapplicable, and the topology must be computed in real space. The
+real-space invariant of choice, the spectral localizer index, is half the
+signature of a matrix --- and a signature is a count of pivot signs,
+decidable exactly over any ordered field. We show that the entire chain from
+tile geometry to topological index lives in $\QQ(\sqrt3)$, and the
+substitution combinatorics in $\QQ(\sqrt5)$, so that every quantity in this
+paper is an exact field element or an integer. The inflation factor is
+derived as $\varphi^4$, an exact root of an exactly computed characteristic
+polynomial; the ratio of unreflected to reflected hats is derived as
+$\varphi^4 : 1$; aperiodicity itself is derived from the irrationality of an
+eigenvector; the substrate lattice detects the Hat's proportions by an exact
+coincidence of coordinates; and the localizer index of a finite patch is
+computed by $LDL^{T}$ elimination with no eigenvalue ever taken, then checked
+against an independent floating-point diagonalization of the same matrix.
+The boundary acquires its fourth formulation: beside what is exact, what is
+quoted, and what is not implemented sits what has no momentum space --- a
+category in which the standard tool's absence is a property of the system,
+and the exact method is not a luxury but the only game in town.
+\end{abstract}
+
+\tableofcontents
+
+% =====================================================================
+
+\section{Introduction}
+\label{sec:intro}
+
+The series this paper concludes is organized around a single question asked
+of four different structures: what determines what, and exactly? For
+heterotic compactifications the determining structure was the configuration
+matrix~\cite{SuppMath}; for F-theory and orientifolds it was anomaly
+cancellation~\cite{SuppStrings}; for tree amplitudes it was
+holomorphy~\cite{SuppTwistor}. In each case the useful output was not only
+the list of exact quantities but the taxonomy of the rest --- the
+distinguishable ways in which a quantity can fail to be available.
+
+The Hat changes the character of the question. In 2023 Smith, Myers, Kaplan
+and Goodman-Strauss found the first aperiodic monotile~\cite{Smith2023a}: a
+single shape that tiles the plane, but only aperiodically. It sits in a
+continuous family Tile$(a,b)$, parametrised by two edge lengths through
+$\ell = a/(a+b)$, whose other named members --- the Chevron, the Spectre,
+the Turtle, the Comet --- include, at the mirror-symmetric point, the
+strictly chiral monotile of the follow-up paper~\cite{Smith2023b}. Recent
+work places tight-binding electrons on the vertices of these tilings and
+finds graphene-like spectral features, chiral response, flux-periodic
+Hofstadter spectra~\cite{Schirmann2024}, and --- the observation this paper
+builds on --- that the shape parameter $\ell$ acts as a real-space control
+knob for the quantum geometric tensor, driving topological transitions with
+no momentum space anywhere in the problem~\cite{RocheCarrasco2025}.
+
+That last clause is the invitation. A crystal's topological invariants are
+integrals over the Brillouin zone; an aperiodic tiling has none, so the
+invariants must be computed in real space, and the modern real-space
+invariant --- the spectral localizer index of Loring and
+Schulz-Baldes~\cite{Loring2015, LoringSchulzBaldes2017} --- is \emph{half the signature
+of a matrix}. A signature is a count of pivot signs in an $LDL^T$
+decomposition. It is decidable, exactly, over any ordered field, with no
+eigenvalue ever taken. The question for a package built on exact arithmetic
+is then whether the whole chain
+%
+\begin{equation}
+\text{tile geometry} \;\to\; \text{vertex coordinates} \;\to\;
+\text{Hamiltonian} \;\to\; \text{localizer} \;\to\; \text{index}
+\label{eq:chain}
+\end{equation}
+%
+can be kept inside such a field. It can. The tiles live on a lattice whose
+bond directions are multiples of $30^\circ$, so every coordinate and every
+hopping amplitude is $p + q\sqrt3$ with $p, q \in \QQ$; the substitution
+combinatorics lives in $\QQ(\sqrt5)$, where the golden ratio does; and both
+fields are ordered with a decidable order, which is the one property a
+signature computation needs.
+
+\Cref{sec:family} sets out the family and its mirror.
+\Cref{sec:inflation,sec:chirality} derive the inflation factor, the tile
+frequencies, the chirality imbalance and aperiodicity itself from one
+quoted matrix. \Cref{sec:substrate} shows the substrate lattice detecting
+the Hat's proportions by an exact coincidence.
+\Cref{sec:signature,sec:localizer} build the exact signature machinery and
+apply it to the localizer, with an independent floating-point route as the
+cross-check. \Cref{sec:boundary} restates the boundary in its fourth form.
+
+% =====================================================================
+
+\section{The family, by parameter}
+\label{sec:family}
+
+Tile$(a,b)$ depends on its two edge lengths only through
+$\ell = a/(a+b) \in [0,1]$, and the named members sit at exact values of it:
+the Chevron at $0$, the Hat at $1/(1+\sqrt3)$, the Spectre at $1/2$, the
+Turtle at $\sqrt3/(1+\sqrt3)$, the Comet at $1$. Rationalising,
+%
+\begin{equation}
+\ell_{\mathrm{Hat}} = \MTHatEll \approx \MTHatEllFloat ,
+\qquad
+\ell_{\mathrm{Turtle}} = \MTTurtleEll ,
+\qquad
+\ell_{\mathrm{Hat}} + \ell_{\mathrm{Turtle}} = \MTHatPlusTurtle .
+\label{eq:ells}
+\end{equation}
+
+Exchanging $a \leftrightarrow b$ reflects the tile, so
+$\ell \mapsto 1 - \ell$ is a mirror on the family. \Cref{eq:ells} then says
+the Hat and the Turtle are mirror partners, and the Spectre, at
+$\ell = \MTSpectreEll$, is the fixed point (\MTSpectreFixed). That is the
+parameter-space shadow of the Spectre's special role: it is the member that
+tiles using a single handedness --- the ``vampire einstein'' that casts no
+reflection --- while the Hat, as \cref{sec:chirality} quantifies, needs its
+mirror image. The mirror map slots into the same catalogue of
+involutions the earlier papers used: the orientifold involution
+of~\cite{SuppStrings} and the parity conjugation of~\cite{SuppTwistor} are
+the same shape of structure, an exact involution on a parameter space with
+the physically distinguished object at or near its fixed locus.
+
+% =====================================================================
+
+\section{The inflation factor, derived}
+\label{sec:inflation}
+
+The Hat tiling is generated by four metatiles $H, T, P, F$ and a
+substitution rule, and the substitution matrix
+%
+\begin{equation}
+M \;=\;
+\begin{pmatrix}
+3 & 1 & 2 & 2\\
+1 & 0 & 0 & 0\\
+3 & 0 & 1 & 1\\
+3 & 0 & 2 & 3
+\end{pmatrix}
+\label{eq:subst}
+\end{equation}
+%
+is one of the two quoted inputs in this paper, taken
+from~\cite{Smith2023a}. Everything after it is derived, and the two
+published numbers it must reproduce are what the derivation is tested
+against.
+
+The characteristic polynomial of \cref{eq:subst}, computed over $\ZZ$ by
+exact Leverrier--Faddeev with nothing numerical anywhere, has coefficients
+$(\MTCharPoly)$, which factor as
+%
+\begin{equation}
+\chi_M(x) \;=\; (x^2 - 7x + 1)(x^2 - 1) .
+\label{eq:charpoly}
+\end{equation}
+%
+The candidate Perron eigenvalue $\varphi^4 = \MTPhiFour$, with $\varphi$ the
+golden ratio, is then \emph{verified} as a root by exact Horner evaluation
+in $\QQ(\sqrt5)$ (\MTPhiFourIsRoot) and satisfies the quadratic factor
+$x^2 = 7x - 1$ (\MTPhiFourQuadratic); no eigenvalue solver is involved. One
+inflation step multiplies areas by
+$\varphi^4 \approx \MTPhiFourFloat$ --- an exact element of $\QQ(\sqrt5)$,
+not a fitted number. Its Galois conjugate $\varphi^{-4}$ is the other root
+of the same quadratic, their product is the constant term $1$, and the trace
+$\MTSubTrace$ of \cref{eq:subst} accounts for all four roots as
+$\varphi^4 + \varphi^{-4} + 1 - 1$.
+
+% =====================================================================
+
+\section{Chirality and aperiodicity, from one eigenvector}
+\label{sec:chirality}
+
+The Perron eigenvector of \cref{eq:subst} gives the relative frequencies of
+the metatiles, computed here by exact elimination in $\QQ(\sqrt5)$:
+%
+\begin{equation}
+f_H = \MTFreqH, \qquad
+f_T = \MTFreqT, \qquad
+f_P = \MTFreqP, \qquad
+f_F = \MTFreqF ,
+\label{eq:freqs}
+\end{equation}
+%
+summing to $\MTFreqSum$ and satisfying $M f = \varphi^4 f$ component by
+component, which the tests check directly against \cref{eq:subst}. Two
+things about \cref{eq:freqs} deserve notice. The $H$ frequency is
+\emph{rational} --- exactly one third (\MTFreqHRational) --- a curiosity
+worth pinning because it means the aperiodicity argument below cannot rest
+on it. And the $T$ frequency is not, which is where that argument does
+rest.
+
+\subsection{The chirality imbalance}
+
+The second quoted input is the hat content of each metatile: $H$ contains
+four hats of which one is reflected, and $T$, $P$, $F$ contain one, two and
+two, all unreflected~\cite{Smith2023a}. Every anti-hat in the tiling
+therefore lives inside an $H$ supertile, and weighting \cref{eq:freqs} by
+these counts gives the ratio of unreflected to reflected hats:
+%
+\begin{equation}
+\frac{4f_H + f_T + 2f_P + 2f_F - f_H}{f_H}
+\;=\; \MTChiralRatio \;=\; \varphi^4 : 1
+\qquad (\text{exactly: } \MTChiralIsPhiFour).
+\label{eq:chirality}
+\end{equation}
+%
+The Hat tiling is \emph{almost} chiral: one reflected tile per
+$\varphi^4 \approx \MTPhiFourFloat$ unreflected ones, and the imbalance is
+not a decimal but an element of $\QQ(\sqrt5)$. The reflected fraction of all
+hats is $\MTReflectedFraction$, which multiplied by $1 + \varphi^4$ gives
+$\MTReflectedTimesOnePlus$ --- i.e.\ it is exactly $1/(1+\varphi^4)$,
+rationalised. The published value of \cref{eq:chirality} is reached here
+without being quoted, which is the same discipline the earlier papers
+applied to the non-Higgsable clusters and the Schubert cell counts: the
+tabulated number is the test, not the input. At the other end of the mirror
+of \cref{sec:family}, the Spectre needs no reflected tiles at all, and the
+family interpolates --- which is precisely the mechanism
+of~\cite{RocheCarrasco2025} for switching off the anti-hat-bound zero modes
+by moving $\ell$.
+
+\subsection{Aperiodicity as irrationality}
+
+A tiling with a period is a periodic arrangement of a fundamental domain; in
+a fundamental domain every metatile occurs an integer number of times; so in
+a periodic tiling every relative frequency is rational. The $\MTWitness$
+frequency in \cref{eq:freqs} has irrational part $\MTWitnessIrr \sqrt5$, so
+no period exists (\MTAperiodic). The headline fact about the Hat is, at this
+level of description, \emph{the irrationality of an eigenvector} --- the
+same shape of argument that quasicrystal diffraction rests on, and a
+pleasingly small amount of machinery for a statement that made newspapers.
+What this derivation does not do is prove the Hat tiles the plane at all;
+that is the content of~\cite{Smith2023a} and enters through
+\cref{eq:subst}. What it derives is that \emph{given} the substitution
+structure, periodicity is impossible.
+
+% =====================================================================
+
+\section{The substrate detects the Hat}
+\label{sec:substrate}
+
+Every Tile$(a,b)$ is a union of eight kites whose two bond lengths are the
+parameters themselves: hexagon centre to edge midpoint ($a$) and edge
+midpoint to hexagon vertex ($b$), meeting at right angles along directions
+that are multiples of $30^\circ$. The cosines of those directions lie in
+$\tfrac12\ZZ[\sqrt3]$, so every vertex coordinate of every patch is exact.
+
+One hexagon's worth of kites, at generic proportions, has
+$\MTSitesGeneric$ distinct sites: one centre, six edge midpoints, and
+\emph{twelve} outer corners, because the corners contributed by neighbouring
+kites do not coincide. At $a : b = \sqrt3 : 1$ --- the Hat's proportions,
+by \cref{eq:ells}, and only there --- the twelve merge in pairs into the six
+vertices of the $[3.4.6.4]$ Laves tiling, and the count drops to
+$\MTSitesHat$. Whether two exact coordinates coincide is decided by the
+order on $\QQ(\sqrt3)$, not by a tolerance: at $a : b = \MTOffRatio$, a
+ratio within $2\%$ of $\sqrt3$, the count is $\MTSitesOff$ again. The bond
+count is $\MTBondsHex$ in every case, since merging vertices does not merge
+bonds. The substrate itself, in other words, detects the Hat point as an
+exact coordinate coincidence --- a small structural echo of how the
+Weierstrass model of~\cite{SuppStrings} detects its special fibres as exact
+vanishing-order coincidences.
+
+The patch so built is periodic, and the module says so. Generating a genuine
+aperiodic vertex patch requires implementing the substitution
+\emph{geometry} --- the placements, not just the counts, of
+\cref{eq:subst} --- which is not done here. What the patch supplies is the
+local geometry every Tile$(a,b)$ model inherits, and the testbed on which
+the machinery of the next two sections runs end to end.
+
+% =====================================================================
+
+\section{A signature, exactly}
+\label{sec:signature}
+
+The invariant of \cref{sec:localizer} is the signature of a symmetric
+matrix over $\QQ(\sqrt3)$, so this section is about computing signatures
+over an ordered field, which is elementary and worth being careful about
+anyway.
+
+$LDL^T$ elimination with symmetric pivoting reduces a symmetric matrix to a
+diagonal of pivots whose signs give the signature, by Sylvester's law of
+inertia. Over $\QQ(\sqrt d)$ the one non-obvious ingredient is the sign of
+$p + q\sqrt d$ itself, which is decided by comparing $p^2$ with $d q^2$ ---
+a comparison of rationals. The implementation's test suite includes the
+close call $26 - 15\sqrt3$, whose sign ($\MTClosePivot$) is decided by
+$\MTClosePivotRatio$: positive by one part in $676$. A floating-point
+computation gets this right too, but not \emph{provably}, and the difference
+between the two is the difference between a numerical experiment and a
+certificate.
+
+The degenerate case is a symmetric block whose diagonal is entirely zero
+--- the matrix $\bigl(\begin{smallmatrix}0&1\\1&0\end{smallmatrix}\bigr)$ in
+miniature. The first implementation handled it by eliminating around the
+off-diagonal block and was wrong, which the hand-checkable test caught; the
+replacement adds row $j$ to row $i$ and column $j$ to column $i$, a
+congruence $S \mapsto P^T S P$ that Sylvester's law \cite{Sylvester1852} guarantees preserves the
+signature and that manufactures the non-zero diagonal entry $2S_{ij}$
+directly. The hyperbolic block then reports signature and nullity
+$\MTHypSig$, as it must. Recording the failed first attempt is in the
+spirit of the series: every error found in four papers' worth of modules was
+found by an exact check with a hand-computable answer, and this one was the
+monotile module's contribution to the pattern.
+
+% =====================================================================
+
+\section{The localizer index, with no floating point computations}
+\label{sec:localizer}
+
+On the patch of \cref{sec:substrate} we place the standard two-orbital
+Chern insulator --- the Qi--Wu--Zhang model~\cite{QWZ2006} transplanted to a
+graph, the usual move for amorphous and quasicrystalline
+topology~\cite{Agarwala2017, Resta2011} --- with on-site term $M\sigma_z$ and, along a
+bond of direction $(\cos\theta, \sin\theta)$, the hopping
+$\tfrac{t}{2}\bigl[i(\cos\theta\,\sigma_x + \sin\theta\,\sigma_y) -
+\sigma_z\bigr]$. On this substrate every $\cos\theta$ and $\sin\theta$ is in
+$\tfrac12\ZZ[\sqrt3]$, so with rational $M$ and $t$ the Hamiltonian is a
+complex Hermitian matrix whose real and imaginary parts are exact.
+
+The spectral localizer of Loring and
+Schulz-Baldes~\cite{LoringSchulzBaldes2017} bundles $H$ with the position
+operators,
+%
+\begin{equation}
+L \;=\;
+\begin{pmatrix}
+H - E_0 & \kappa\,\Pi \\
+\kappa\,\Pi^\dagger & -(H - E_0)
+\end{pmatrix},
+\qquad
+\Pi = (X - x_0) - i (Y - y_0),
+\label{eq:localizer}
+\end{equation}
+%
+and the local index at $(x_0, y_0, E_0)$ is half its signature. The complex
+Hermitian $L$ is doubled to the real symmetric
+$\bigl(\begin{smallmatrix}A & -B\\ B & A\end{smallmatrix}\bigr)$, which doubles the
+signature again, so the index is a quarter of what the elimination of
+\cref{sec:signature} returns. On the one-hexagon patch the doubled localizer
+is a $\MTLocSize \times \MTLocSize$ matrix over $\QQ(\sqrt3)$, and with
+$\kappa = \MTKappa$ the mass scan gives
+%
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+$M$ & $-4$ & $-1$ & $1/2$ & $4$ \\
+\midrule
+index & $\MTIdxAtomic$ & $\MTIdxNegOne$ & $\MTIdxHalf$ & $\MTIdxAtomic$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+%
+trivial in both atomic limits and carrying Chern number $\mp 1$ in between,
+with every zero-pivot count zero, so the localizer gap is open at every
+sampled point and the index is well defined there. Each jump in the row
+brackets an exact topological transition between rational masses ---
+located without a band structure, because there is none to compute.
+
+The cross-check is the point of the exercise, and it is the sharpest
+available: the same matrix is handed to LAPACK, which diagonalises it in
+floating point, and the eigenvalue sign count is compared with the exact
+signature. One route is field arithmetic and pivot signs; the other is
+numerical linear algebra; they share nothing, and they agree at every mass
+(\MTNumpyAgree). This is the fourth paper's instance of the series'
+methodological refrain --- a quantity computed once is a result, computed
+twice by disjoint routes it is a test --- with the new twist that here one
+of the routes is exact and the other is the field's standard numerical
+practice, so the comparison also calibrates the practice.
+
+% =====================================================================
+
+\section{The boundary, in its fourth form}
+\label{sec:boundary}
+
+Each paper in this series has ended by classifying the ways a quantity can
+fail to be available, and each system has demanded a new category. Here the
+classification reads:
+
+\begin{enumerate}[leftmargin=2em]
+\item \emph{Exact and complete.} The parameter values of the named tiles,
+the mirror structure, the inflation factor, the metatile frequencies, the
+chirality imbalance, the aperiodicity argument, and the localizer index of
+any finite patch --- the full chain \cref{eq:chain}, with no tolerance
+anywhere in it.
+
+\item \emph{Quoted.} Two combinatorial facts about the published
+construction: the substitution matrix \cref{eq:subst} and the hat content
+of the metatiles. The derivations downstream reproduce the published
+$\varphi^4$ and $\varphi^4 : 1$ without consulting them, which is the test.
+
+\item \emph{Not implemented.} The substitution geometry --- the exact
+placements that would generate genuinely aperiodic vertex patches --- and
+with it everything requiring large patches or a thermodynamic limit:
+spectral functions, the quantum metric maps of~\cite{RocheCarrasco2025},
+disorder averages. The finite patches here are cut from the periodic
+substrate, and the module says so rather than presenting them as more.
+
+\item \emph{Has no momentum space.} The Brillouin zone, and everything
+built on it: Bloch bands, momentum-space Berry curvature, the
+$k$-space Chern integral. For an aperiodic tiling these are not
+approximations that degrade but tools that do not apply, and the honest
+response is not to regret them but to notice that the real-space invariant
+was never second best --- it is the definition that survives, and it is
+\emph{more} exactly computable than its momentum-space counterpart, being a
+signature rather than an integral.
+\end{enumerate}
+
+\noindent
+The fourth category completes a progression. In~\cite{SuppMath} the
+boundary was of the data; in~\cite{SuppStrings} it separated what
+consistency forces from what a choice leaves open, and contained a quantity
+that \emph{does not exist}; in~\cite{SuppTwistor} the boundary was of the
+method, with a relation exact but invisible to a rank. Here the absent
+object is the standard method's entire arena, and the system is the better
+for it: the constraint that forced the computation into real space is the
+same constraint that made it exactly decidable.
+
+% =====================================================================
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+The first paper found that a configuration matrix determines more than one
+expects; the second, that consistency does; the third, that holomorphy
+does. This one finds that real-space geometry does --- and that when the
+geometry is aperiodic, real space is not a fallback but the native habitat
+of the invariants, where they are signatures of matrices over ordered
+fields and therefore decidable.
+
+The specific results are small and sharp. The inflation factor of the Hat
+substitution is $\varphi^4$, as an exact root of an exactly computed
+polynomial. The tiling's chirality imbalance is $\varphi^4 : 1$, derived
+from an eigenvector over $\QQ(\sqrt5)$. Its aperiodicity is the
+irrationality of that eigenvector. The Laves substrate detects the Hat's
+proportions as an exact coincidence of coordinates, $\MTSitesGeneric$
+sites collapsing to $\MTSitesHat$. And the topological index of a finite
+patch is a quarter of an exact matrix signature, computed with no floating
+point and confirmed by an independent LAPACK diagonalization at every
+sampled mass.
+
+The refrain of the series closes on its strongest instance. A quantity
+computed once is a result; computed twice, by routes sharing nothing, it is
+a test. Here the two routes are an exact elimination and the field's
+standard numerical practice, so the disagreement that never came would have
+indicted one of them --- and the agreement that did come is a certificate
+for both.
+
+% =====================================================================
+
+\section{Source code and limitations}
+\label{sec:source}
+\footnotesize
+Everything above is implemented in \texttt{pyCICY.monotile}, with
+\texttt{tests/test\_monotile.py} executing the checks quoted here and
+\texttt{examples/monotile.py} reproducing the tables. The numbers in this
+document are emitted by \texttt{paper/make\_strings\_facts.py} with
+\texttt{--sections monotile}. The repository is at
+\url{https://github.com/brentharts/CICY}.
+
+Limitations:
+%
+\begin{itemize}[leftmargin=2em,itemsep=1pt]
+\item The substitution matrix and the hats-per-metatile counts are quoted;
+the tiling property itself (that the Hat tiles the plane, and only
+aperiodically) is the theorem of~\cite{Smith2023a} and is not re-proved.
+\item Finite patches are cut from the periodic Laves substrate; the
+substitution geometry that would generate aperiodic patches is not
+implemented yet.
+\item The localizer is evaluated at exact sample points; no attempt is made yet
+to certify the index over intervals of $M$, which would require tracking
+the localizer gap as a function of the mass.
+\item One tile family, one model: Tile$(a,b)$ with a Qi--Wu--Zhang
+Hamiltonian. Hofstadter physics on the tiling, the quantum metric, and the
+topological Anderson transitions of~\cite{RocheCarrasco2025} are absent.
+\item Exactness has a cost: the $LDL^T$ elimination over $\QQ(\sqrt3)$ on
+the $\MTLocSize$-dimensional localizer takes seconds where LAPACK takes
+milliseconds. The claim is decidability, not speed.
+\end{itemize}
+
+% =====================================================================
+
+\begin{thebibliography}{99}
+\setlength{\itemsep}{1pt plus 0.5pt}
+
+\bibitem{SuppMath}
+B.S.~Hartshorn,
+\emph{What a configuration matrix determines, and what it does not: exact
+methods for heterotic compactifications on CICYs},
+Pre-print (2026), \url{https://doi.org/10.5281/zenodo.21844007}.
+
+\bibitem{SuppStrings}
+B.S.~Hartshorn,
+\emph{What anomaly cancellation determines, and what does not exist: exact
+methods for F-theory and Type IIB orientifolds},
+Pre-print (2026), \url{https://doi.org/10.5281/zenodo.21865768}.
+
+\bibitem{SuppTwistor}
+B.S.~Hartshorn,
+\emph{What holomorphy determines, and what a rank cannot see: exact methods
+for twistor geometry and tree amplitudes},
+Pre-print (2026), \url{https://doi.org/10.5281/zenodo.21892738}.
+
+
+\bibitem{Smith2023a}
+D.~Smith, J.~S.~Myers, C.~S.~Kaplan and C.~Goodman-Strauss,
+\emph{An aperiodic monotile},
+Combinatorial Theory \textbf{4} (2024) 6,
+\href{https://arxiv.org/abs/2303.10798}{arXiv:2303.10798}.
+
+\bibitem{Smith2023b}
+D.~Smith, J.~S.~Myers, C.~S.~Kaplan and C.~Goodman-Strauss,
+\emph{A chiral aperiodic monotile},
+Combinatorial Theory \textbf{4} (2024) 13,
+\href{https://arxiv.org/abs/2305.17743}{arXiv:2305.17743}.
+
+\bibitem{Schirmann2024}
+J.~Schirmann, S.~Franca, F.~Flicker and A.~G.~Grushin,
+\emph{Physical properties of an aperiodic monotile with graphene-like
+features, chirality, and zero modes},
+Phys.\ Rev.\ Lett.\ \textbf{132} (2024) 086402,
+\href{https://arxiv.org/abs/2307.11054}{arXiv:2307.11054}.
+
+\bibitem{RocheCarrasco2025}
+H.~Roche Carrasco, J.~Schirmann, A.~Mordret and A.~G.~Grushin,
+\emph{Family of aperiodic tilings with tunable quantum geometric tensor},
+\href{https://arxiv.org/abs/2505.13304}{arXiv:2505.13304}.
+
+\bibitem{LoringSchulzBaldes2017}
+T.~A.~Loring and H.~Schulz-Baldes,
+\emph{Finite volume calculation of K-theory invariants},
+New York J.\ Math.\ \textbf{23} (2017) 1111,
+\href{https://arxiv.org/abs/1701.07455}{arXiv:1701.07455}.
+
+\bibitem{Loring2015}
+T.~A.~Loring,
+\emph{K-theory and pseudospectra for topological insulators},
+Ann.\ Phys.\ \textbf{356} (2015) 383,
+\href{https://arxiv.org/abs/1502.03498}{arXiv:1502.03498}.
+
+\bibitem{QWZ2006}
+X.-L.~Qi, Y.-S.~Wu and S.-C.~Zhang,
+\emph{Topological quantization of the spin Hall effect in two-dimensional
+paramagnetic semiconductors},
+Phys.\ Rev.\ B \textbf{74} (2006) 085308,
+\href{https://arxiv.org/abs/cond-mat/0505308}{arXiv:cond-mat/0505308}.
+
+\bibitem{Agarwala2017}
+A.~Agarwala and V.~B.~Shenoy,
+\emph{Topological insulators in amorphous systems},
+Phys.\ Rev.\ Lett.\ \textbf{118} (2017) 236402,
+\href{https://arxiv.org/abs/1607.05457}{arXiv:1607.05457}.
+
+
+\bibitem{Resta2011}
+R.~Bianco and R.~Resta,
+\emph{Mapping topological order in coordinate space},
+Phys.\ Rev.\ B \textbf{84} (2011) 241106,
+\href{https://arxiv.org/abs/1111.5697}{arXiv:1111.5697}.
+
+\bibitem{Sylvester1852}
+J.~J.~Sylvester,
+\emph{A demonstration of the theorem that every homogeneous quadratic
+polynomial is reducible by real orthogonal substitutions to the form of a
+sum of positive and negative squares},
+Philos.\ Mag.\ \textbf{4} (1852) 138.
+\url{https://doi.org/10.1080/14786445208647087}
+
+\end{thebibliography}
+
+\end{document}
