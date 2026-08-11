@@ -85,7 +85,7 @@ __all__ = ["TypeIIIFactor", "NariaiEntropic", "nariai_data", "sds_horizons",
            "coherent_entropy_quadrature", "coherent_entropy_araki",
            "jt_area_response", "ContourPacket", "squeezed_flux_budget",
            "one_mode_sum_rule", "lifted_sum_rule", "running_ledger",
-           "universal_negativity_ratio",
+           "universal_negativity_ratio", "negativity_bound", "circular_moments",
            "timescales", "OBSERVED_LAMBDA_PLANCK"]
 
 #: The observed cosmological constant in Planck units,
@@ -597,6 +597,66 @@ def universal_negativity_ratio(r):
     psi0 = math.acos(t)
     return ((math.sin(psi0) - t * psi0)
             / (t * (math.pi - psi0) + math.sin(psi0)))
+
+
+def negativity_bound(r):
+    r"""The sharp bound D(W) <= e^{-2r} * (positive part), from I_2 = 0 alone.
+
+    A theorem, with a two-line proof. The squeezed flux factorizes as
+
+        t(u) = sinh(2r) |d_u chi|^2 [ tanh r - cos(theta - phase(u)) ] / k,
+
+    so with x = cos(theta - phase) and T = tanh r the negative and positive
+    parts are integrals of (x - T)_+ and (T - x)_+ against the intensity
+    measure. The vanishing theorem I_2 = 0 says exactly that the intensity-
+    weighted first circular moment of the phase vanishes -- in particular
+    E[x] = 0. The function g(x) = (x - T)_+ - c (T - x)_+ is convex and
+    piecewise linear on [-1, 1] with slopes c then 1; choosing
+    c = (1 - T)/(1 + T) makes its chord over [-1, 1] pass through the origin,
+    g(x) <= (1 - T) x, and taking expectations gives
+
+        D(W) <= e^{-2r} * (positive part),      e^{-2r} = (1-T)/(1+T),
+
+    for *every* wedge-local single-mode squeezed excitation, at every
+    squeezing angle and for every packet shape. This strictly sharpens the
+    budget inequality (61) of the source paper (D <= positive part): the
+    depth available to the anti-evaporating branch is exponentially small in
+    the squeeze parameter relative to the deposit that funds it.
+
+    Equality holds only for phase mass concentrated on {0, pi} -- data whose
+    (d chi)^2 is real, which is exactly the boost-blind configuration with
+    |I_2|/I_1 = 1 that wedge-locality excludes. The paper's 0-or-1
+    wedge-locality dichotomy reappears here as the extremal configuration of
+    the bound: the bound is strict on the wedge-local class and saturated
+    precisely on its boundary.
+    """
+    return math.exp(-2.0 * r)
+
+
+def circular_moments(dchi_values, u, mmax=4):
+    r"""Intensity-weighted circular moments of the phase of (d chi)^2.
+
+    ``rho_m = | int |d chi|^2 e^{i m phase} du | / int |d chi|^2 du``. The
+    vanishing theorem is the statement ``rho_1 = 0`` (it is |I_2|/I_1); the
+    higher moments measure how far the phase distribution is from uniform,
+    and hence how far the measured negativity ratio can sit from the
+    phase-average value :func:`universal_negativity_ratio`. A packet whose
+    carrier turns over many cycles under its envelope has all higher moments
+    small; the contour packet has them *exactly* zero for m not divisible by
+    a symmetry, and its m = 3 harmonic content happens to be absent too, so
+    its ratio is exactly the phase-average value.
+    """
+    d = np.asarray(dchi_values)
+    intensity = np.abs(d) ** 2
+    total = float(np.trapezoid(intensity, u))
+    sq = d ** 2
+    phase_factor = np.where(np.abs(sq) > 0, sq / np.where(
+        np.abs(sq) > 0, np.abs(sq), 1.0), 0.0)
+    out = []
+    for m in range(1, mmax + 1):
+        num = complex(np.trapezoid(intensity * phase_factor ** m, u))
+        out.append(abs(num) / total)
+    return out
 
 
 def one_mode_sum_rule(omega, r, theta=0.0, kappa=1.0):
