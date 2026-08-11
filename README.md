@@ -20,6 +20,7 @@ stabilisation — it stops explicitly, with an exception rather than an
 estimate.
 
 ## pyCICY-X Papers and figures
+- What Holomorphy Determines, and What a Rank Cannot See: Exact Methods for Twistor Geometry and Tree Amplitudes https://doi.org/10.5281/zenodo.21892738
 - What Anomaly Cancellation Determines, and What Does Not Exist: Exact Methods for F-theory and Type IIB Orientifolds https://doi.org/10.5281/zenodo.21865768
 - What a Configuration Matrix Determines, and What It Does Not: Exact Methods for Heterotic Compactifications on CICYs https://doi.org/10.5281/zenodo.21844007
 - Supplementary material: figures for the pyCICY-X package —
