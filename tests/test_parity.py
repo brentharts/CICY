@@ -180,7 +180,26 @@ def main():
         else:
             print("  (planck_lite data absent; run "
                   "scripts/get_external_data.sh)")
+        bb = P.layer_two_search("SPTpol_BB_lite")
+        check("SPTpol BB bins", bb["n_bins"], 7)
+        check_true("BB channel powerless at current sensitivity (UL > 1)",
+                   bb["upper95_amplitude"] > 1.0)
+    if os.path.isdir(P._BK18_DIR):
+        bk = P.Bk18Reader()
+        check("BK18: 66 spectra", len(bk.order), 66)
+        check("BK18: 9 band powers", bk.nbins, 9)
+        check("BK18: covariance 594x594", bk.covariance.shape, (594, 594))
+        s150 = bk.spectrum("BK18_150_BxBK18_150_B")
+        check_true("BK18 150 GHz BB band powers positive and finite",
+                   bool(np.all(np.isfinite(s150)) and np.all(s150 > 0)))
+        if os.environ.get("RUN_DATA") == "1":
+            fc = bk.chiral_forecast()
+            check_true("tensor at the limit registers at ~1 sigma "
+                       "(channel closed, quantified)",
+                       1.0 < fc["total_sn"] < 2.0)
     else:
+        print("  (BK18 archive absent; run scripts/get_external_data.sh)")
+    if os.environ.get("RUN_DATA") != "1":
         print("  (layer-two data search skipped; set RUN_DATA=1 to run)")
 
     dt = time.time() - t0
