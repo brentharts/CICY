@@ -20,6 +20,7 @@ stabilisation — it stops explicitly, with an exception rather than an
 estimate.
 
 ## pyCICY-X Papers and figures
+- What Wedge-Locality Determines, and What the Phase Averages Out: Exact Tests and a Universal Negativity Bound for Entropic Gravity on the Nariai Horizon https://doi.org/10.5281/zenodo.21908671
 - What Real-Space Geometry Determines, and What Has No Momentum Space: Exact Methods for the Aperiodic Monotile Family https://doi.org/10.5281/zenodo.21893694
 - What Holomorphy Determines, and What a Rank Cannot See: Exact Methods for Twistor Geometry and Tree Amplitudes https://doi.org/10.5281/zenodo.21892738
 - What Anomaly Cancellation Determines, and What Does Not Exist: Exact Methods for F-theory and Type IIB Orientifolds https://doi.org/10.5281/zenodo.21865768
