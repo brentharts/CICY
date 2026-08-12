@@ -107,6 +107,41 @@ def main():
     check_close("r bound", ten["r_upper_95"], 0.036, 1e-12)
 
     # ------------------------------------------------------------------
+    # 3b. the substrate prediction, exactly
+    # ------------------------------------------------------------------
+    pr = P.substrate_beta_prediction()
+    g = S.Quad(4, -1, 15)
+    pred_quad = (S.Quad(20, 0, 15) * g) / (S.Quad(8, 0, 15) + 10 * g)
+    from fractions import Fraction as Fr
+    check("beta_pred rationalization 70/67 - (40/201) sqrt15",
+          (pred_quad.a, pred_quad.b), (Fr(70, 67), Fr(-40, 201)))
+    check("module quotes the exact pair",
+          tuple(pr["beta_pred_exact"]), (Fr(70, 67), Fr(-40, 201)))
+    check_close("beta_pred decimal", pr["beta_pred_deg"], 0.2740332, 1e-6)
+    check_close("beta_pred = 2 x order parameter",
+                pr["beta_pred_deg"],
+                2 * S.order_parameter()["max_splitting_float"], 1e-12)
+    check_true("pull against 2026 joint below 0.1 sigma",
+               abs(pr["pull_sigma"]) < 0.1)
+    check_true("prediction is labeled speculation-grade",
+               "speculation" in pr["grade"])
+    ta = P.transfer_assumptions()
+    check_close("one period is a factor lambda^2",
+                ta["first_harmonic_period_factor"],
+                float(S.inflation_data()["lambda_squared"]), 1e-10)
+    check_true("amplitude and phase declared free",
+               "amplitude" in ta["free"] and "phase" in ta["free"])
+    fc = P.calibration_forecast()
+    check_true("SO-era 0.05 deg tests the prediction at >5 sigma",
+               next(r for r in fc["rows"]
+                    if r["sigma_cal_deg"] == 0.05)
+               ["detect_beta_sigma"] > 5.0)
+    check_true("LiteBIRD-class separates 0.274 from 0.342 at >5 sigma",
+               next(r for r in fc["rows"]
+                    if r["sigma_cal_deg"] == 0.01)
+               ["discriminate_pred_vs_0p342"] > 5.0)
+
+    # ------------------------------------------------------------------
     # 4. categories, refusals, registry
     # ------------------------------------------------------------------
     th = get_theory("crossover-parity")()
@@ -135,6 +170,16 @@ def main():
                    r["delta_chi2_2dof"] < 9.0)
         check_true("upper limit is finite and sub-10%",
                    0 < r["upper95_amplitude"] < 0.10)
+        if os.path.isdir(P._PLANCK_LITE_DIR):
+            rp = P.planck_layer_two()
+            check("Planck bin count 613", rp["n_bins"], 613)
+            check_true("Planck null at omega* (dchi2 < 9)",
+                       rp["delta_chi2_2dof"] < 9.0)
+            check_true("Planck UL95 below 1%",
+                       rp["upper95_amplitude"] < 0.01)
+        else:
+            print("  (planck_lite data absent; run "
+                  "scripts/get_external_data.sh)")
     else:
         print("  (layer-two data search skipped; set RUN_DATA=1 to run)")
 
