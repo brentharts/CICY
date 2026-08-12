@@ -56,7 +56,10 @@ __all__ = ["rotation_mixing", "rotation_invariants", "OMEGA_STAR",
            "LOG_PERIOD", "birefringence_measurements",
            "birefringence_status", "tensor_chirality_status",
            "camb_fiducial", "modulation_templates", "layer_two_search",
-           "combined_search", "frequency_scan", "CrossoverParityProbe"]
+           "combined_search", "frequency_scan", "substrate_beta_prediction",
+           "transfer_assumptions", "harmonic_search",
+           "calibration_forecast", "PlanckLite", "planck_layer_two",
+           "CrossoverParityProbe"]
 
 # ---------------------------------------------------------------------------
 # the exact layer: rotation algebra and the substrate frequency
@@ -300,6 +303,224 @@ def modulation_templates(lmax=4600, amplitude=0.04, omega=None):
         OMEGA_STAR = om_save
 
 
+# --- the substrate prediction, the transfer assumption, the forecast -----
+
+def substrate_beta_prediction():
+    r"""A quantitative candidate for beta from the substrate, exactly.
+
+    SPECULATION-GRADE, and labeled as such. The substrate's only intrinsic
+    chiral order parameter with a preferred magnitude is the geometric
+    splitting maximum of the Spectre->Hat sweep,
+
+        A_max = 10 g / (8 + 10 g) = 35/67 - (20/201) sqrt(15)
+              = 0.1370166...,       g = 4 - sqrt(15),
+
+    an exact number of the tiling (pyCICY.theories.spectre,
+    order_parameter()), computed for the deformation analysis before any
+    comparison with polarization data was contemplated. The candidate
+    identification is
+
+        beta_pred = 2 * A_max  [degrees]
+                  = 70/67 - (40/201) sqrt(15)  degrees
+                  = 0.2740332... degrees,
+
+    where the factor 2 is the spin-2 convention (the polarization plane
+    rotates by beta while the Stokes vector rotates by 2 beta; the
+    substrate order parameter is identified with the Stokes-level
+    asymmetry) and the unit postulate -- the dimensionless order parameter
+    read in DEGREES -- is the entire modeling step, stated rather than
+    hidden. Against the 2026 joint measurement beta = 0.277 +/- 0.057 deg
+    the candidate sits at 0.05 sigma. That is either a coincidence among
+    small numbers or a prediction; the 0.05-degree calibration era will
+    decide, which is exactly what a speculation is for.
+    """
+    import fractions
+    F = fractions.Fraction
+    a_max_rational = (F(35, 67), F(-20, 201))         # a + b sqrt15
+    beta_rational = (F(70, 67), F(-40, 201))
+    a_max = float(a_max_rational[0]) + float(a_max_rational[1]) * math.sqrt(15)
+    beta = 2.0 * a_max
+    head = next(m for m in birefringence_measurements()
+                if m.get("headline"))
+    pull = (head["beta_deg"] - beta) / head["sigma"]
+    return {"order_parameter_exact": a_max_rational,
+            "beta_pred_exact": beta_rational,
+            "beta_pred_deg": beta,
+            "measured": head,
+            "pull_sigma": pull,
+            "grade": "speculation (unit postulate: degrees; factor 2: "
+                     "Stokes convention)",
+            "falsified_if": "|beta - 0.2740| > 5 sigma_cal once "
+                            "sigma_cal ~ 0.05 deg (Simons Observatory "
+                            "goal) or 0.01 deg class (LiteBIRD)"}
+
+
+def transfer_assumptions():
+    r"""The substrate -> P(k) transfer, made explicit.
+
+    The search template is not arbitrary: if the crossover statistics
+    inherit the substitution's discrete scale invariance k -> lambda^2 k,
+    then any imprint on the primordial spectrum is a periodic function of
+    ln k with period log(lambda^2),
+
+        P(k) = P_0(k) * F(ln k mod log lambda^2),
+        F(x) = 1 + sum_m [a_m cos(m omega* x) + b_m sin(m omega* x)],
+
+    and the searched amplitude is the leading Fourier mode |c_1| of F.
+    The modeling choices, in decreasing order of necessity:
+
+    (i) discrete scale invariance itself (the content of the paper's
+        layer-two prediction; gives the frequency, no amplitude);
+    (ii) the imprint is multiplicative on P(k) (minimal coupling of the
+        substrate modulation to curvature perturbations);
+    (iii) truncation at the first harmonic (testable: the m = 2 harmonic
+        sits at 2 omega*, and the same machinery bounds it --
+        harmonic_search()).
+
+    What DSI does not fix: the amplitude, the phase, and whether F acts
+    on the spectrum or its logarithm (indistinguishable at first order).
+    """
+    return {"frequency_fixed_by": "discrete scale invariance under "
+                                  "k -> lambda^2 k",
+            "free": ["amplitude", "phase", "harmonic content"],
+            "harmonics_at": [OMEGA_STAR, 2 * OMEGA_STAR, 3 * OMEGA_STAR],
+            "first_harmonic_period_factor": float(math.exp(LOG_PERIOD))}
+
+
+def harmonic_search(dataset="ACT_DR6_TTTEEE", m=2):
+    """Bound the m-th DSI harmonic with the same machinery."""
+    return layer_two_search(dataset, omega=m * OMEGA_STAR)
+
+
+def calibration_forecast(sigma_cals=(0.5, 0.277, 0.1, 0.05, 0.01)):
+    r"""What the calibration era decides, as arithmetic.
+
+    For an absolute polarization-angle calibration sigma_cal (degrees)
+    and negligible statistical error (the satellite/SO regime), the
+    significance of the current central value and the discrimination
+    between beta_pred = 0.2740 and beta = 0 are pure ratios. The 2026
+    joint measurement is calibration-prior dominated; the entries below
+    say when the question moves from priors to instrumental fact. Quoted
+    program goals: Simons Observatory targets ~0.1-0.05 deg absolute
+    calibration; LiteBIRD's requirement is of order 0.01 deg class for
+    its birefringence science case [LiteBIRD forecast, JCAP 07 (2025)
+    083].
+    """
+    pred = substrate_beta_prediction()["beta_pred_deg"]
+    rows = []
+    for sc in sigma_cals:
+        rows.append({"sigma_cal_deg": sc,
+                     "detect_beta_sigma": pred / sc,
+                     "discriminate_pred_vs_zero": pred / sc,
+                     "discriminate_pred_vs_0p342": abs(0.342 - pred) / sc})
+    return {"beta_pred": pred, "rows": rows}
+
+
+# --- Planck plik-lite: the two extra octaves ------------------------------
+
+_PLANCK_LITE_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)))), "external", "planck_lite_data")
+
+
+class PlanckLite(object):
+    """Adapter for the Planck 2018 plik-lite band powers [PlanckLitePy].
+
+    Reads the foreground-marginalized binned TT (215 bins, ell 30-2508),
+    TE and EE (199 bins each, ell 30-1996) band powers, covariance and
+    bin weights vendored from github.com/heatherprince/planck-lite-py
+    into ``external/planck_lite_data``. Exposes the same three pieces the
+    GLS core needs: ``data_bandpowers``, ``covariance`` and a Dl-binning
+    function. Extends the search band from ell ~ 325 (SPT-3G) down to
+    ell = 30: two more octaves of ln k, slightly over one additional
+    period of the substrate modulation.
+    """
+
+    name = "Planck 2018 plik-lite TT/TE/EE"
+    ell_max = 2508
+
+    def __init__(self, data_dir=None):
+        from scipy.io import FortranFile
+        d = data_dir or _PLANCK_LITE_DIR
+        pl = os.path.join(d, "planck2018_plik_lite") + os.sep
+        self.plmin = 30
+        self.nbintt, self.nbinte, self.nbinee = 215, 199, 199
+        bval, X_data, X_sig = np.genfromtxt(
+            pl + "cl_cmb_plik_v22.dat", unpack=True)
+        self.data_bandpowers = X_data          # binned Cl, muK^2
+        self.blmin = np.loadtxt(pl + "blmin.dat").astype(int)
+        self.blmax = np.loadtxt(pl + "blmax.dat").astype(int)
+        self.bin_w = np.loadtxt(pl + "bweight.dat")
+        f = FortranFile(pl + "c_matrix_plik_v22.dat", "r")
+        n = self.nbintt + self.nbinte + self.nbinee
+        cov = f.read_reals(dtype=float).reshape((n, n))
+        for i in range(n):
+            for j in range(i, n):
+                cov[i, j] = cov[j, i]
+        self.covariance = cov
+
+    def bin_dls(self, dls):
+        """Bin theory Dl dict (arrays from ell 0) into the data ordering."""
+        out = np.zeros(self.nbintt + self.nbinte + self.nbinee)
+        for spec, nb, off in (("TT", self.nbintt, 0),
+                              ("TE", self.nbinte, self.nbintt),
+                              ("EE", self.nbinee,
+                               self.nbintt + self.nbinte)):
+            dl = dls[spec]
+            ls = np.arange(dl.size)
+            fac = np.where(ls > 0, ls * (ls + 1) / (2.0 * np.pi), 1.0)
+            cl = dl / fac
+            for i in range(nb):
+                lo = self.blmin[i] + self.plmin
+                hi = self.blmax[i] + self.plmin + 1
+                out[off + i] = np.sum(
+                    cl[lo:hi] * self.bin_w[self.blmin[i]:
+                                           self.blmax[i] + 1])
+        return out
+
+
+def planck_layer_two(omega=None, _cache={}):
+    """The layer-two GLS on the Planck plik-lite band powers."""
+    key = ("planck", omega)
+    if key in _cache:
+        return _cache[key]
+    like = PlanckLite()
+    fid, temps = modulation_templates(lmax=like.ell_max + 2, omega=omega)
+    b_fid = like.bin_dls(fid)
+    resid = like.data_bandpowers - b_fid
+    cols = []
+    for name in ("cos", "sin"):
+        d = {sp: fid[sp] + temps[name][sp] for sp in fid}
+        cols.append(like.bin_dls(d) - b_fid)
+    cols.append(b_fid.copy())                          # lnAs
+    d = {sp: fid[sp] + temps["dns"][sp] * 0.01 for sp in fid}
+    cols.append((like.bin_dls(d) - b_fid) / 0.01)      # ns
+    d = {sp: fid[sp] * (1.02 if sp == "EE" else (1.01 if sp == "TE"
+                                                 else 1.0)) for sp in fid}
+    cols.append((like.bin_dls(d) - b_fid) / 0.01)      # Pcal
+    X = np.array(cols).T
+    C = like.covariance
+    F = X.T @ np.linalg.solve(C, X)
+    theta = np.linalg.solve(F, X.T @ np.linalg.solve(C, resid))
+    cov = np.linalg.inv(F)
+    a, ca = theta[:2], cov[:2, :2]
+    chi2 = float(a @ np.linalg.solve(ca, a))
+    amp = float(np.hypot(*a))
+    sig = float(np.sqrt(0.5 * np.trace(ca)))
+    out = {"dataset": like.name, "n_bins": int(like.data_bandpowers.size),
+           "omega": omega or OMEGA_STAR,
+           "A_cos": float(a[0]), "A_sin": float(a[1]),
+           "sigma_cos": float(np.sqrt(ca[0, 0])),
+           "sigma_sin": float(np.sqrt(ca[1, 1])),
+           "cov_cs": float(ca[0, 1]),
+           "amplitude": amp, "sigma_amp": sig,
+           "delta_chi2_2dof": chi2,
+           "upper95_amplitude": amp + 1.96 * sig,
+           "chi2_fiducial": float(resid @ np.linalg.solve(C, resid))}
+    _cache[key] = out
+    return out
+
+
 def _default_nuisance(like):
     """Central values of the likelihood's priors for required nuisances."""
     vals = {}
@@ -409,7 +630,10 @@ def combined_search(datasets=("SPT3G_2018_TTTEEE_lite",
     Fs, ms = [], []
     per = []
     for ds in datasets:
-        r = layer_two_search(ds, omega=omega)
+        if ds == "planck_lite":
+            r = planck_layer_two(omega=omega)
+        else:
+            r = layer_two_search(ds, omega=omega)
         per.append(r)
         cov = np.array([[r["sigma_cos"] ** 2, r.get("cov_cs", 0.0)],
                         [r.get("cov_cs", 0.0), r["sigma_sin"] ** 2]])
