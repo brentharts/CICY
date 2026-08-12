@@ -16,6 +16,19 @@ import math
 import os
 import sys
 
+import candl
+candl_version = [int(a) for a in candl.__version__.split('.')]
+if candl_version[0] <= 2 and candl_version[1] <= 2 and candl_version[2] < 1:
+    print('monkey patching jax for older candl')
+    print(candl, candl.__version__)
+    ## allows older version of candl and newer version of jax to be compatible
+    import jax.numpy as jnp
+    # Convert lists to JAX arrays before jnp.atleast_1d checks types
+    _orig_atleast_1d = jnp.atleast_1d
+    jnp.atleast_1d = lambda *arys: _orig_atleast_1d(
+        *[jnp.asarray(a) if isinstance(a, (list, tuple)) else a for a in arys]
+    )
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pyCICY.theories import parity as P
