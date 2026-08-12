@@ -63,6 +63,24 @@ def main():
     facts["DChiTri"] = tri["delta_chi2_2dof"]
     facts["ULTri"] = tri["upper95_amplitude"]
 
+    # robustness: six smooth directions
+    tri_r = P.combined_search(datasets=("planck_lite",
+                                        "SPT3G_2018_TTTEEE_lite",
+                                        "ACT_DR6_TTTEEE"), robust=True)
+    facts["ULTriRobust"] = tri_r["upper95_amplitude"]
+
+    # the BB channel and the wired tensor archive
+    bb = P.layer_two_search("SPTpol_BB_lite")
+    facts["ULBB"] = bb["upper95_amplitude"]
+    facts["NBinsBB"] = bb["n_bins"]
+    try:
+        bk = P.Bk18Reader()
+        facts["BKChiralSN"] = bk.chiral_forecast()["total_sn"]
+        facts["BKNSpectra"] = len(bk.order)
+        facts["BKNBins"] = bk.nbins
+    except Exception:
+        pass
+
     # the DSI second harmonic
     h2 = P.planck_layer_two(omega=2 * P.OMEGA_STAR)
     facts["ULHarmTwo"] = h2["upper95_amplitude"]
