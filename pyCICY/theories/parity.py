@@ -59,7 +59,7 @@ __all__ = ["rotation_mixing", "rotation_invariants", "OMEGA_STAR",
            "combined_search", "frequency_scan", "substrate_beta_prediction",
            "transfer_assumptions", "harmonic_search",
            "calibration_forecast", "PlanckLite", "planck_layer_two",
-           "CrossoverParityProbe"]
+           "cosmology_templates", "Bk18Reader", "CrossoverParityProbe"]
 
 # ---------------------------------------------------------------------------
 # the exact layer: rotation algebra and the substrate frequency
@@ -479,9 +479,9 @@ class PlanckLite(object):
         return out
 
 
-def planck_layer_two(omega=None, _cache={}):
+def planck_layer_two(omega=None, robust=False, _cache={}):
     """The layer-two GLS on the Planck plik-lite band powers."""
-    key = ("planck", omega)
+    key = ("planck", omega, robust)
     if key in _cache:
         return _cache[key]
     like = PlanckLite()
@@ -498,6 +498,10 @@ def planck_layer_two(omega=None, _cache={}):
     d = {sp: fid[sp] * (1.02 if sp == "EE" else (1.01 if sp == "TE"
                                                  else 1.0)) for sp in fid}
     cols.append((like.bin_dls(d) - b_fid) / 0.01)      # Pcal
+    if robust:
+        for par, tpl in cosmology_templates(like.ell_max + 2).items():
+            d = {sp: fid[sp] + tpl[sp] for sp in fid}
+            cols.append(like.bin_dls(d) - b_fid)
     X = np.array(cols).T
     C = like.covariance
     F = X.T @ np.linalg.solve(C, X)
@@ -518,6 +522,37 @@ def planck_layer_two(omega=None, _cache={}):
            "upper95_amplitude": amp + 1.96 * sig,
            "chi2_fiducial": float(resid @ np.linalg.solve(C, resid))}
     _cache[key] = out
+    return out
+
+
+_COSMO_STEPS = (("H0", 0.5), ("ombh2", 0.0004), ("omch2", 0.002))
+
+
+def cosmology_templates(lmax=4600, _cache={}):
+    """d Dl / d(H0, ombh2, omch2) by finite difference, for the robust fit.
+
+    Addresses the stated limitation that the fiducial cosmology is fixed:
+    with these three columns added to the design matrix, the template fit
+    profiles over the full six-dimensional smooth neighbourhood of the
+    fiducial (amplitude, tilt, calibration split, and the three background
+    parameters), so a percent-level log-periodic amplitude cannot be
+    manufactured or hidden by a slightly wrong LCDM point.
+    """
+    if lmax in _cache:
+        return _cache[lmax]
+    import camb
+    fid = camb_fiducial(lmax)
+    out = {}
+    for par, step in _COSMO_STEPS:
+        kw = dict(_PLANCK18)
+        kw[par] = kw[par] + step
+        p = camb.set_params(H0=kw["H0"], ombh2=kw["ombh2"],
+                            omch2=kw["omch2"], tau=kw["tau"],
+                            As=kw["As"], ns=kw["ns"], lmax=lmax,
+                            lens_potential_accuracy=1)
+        dls = _dls_from_pars(p, lmax)
+        out[par] = {sp: (dls[sp] - fid[sp]) / step for sp in fid}
+    _cache[lmax] = out
     return out
 
 
@@ -543,7 +578,7 @@ def _binned(like, dls, nuisance):
 
 
 def layer_two_search(dataset="SPT3G_2018_TTTEEE_lite", lmax=None,
-                     amplitude=0.04, omega=None, _cache={}):
+                     amplitude=0.04, omega=None, robust=False, _cache={}):
     r"""Fit the substrate's log-periodic template to real band powers.
 
     Generalized least squares in band-power space: the design matrix holds
@@ -557,7 +592,7 @@ def layer_two_search(dataset="SPT3G_2018_TTTEEE_lite", lmax=None,
     """
     import candl
     import candl_data
-    key = (dataset, omega)
+    key = (dataset, omega, robust)
     if key in _cache:
         return _cache[key]
     like = candl.Like(getattr(candl_data, dataset))
@@ -583,8 +618,16 @@ def layer_two_search(dataset="SPT3G_2018_TTTEEE_lite", lmax=None,
     # polarization-vs-temperature relative calibration direction
     d = {s: fid[s] * (1.02 if s in ("EE",) else (1.01 if s == "TE"
                                                  else 1.0)) for s in fid}
-    cols.append((_binned(like, d, nuis) - b_fid) / 0.01)
-    names.append("Pcal")
+    pcal = (_binned(like, d, nuis) - b_fid) / 0.01
+    if np.max(np.abs(pcal)) > 0:                    # absent for BB-only
+        cols.append(pcal)
+        names.append("Pcal")
+    if robust:
+        for par, tpl in cosmology_templates(
+                max(lmax, like.ell_max)).items():
+            d = {s: fid[s] + tpl[s] for s in fid}
+            cols.append(_binned(like, d, nuis) - b_fid)
+            names.append(par)
 
     X = np.array(cols).T
     C = np.asarray(like.covariance)
@@ -612,13 +655,15 @@ def layer_two_search(dataset="SPT3G_2018_TTTEEE_lite", lmax=None,
            "significance_1d_equiv": math.sqrt(max(chi2 - 2.0, 0.0)),
            "upper95_amplitude": upper95,
            "chi2_fiducial": chi2_fid,
+           "robust": robust,
            "nuisance_directions": names[2:]}
     _cache[key] = out
     return out
 
 
 def combined_search(datasets=("SPT3G_2018_TTTEEE_lite",
-                              "ACT_DR6_TTTEEE"), omega=None):
+                              "ACT_DR6_TTTEEE"), omega=None,
+                    robust=False):
     """Inverse-Fisher combination of the quadrature fits across datasets.
 
     The band powers of SPT-3G 2018 and ACT DR6 are independent
@@ -631,9 +676,9 @@ def combined_search(datasets=("SPT3G_2018_TTTEEE_lite",
     per = []
     for ds in datasets:
         if ds == "planck_lite":
-            r = planck_layer_two(omega=omega)
+            r = planck_layer_two(omega=omega, robust=robust)
         else:
-            r = layer_two_search(ds, omega=omega)
+            r = layer_two_search(ds, omega=omega, robust=robust)
         per.append(r)
         cov = np.array([[r["sigma_cos"] ** 2, r.get("cov_cs", 0.0)],
                         [r.get("cov_cs", 0.0), r["sigma_sin"] ** 2]])
@@ -664,6 +709,111 @@ def frequency_scan(dataset="SPT3G_2018_TTTEEE_lite",
     strengthened by showing the machinery responds elsewhere.
     """
     return [layer_two_search(dataset, omega=w) for w in omegas]
+
+
+# --- the BICEP/Keck 2018 archive: the tensor channel, wired ---------------
+
+_BK18_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)))), "external", "BK18_cosmomc",
+    "data", "BK18lf_dust")
+
+
+class Bk18Reader(object):
+    """Reader for the BICEP/Keck 2018 (BK18) likelihood data release.
+
+    Parses the CosmoMC-format dataset behind r_0.05 < 0.036: 11 B-mode
+    maps (BICEP/Keck 95/150/220 GHz and the auxiliary WMAP/Planck bands),
+    66 cross-spectra in 9 band powers each (ell ~ 20-330), the 594x594
+    covariance, and the per-bin band-power window functions. This class
+    wires the tensor channel: it exposes the measured BB band powers and
+    can project a CAMB Dl through the published windows.
+
+    What it deliberately does NOT do is fit: the BK18 constraint lives in
+    a multi-component foreground model (dust and synchrotron amplitudes,
+    spectral indices, decorrelation) evaluated through an HL likelihood,
+    and a single-frequency Gaussian shortcut would produce a number that
+    looks like science and is not. The honest uses today are (i) the
+    signal-side forecast -- project a maximally chiral tensor template at
+    the current r limit through the real windows and compare with the
+    real uncertainties -- and (ii) readiness for the day the channel
+    opens.
+    """
+
+    def __init__(self, data_dir=None):
+        d = data_dir or _BK18_DIR
+        self.data_dir = d
+        cfg = {}
+        with open(os.path.join(d, "BK18lf_dust.dataset")) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    cfg[k.strip()] = v.strip()
+        self.nbins = int(cfg["nbins"])
+        self.maps = cfg["map_names"].split()
+        self.order = cfg["cl_hat_order"].split()
+        raw = np.loadtxt(os.path.join(d, cfg["cl_hat_file"]))
+        # file rows: nbins blocks of the 66 spectra (l(l+1)C/2pi, muK^2)
+        self.cl_hat = raw.reshape(self.nbins, -1)
+        self.covariance = np.loadtxt(
+            os.path.join(d, cfg["covmat_fiducial"]))             if "covmat_fiducial" in cfg else np.loadtxt(
+            os.path.join(d, "BK18lf_covmat_dust.dat"))
+        self.windows = [np.loadtxt(os.path.join(
+            d, "windows", "BK18lf_bpwf_bin%d.txt" % (i + 1)))
+            for i in range(self.nbins)]
+
+    def spectrum(self, name):
+        """Band powers of one cross-spectrum, e.g. 'BK18_150_BxBK18_150_B'."""
+        j = self.order.index(name)
+        return self.cl_hat[:, j]
+
+    def spectrum_sigma(self, name):
+        """Diagonal uncertainties of one spectrum from the covariance."""
+        j = self.order.index(name)
+        n = len(self.order)
+        idx = [b * n + j for b in range(self.nbins)]
+        return np.sqrt(np.diag(self.covariance)[idx])
+
+    def project(self, dl_bb, map_name="BK18_150_B"):
+        """Bin a theory BB Dl (from ell 0) through the published windows."""
+        col = self.maps.index(map_name) + 1     # column 0 is ell
+        out = np.zeros(self.nbins)
+        for i, w in enumerate(self.windows):
+            ells = w[:, 0].astype(int)
+            keep = ells < dl_bb.size
+            out[i] = np.sum(w[keep, col] * dl_bb[ells[keep]])
+        return out
+
+    def chiral_forecast(self, r=0.036):
+        """The tensor signal at the current limit, through real windows.
+
+        CAMB's tensor BB at r, projected through the BK18_150 windows,
+        against the real diagonal uncertainties of the 150 GHz auto
+        spectrum: the per-bin and total signal-to-noise available to the
+        chirality channel the day a background at the limit is detected.
+        (The TB/EB chirality observables scale with the same tensor
+        transfer; this is the amplitude side of the forecast, with the
+        foreground caveat inherited from the class docstring.)
+        """
+        import camb
+        lmax_w = max(int(w[-1, 0]) for w in self.windows)
+        p = _camb_pars(lmax=max(lmax_w + 2, 1000))
+        p.WantTensors = True
+        p.InitPower.set_params(As=_PLANCK18["As"], ns=_PLANCK18["ns"],
+                               r=r)
+        res = camb.get_results(p)
+        cl = res.get_cmb_power_spectra(p, CMB_unit="muK",
+                                       spectra=["tensor"])["tensor"]
+        dl_bb = np.zeros(lmax_w + 1)
+        n = min(dl_bb.size, cl.shape[0])
+        dl_bb[:n] = cl[:n, 2]
+        sig = self.project(dl_bb)
+        err = self.spectrum_sigma("BK18_150_BxBK18_150_B")
+        sn = sig / err
+        return {"r": r, "binned_signal": sig, "sigma": err,
+                "per_bin_sn": sn,
+                "total_sn": float(np.sqrt(np.sum(sn ** 2)))}
 
 
 # ---------------------------------------------------------------------------
