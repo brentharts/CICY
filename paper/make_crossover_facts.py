@@ -38,7 +38,21 @@ os.makedirs(OUT, exist_ok=True)
 
 
 def main():
+    # resumable: reload any previously computed facts so an interrupted
+    # run continues where it left off (delete the json to force fresh)
     facts = {}
+    ck = os.path.join(OUT, "crossover_facts.json")
+    if os.path.exists(ck):
+        with open(ck) as f:
+            facts = {k: v for k, v in json.load(f).items()}
+        facts = {k: (float(v) if isinstance(v, str) and
+                     v.replace(".", "").replace("-", "").replace("e",
+                     "").replace("+", "").isdigit() else v)
+                 for k, v in facts.items()}
+
+    def save():
+        with open(ck, "w") as f:
+            json.dump(facts, f, indent=1, default=str)
 
     # parity channel
     st = P.birefringence_status()
@@ -54,39 +68,50 @@ def main():
     facts["BetaPull"] = abs(pr["pull_sigma"])
 
     # layer two, per dataset
-    spt = P.layer_two_search("SPT3G_2018_TTTEEE_lite")
-    act = P.layer_two_search("ACT_DR6_TTTEEE")
-    pl = P.planck_layer_two()
-    for tag, r in (("SPT", spt), ("ACT", act), ("Planck", pl)):
-        facts["Amp%s" % tag] = r["amplitude"]
-        facts["SigAmp%s" % tag] = r["sigma_amp"]
-        facts["DChi%s" % tag] = r["delta_chi2_2dof"]
-        facts["UL%s" % tag] = r["upper95_amplitude"]
-        facts["NBins%s" % tag] = r["n_bins"]
-    facts["ChiFidPlanck"] = pl["chi2_fiducial"]
+    if "ULPlanck" in facts:
+        spt = act = pl = None
+    else:
+        spt = P.layer_two_search("SPT3G_2018_TTTEEE_lite")
+        act = P.layer_two_search("ACT_DR6_TTTEEE")
+        pl = P.planck_layer_two()
+        for tag, r in (("SPT", spt), ("ACT", act), ("Planck", pl)):
+            facts["Amp%s" % tag] = r["amplitude"]
+            facts["SigAmp%s" % tag] = r["sigma_amp"]
+            facts["DChi%s" % tag] = r["delta_chi2_2dof"]
+            facts["UL%s" % tag] = r["upper95_amplitude"]
+            facts["NBins%s" % tag] = r["n_bins"]
+        facts["ChiFidPlanck"] = pl["chi2_fiducial"]
 
-    duo = P.combined_search()
-    tri = P.combined_search(datasets=("planck_lite",
-                                      "SPT3G_2018_TTTEEE_lite",
-                                      "ACT_DR6_TTTEEE"))
-    facts["AmpDuo"] = duo["amplitude"]
-    facts["ULDuo"] = duo["upper95_amplitude"]
-    facts["AmpTri"] = tri["amplitude"]
-    facts["SigAmpTri"] = tri["sigma_amp"]
-    facts["DChiTri"] = tri["delta_chi2_2dof"]
-    facts["ULTri"] = tri["upper95_amplitude"]
+        duo = P.combined_search()
+        tri = P.combined_search(datasets=("planck_lite",
+                                          "SPT3G_2018_TTTEEE_lite",
+                                          "ACT_DR6_TTTEEE"))
+        facts["AmpDuo"] = duo["amplitude"]
+        facts["ULDuo"] = duo["upper95_amplitude"]
+        facts["AmpTri"] = tri["amplitude"]
+        facts["SigAmpTri"] = tri["sigma_amp"]
+        facts["DChiTri"] = tri["delta_chi2_2dof"]
+        facts["ULTri"] = tri["upper95_amplitude"]
+        save()
 
     # robustness: six smooth directions
-    tri_r = P.combined_search(datasets=("planck_lite",
-                                        "SPT3G_2018_TTTEEE_lite",
-                                        "ACT_DR6_TTTEEE"), robust=True)
-    facts["ULTriRobust"] = tri_r["upper95_amplitude"]
+    if "ULTriRobust" not in facts:
+        tri_r = P.combined_search(datasets=("planck_lite",
+                                            "SPT3G_2018_TTTEEE_lite",
+                                            "ACT_DR6_TTTEEE"),
+                                  robust=True)
+        facts["ULTriRobust"] = tri_r["upper95_amplitude"]
+        save()
 
     # the BB channel and the wired tensor archive
-    bb = P.layer_two_search("SPTpol_BB_lite")
-    facts["ULBB"] = bb["upper95_amplitude"]
-    facts["NBinsBB"] = bb["n_bins"]
+    if "ULBB" not in facts:
+        bb = P.layer_two_search("SPTpol_BB_lite")
+        facts["ULBB"] = bb["upper95_amplitude"]
+        facts["NBinsBB"] = bb["n_bins"]
+        save()
     try:
+        if "BKChiralSN" in facts:
+            raise RuntimeError("cached")
         bk = P.Bk18Reader()
         facts["BKChiralSN"] = bk.chiral_forecast()["total_sn"]
         facts["BKNSpectra"] = len(bk.order)
@@ -95,9 +120,29 @@ def main():
         pass
 
     # the DSI second harmonic
-    h2 = P.planck_layer_two(omega=2 * P.OMEGA_STAR)
-    facts["ULHarmTwo"] = h2["upper95_amplitude"]
-    facts["DChiHarmTwo"] = h2["delta_chi2_2dof"]
+    if "ULHarmTwo" not in facts:
+        h2 = P.planck_layer_two(omega=2 * P.OMEGA_STAR)
+        facts["ULHarmTwo"] = h2["upper95_amplitude"]
+        facts["DChiHarmTwo"] = h2["delta_chi2_2dof"]
+        save()
+
+    # the GK foreground, priced
+    from pyCICY.theories import etg_foreground as E
+    if "ULTriShot" not in facts:
+        gk = E.gk_reproduction()
+        facts["GKZfPrinted"] = gk["z_f_eq5_as_printed"]
+        facts["GKZfComputed"] = gk["z_f_eq5_computed"]
+        fir = E.firas_limit()
+        facts["GKFirasBest"] = min(fir["f_max_by_beta_d"].values())
+        facts["GKFirasWorst"] = max(fir["f_max_by_beta_d"].values())
+        shot = E.shot_noise_limit()
+        facts["GKShotFmax"] = shot["f_max"]
+        facts["GKOverpred"] = shot["overprediction_factor"]
+        facts["GKClaimedOverAllowed"] = shot["claimed_over_allowed"]
+        facts["GKPerBeam"] = shot["sources_per_planck_beam"]
+        lw = E.layer_two_with_shot()
+        facts["ULTriShot"] = lw["upper95_amplitude"]
+        save()
 
     # frequencies
     facts["OmegaStar"] = P.OMEGA_STAR
