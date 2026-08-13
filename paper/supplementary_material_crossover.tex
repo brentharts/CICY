@@ -1,0 +1,684 @@
+% supplementary_material_crossover.tex
+%
+% Build: python3 paper/make_crossover_facts.py && pdflatex supplementary_material_crossover.tex
+% Every number is generated into figures/crossover_facts.tex; the prose
+% cannot drift from the computation.
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink,capitalize]{cleveref}
+\IfFileExists{orcidlink.sty}{\usepackage{orcidlink}}%
+  {\newcommand{\orcidlink}[1]{}}
+
+% facts fallbacks (overridden by the generated file)
+\newcommand{\CFAmpACT}{?}\newcommand{\CFAmpDuo}{?}\newcommand{\CFAmpSPT}{?}
+\newcommand{\CFAmpPlanck}{?}\newcommand{\CFAmpTri}{?}
+\newcommand{\CFBetaMeasured}{?}\newcommand{\CFBetaPred}{?}
+\newcommand{\CFBetaPull}{?}\newcommand{\CFBetaSigma}{?}
+\newcommand{\CFBetaZDust}{?}\newcommand{\CFBetaZFace}{?}
+\newcommand{\CFChiFidPlanck}{?}\newcommand{\CFDChiACT}{?}
+\newcommand{\CFDChiHarmTwo}{?}\newcommand{\CFDChiPlanck}{?}
+\newcommand{\CFDChiSPT}{?}\newcommand{\CFDChiTri}{?}
+\newcommand{\CFDetectHalf}{?}\newcommand{\CFDetectToday}{?}
+\newcommand{\CFDetectPointOne}{?}\newcommand{\CFDetectSO}{?}
+\newcommand{\CFDetectLB}{?}\newcommand{\CFDiscHalf}{?}
+\newcommand{\CFDiscToday}{?}\newcommand{\CFDiscPointOne}{?}
+\newcommand{\CFDiscSO}{?}\newcommand{\CFDiscLB}{?}
+\newcommand{\CFLogPeriod}{?}\newcommand{\CFNBinsACT}{?}
+\newcommand{\CFNBinsPlanck}{?}\newcommand{\CFNBinsSPT}{?}
+\newcommand{\CFOmegaStar}{?}\newcommand{\CFPeriodFactor}{?}
+\newcommand{\CFRUpper}{?}\newcommand{\CFSigAmpACT}{?}
+\newcommand{\CFSigAmpPlanck}{?}\newcommand{\CFSigAmpSPT}{?}
+\newcommand{\CFSigAmpTri}{?}\newcommand{\CFULACT}{?}
+\newcommand{\CFULDuo}{?}\newcommand{\CFULHarmTwo}{?}
+\newcommand{\CFULPlanck}{?}\newcommand{\CFULSPT}{?}\newcommand{\CFULTri}{?}
+\newcommand{\CFULTriRobust}{?}\newcommand{\CFULBB}{?}
+\newcommand{\CFNBinsBB}{?}\newcommand{\CFBKChiralSN}{?}
+\newcommand{\CFBKNSpectra}{?}\newcommand{\CFBKNBins}{?}
+\newcommand{\CFGKZfPrinted}{?}\newcommand{\CFGKZfComputed}{?}
+\newcommand{\CFGKFirasBest}{?}\newcommand{\CFGKFirasWorst}{?}
+\newcommand{\CFGKShotFmax}{?}\newcommand{\CFGKOverpred}{?}
+\newcommand{\CFGKClaimedOverAllowed}{?}\newcommand{\CFGKPerBeam}{?}
+\newcommand{\CFULTriShot}{?}
+\IfFileExists{figures/crossover_facts.tex}%
+  {\input{figures/crossover_facts.tex}}{}
+
+\newcommand{\lam}{\lambda}
+
+\theoremstyle{plain}
+\newtheorem{prop}{Proposition}
+\theoremstyle{definition}
+\newtheorem{spec}{Speculation}
+\newtheorem{remark}{Remark}
+
+\title{\vspace{-1cm}\textbf{Supplementary Material to 
+\emph{``The Spectre Substrate: A Chiral Monotile Vacuum for the Penrose Conformal Crossover Surface''} \\ [2pt]
+\large Bounds on the Substrate from CMB Parity and Log-Periodicity Data}}
+\author{B.S. Hartshorn \orcidlink{0009-0004-2853-655X} \small
+\url{https://github.com/brentharts/CICY}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The Spectre-substrate proposal for the Penrose conformal crossover surface makes
+two data-facing statements: a parity-asymmetric crossover
+(Conjecture~1), and a log-periodic modulation of primordial
+statistics with the parameter-free period
+$\log\lam^{2}=\log(4+\sqrt{15})=\CFLogPeriod$ in $\ln k$. This paper
+confronts both with current data. On parity: the sky is currently
+measured to be parity-odd, with the 2026 joint ACT~DR6 $+$ Planck~PR4
+birefringence analysis giving $\beta=\CFBetaMeasured^{\circ}\pm
+\CFBetaSigma^{\circ}$ ($\CFBetaZFace\sigma$ at face-value instrument
+priors, $\CFBetaZDust\sigma$ under conservative dust modeling); the
+disfavoring branch of the conjecture is not triggered. The substrate's
+one intrinsic chiral order parameter, the exact splitting maximum
+$10g/(8+10g)$ with $g=4-\sqrt{15}$, yields under a stated unit postulate
+the sharp candidate $\beta_{\rm pred}=70/67-(40/201)\sqrt{15}=
+\CFBetaPred^{\circ}$, which sits $\CFBetaPull\sigma$ from the
+measurement --- recorded as a falsifiable speculation, not a claim. On
+log-periodicity: the first direct search at the substrate frequency is
+performed by generalized least squares on $\CFNBinsSPT$ SPT-3G~2018,
+$\CFNBinsACT$ ACT~DR6, and $\CFNBinsPlanck$ Planck plik-lite band
+powers, with templates projected through full CAMB transfer functions
+and smooth directions marginalized. All three datasets return null; the
+joint bound is $|A|<\CFULTri$ at 95\%, with the second discrete-scale-
+invariance harmonic bounded at $\CFULHarmTwo$. A calibration-era table
+states what decides the parity question instrumentally: at
+$0.05^{\circ}$ absolute calibration the candidate is tested at
+$\CFDetectSO\sigma$; at the $0.01^{\circ}$ class it is separated from
+the WMAP$+$Planck value at $\CFDiscLB\sigma$.
+\end{abstract}
+
+\tableofcontents
+
+% =====================================================================
+\section{Introduction}
+\label{sec:intro}
+
+This paper is supplementary material to
+\emph{"The Spectre Substrate: A Chiral Monotile Vacuum for the Penrose Conformal Crossover Surface"},
+and its Conjecture~1 (page~1 Section~\emph{The crossover screen and the two monotile phases}).
+Conjecture~1 predicts a parity-asymmetric crossover: primordial chiral gravitational waves or
+parity-odd CMB (cosmic microwave background radiation) correlations of primordial origin are consistent with it,
+and exact parity-evenness to observational limits disfavors it. 
+The falsifiability section (page~9) predicts a log-periodic modulation of primordial statistics at the substrate's fundamental unit: period
+$\log\lam^{2}=\log(4+\sqrt{15})$ in $\ln k$, frequency
+$\omega_{*}=2\pi/\log\lam^{2}=\CFOmegaStar$ per $e$-fold of scale, with
+\emph{no free parameter in the frequency}.
+
+Neither statement had been given numbers. This paper gives both numbers,
+in the discipline of the series \cite{SuppMath,SuppStrings,SuppTwistor, SuppNariai, SuppMonotile}: 
+every figure quoted here is written by
+\texttt{paper/make\_crossover\_facts.py}, which runs the analysis module
+\texttt{pyCICY.theories.parity} end to end, so the prose and the
+computation cannot drift apart. \Cref{sec:parity} collects the
+birefringence measurements and renders the verdict the data currently
+support. \Cref{sec:candidate} records the substrate's quantitative
+candidate for $\beta$ --- speculation-grade, exactly stated, and sitting
+startlingly close to the measurement. \Cref{sec:transfer} makes the
+substrate$\to$$P(k)$ transfer assumption explicit and derives the search
+template from discrete scale invariance rather than positing it.
+\Cref{sec:search} performs the search on real band powers ---
+SPT-3G~2018, ACT~DR6, and the Planck plik-lite spectra, whose
+$\ell\ge30$ reach adds slightly over one full modulation period ---
+and sets the joint bound. \Cref{sec:calibration} tabulates what the
+coming calibration era decides. \Cref{sec:boundary} restates the
+series boundary for a data paper, where the categories acquire an
+observational flavor: what is measured, what is bounded, what is
+predicted, and what does not yet exist as an observable.
+
+% =====================================================================
+\section{The parity channel: what is measured}
+\label{sec:parity}
+
+Isotropic cosmic birefringence --- a uniform rotation $\beta$ of the
+CMB linear polarization between emission and observation --- is the
+cleanest parity-odd observable in cosmology: it generates $EB$ and $TB$
+correlations through the exact mixing
+$C_{\ell}^{EB}=\tfrac12\sin(4\beta)\,(C_{\ell}^{EE}-C_{\ell}^{BB})$,
+$C_{\ell}^{TB}=\sin(2\beta)\,C_{\ell}^{TE}$, identities the analysis
+module implements and verifies as identities (rotation invariance of
+$EE+BB$ and of $TE^{2}+TB^{2}$, round-trip exactness, all at
+$10^{-15}$). The measurement chain, all by the foreground-$EB$
+(Minami--Komatsu) method or with instrument-angle priors:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+dataset & $\beta$ [deg] & ref.\\
+\midrule
+Planck PR3 & $0.35\pm0.14$ & \cite{MinamiKomatsu2020}\\
+Planck PR4 & $0.30\pm0.11$ & \cite{DiegoPalazuelos2022}\\
+WMAP9 $+$ PR4 & $0.342^{+0.094}_{-0.091}$ & \cite{EskiltKomatsu2022}\\
+Cosmoglobe DR1 & $0.26\pm0.10$ & \cite{Cosmoglobe2023}\\
+ACT DR6 (as $\langle\psi\rangle$) & $0.20\pm0.08$ & \cite{ACTDR6}\\
+ACT DR6 (cosmological) & $0.215\pm0.074$ & \cite{DPK2025}\\
+\textbf{ACT DR6 $+$ PR4 joint} & $\mathbf{0.277\pm0.057}$ &
+\cite{Eskilt2026}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The headline is the 2026 joint analysis \cite{Eskilt2026}:
+$\beta=\CFBetaMeasured^{\circ}\pm\CFBetaSigma^{\circ}$, nonzero at
+$\CFBetaZFace\sigma$ taking the reported instrument priors at face
+value, and still $\CFBetaZDust\sigma$ under a dust-$EB$ modeling
+variant designed to be conservative. Three caveats are part of the
+result, not footnotes to it: the entries share two systematics
+(Galactic dust $EB$ modeling and absolute polarization-angle
+calibration) and are correlated through reused Planck data; isotropic
+birefringence is parity violation in photon \emph{propagation} --- a
+Chern--Simons coupling to an axion-like field would produce it ---
+so its detection is consistency with a parity-asymmetric crossover,
+not identification of one; and Conjecture~1 as published is
+qualitative.
+
+The verdict, stated as the conjecture's own dichotomy requires: the
+sky is currently measured to be parity-\emph{odd}. Exact
+parity-evenness to observational limits --- the disfavoring branch ---
+is not what the data show. The consistent branch is active, at
+$3.5$--$4.9\sigma$ depending on how much of the systematic budget one
+concedes.
+
+\begin{remark}[The tensor channel does not yet exist]
+The other parity observable named by Conjecture~1, the chirality of the
+primordial gravitational-wave background, is not an observable of any
+existing dataset: no such background has been detected
+($r_{0.05}<\CFRUpper$ at 95\% \cite{BK18}), and the handedness of an
+undetected signal is not a measurement. The analysis module encodes
+this as a refusal (\texttt{NoSuchTheory}), in the discipline of
+\cite{SuppStrings}: the channel opens if and when $r$ is detected. The
+channel is nonetheless \emph{wired}: the BK18 archive \cite{BK18} ---
+$\CFBKNSpectra$ cross-spectra in $\CFBKNBins$ band powers with
+published window functions --- is parsed by the analysis module, and
+projecting a tensor background at the current limit through the real
+$150\,$GHz windows against the real uncertainties yields a total
+signal-to-noise of $\CFBKChiralSN$: even a background saturating the
+bound registers at barely more than $1\sigma$ in this spectrum alone,
+which is the quantitative content of ``closed.''
+\end{remark}
+
+% =====================================================================
+\section{The substrate's candidate for $\beta$}
+\label{sec:candidate}
+
+Conjecture~1 gains teeth only if the substrate names a number. It has
+exactly one intrinsic chiral order parameter with a preferred magnitude:
+the geometric splitting maximum of the Spectre$\to$Hat deformation
+sweep, computed exactly in the companion paper (page~6, the area-form, Fact7) as
+
+\begin{equation}
+A_{\max}\;=\;\frac{10\,g}{8+10\,g}
+\;=\;\frac{35}{67}-\frac{20}{201}\sqrt{15}
+\;=\;0.1370166\ldots,
+\qquad g=4-\sqrt{15}.
+\label{eq:amax}
+\end{equation}
+That number was derived for the deformation analysis of the substrate
+paper, before any comparison with polarization data was contemplated;
+its reuse here is a reuse, not a fit.
+
+\begin{spec}[The birefringence candidate]
+\label{spec:beta}
+Identify the substrate order parameter \cref{eq:amax} with the
+Stokes-level chiral asymmetry of the crossover, and read the resulting
+angle in degrees:
+\begin{equation}
+\beta_{\rm pred}
+\;=\;2\,A_{\max}\ \mathrm{[deg]}
+\;=\;\frac{70}{67}-\frac{40}{201}\sqrt{15}\ \mathrm{deg}
+\;=\;0.2740332\ldots^{\circ}.
+\label{eq:betapred}
+\end{equation}
+The factor $2$ is the spin-2 convention (the polarization plane rotates
+by $\beta$ while the Stokes vector rotates by $2\beta$); the unit
+postulate --- a dimensionless order parameter read in degrees --- is
+the entire modeling step, and it is unjustified. Against the joint
+measurement, $\beta_{\rm pred}$ sits at $\CFBetaPull\sigma$.
+\end{spec}
+
+Everything about \cref{spec:beta} is stated so that it can die. The
+exact value \cref{eq:betapred} has no adjustable content; the
+identification is either a coincidence among small numbers or a
+prediction; and \cref{sec:calibration} says exactly when the
+instruments will decide. 
+It is recorded behind the speculation firewall of the source paper's
+stratification for precisely this reason: a $0.05\sigma$ agreement
+produced by a unit postulate is a target painted for future
+calibration, not evidence.
+
+% =====================================================================
+\section{The transfer assumption, made explicit}
+\label{sec:transfer}
+
+The layer-two search is often phrased as ``look for the log-period.''
+The honest version derives the template. If the crossover statistics
+inherit the substitution's discrete scale invariance --- physics
+unchanged under $k\to\lam^{2}k$ --- then any imprint on the primordial
+spectrum is a periodic function of $\ln k$ with period $\log\lam^{2}$:
+\begin{equation}
+P(k)\;=\;P_{0}(k)\,
+F\!\left(\ln k \bmod \log\lam^{2}\right),
+\qquad
+F(x)=1+\sum_{m\ge1}\bigl[a_{m}\cos(m\,\omega_{*}x)
++b_{m}\sin(m\,\omega_{*}x)\bigr],
+\label{eq:dsi}
+\end{equation}
+and the searched amplitude is the leading Fourier mode of $F$. The
+modeling ladder, in decreasing order of necessity: (i) discrete scale
+invariance itself --- this is the content of the substrate prediction,
+and it fixes the frequency and nothing else; (ii) multiplicative
+imprint on $P(k)$, the minimal coupling of substrate modulation to
+curvature perturbations; (iii) truncation at $m=1$, which is testable,
+because the $m=2$ harmonic sits at $2\omega_{*}$ and the same machinery
+bounds it (\cref{sec:search}). What discrete scale invariance does not
+fix: the amplitude, the phase, and whether $F$ multiplies the spectrum
+or its logarithm (indistinguishable at first order). One period of
+\cref{eq:dsi} spans a factor $e^{\log\lam^{2}}=\CFPeriodFactor$ in $k$:
+the modulation is slow, roughly one cycle per data octave-triple, which
+is why the fit must marginalize smooth directions explicitly or the
+signal hides in the tilt.
+
+% =====================================================================
+\section{The search on real band powers}
+\label{sec:search}
+
+The method is generalized least squares in band-power space. CAMB
+projects the modulated primordial spectrum \cref{eq:dsi} (at unit
+$a_{1}$, both quadratures) through the full transfer functions --- no
+$k\simeq\ell/D$ shortcut --- and the resulting $\Delta D_{\ell}$
+templates are binned through each dataset's own machinery: the candl
+library \cite{candl} with its window functions and data models for
+SPT-3G~2018 TT/TE/EE \cite{SPT3G} and ACT~DR6 TT/TE/EE \cite{ACTDR6},
+and the plik-lite band powers, covariance and bin weights of Planck~2018
+\cite{PlanckLikelihood,PlanckLitePy} for the third dataset. The design
+matrix carries the two modulation quadratures and three smooth nuisance
+directions (overall amplitude, the tilt derivative $dD_{\ell}/dn_{s}$
+computed by finite difference, and a temperature-vs-polarization
+calibration split); the noise is each likelihood's full band-power
+covariance; the fiducial cosmology is Planck~2018 and is \emph{not}
+refit per dataset --- a stated limitation, mitigated by the
+marginalized smooth directions, and visible as an acceptable fiducial
+$\chi^{2}$ of $\CFChiFidPlanck$ on $\CFNBinsPlanck$ Planck bins.
+
+\begin{center}
+\begin{tabular}{lccccc}
+\toprule
+dataset & bins & $|\hat A|$ & $\sigma_{A}$ &
+$\Delta\chi^{2}$ (2 dof) & 95\% UL\\
+\midrule
+SPT-3G 2018 & \CFNBinsSPT & \CFAmpSPT & \CFSigAmpSPT & \CFDChiSPT &
+\CFULSPT\\
+ACT DR6 & \CFNBinsACT & \CFAmpACT & \CFSigAmpACT & \CFDChiACT &
+\CFULACT\\
+Planck plik-lite & \CFNBinsPlanck & \CFAmpPlanck & \CFSigAmpPlanck &
+\CFDChiPlanck & \CFULPlanck\\
+\midrule
+joint (all three) & --- & \CFAmpTri & \CFSigAmpTri & \CFDChiTri &
+$\boldsymbol{\CFULTri}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{prop}[The layer-two bound]
+\label{prop:bound}
+At the substrate frequency $\omega_{*}=\CFOmegaStar$ per $\ln k$, the
+leading log-periodic modulation amplitude of the primordial spectrum is
+\begin{equation}
+|A| \;<\; \CFULTri
+\qquad(95\%,\ \text{SPT-3G}+\text{ACT DR6}+\text{Planck plik-lite}),
+\end{equation}
+with all three datasets individually consistent with zero
+($\Delta\chi^{2}$ of $\CFDChiSPT$, $\CFDChiACT$, $\CFDChiPlanck$ on two
+degrees of freedom) and the SPT and ACT quadrature phases mutually
+inconsistent --- the two ground experiments prefer orthogonal phases,
+which is what noise does. The second discrete-scale-invariance harmonic
+is bounded independently: $|a_{2}|<\CFULHarmTwo$ at $2\omega_{*}$
+($\Delta\chi^{2}=\CFDChiHarmTwo$).
+\end{prop}
+
+Two robustness statements accompany \cref{prop:bound}. First, the
+stated fiducial limitation is demonstrated harmless rather than argued
+away: adding finite-difference derivative templates in $H_{0}$,
+$\omega_{b}$ and $\omega_{c}$ to the design matrix --- a
+six-dimensional smooth marginalization --- moves the joint bound from
+$\CFULTri$ to $\CFULTriRobust$, a shift of two percent of itself.
+Second, the $BB$ channel is searched and found powerless at current
+sensitivity: the SPTpol $BB$ band powers ($\CFNBinsBB$ bins) admit
+$|A|<\CFULBB$, two orders of magnitude weaker than the primary
+channels, because the lensing kernel washes the modulation out of $BB$;
+it is reported so that the channel's silence is a number rather than an
+omission.
+
+Planck's contribution is decisive and is exactly the two extra octaves:
+its $\ell\ge30$ reach adds slightly over one full modulation period
+below the ground experiments' bands, and its single-dataset limit
+($\CFULPlanck$) is already twice as strong as the SPT$+$ACT
+combination ($\CFULDuo$). A frequency scan confirms the machinery
+responds sensibly away from $\omega_{*}$ --- limits tighten
+monotonically with frequency as tilt degeneracy releases --- with no
+anomaly anywhere.
+
+The prediction survives as a constraint. The substrate paper's layer
+two said ``a log-periodic modulation \ldots at sufficient sensitivity'';
+this section replaces the ellipsis: current sensitivity is
+$\sigma_{A}\approx\CFSigAmpTri$ at the predicted frequency, the data
+are null there, and any future claim of the substrate's imprint on
+$P(k)$ must live below $\CFULTri$.
+
+% =====================================================================
+\section{A proposed percent-level foreground, priced}
+\label{sec:etg}
+
+Gjergo and Kroupa have proposed that the dust-thermalized light of massive early-type galaxies (ETG) forming at
+$z\sim15$--$20$ constitutes an overlooked CMB foreground, accounting
+for ``1.4\% up to the full present-day CMB energy density''
+\cite{GjergoKroupa}. Both channels of this paper live in CMB data, so
+the claim sits underneath our verdicts and must be priced, not cited.
+The analysis module reproduces their pipeline first --- the downsizing
+timescales, the energy densities and their $1.4\%$ ratio, and the
+dust-temperature consistency ($L=10^{15}L_{\odot}$ through
+$10\,$kpc gives $49\,$K, redshifting to $\sim2.7\,$K) all check ---
+with one finding in the two-route spirit: their Eq.~(5) as printed,
+$15\,{\rm Mpc}/800\,{\rm kpc}-1$, evaluates to $\CFGKZfComputed$,
+not the quoted $\CFGKZfPrinted$; the conclusion it feeds, a formation
+epoch inside the 21-cm window $15<z<20$, holds either way.
+
+The proposal then meets two walls its authors defer to future work, one
+per spectral variant. If the component is a \emph{graybody} --- dust
+emissivity $\propto\nu^{\beta_{d}}$ with $\beta_{d}>0$ --- the
+power-law factor survives redshift, the component is not a blackbody
+today, and the FIRAS monopole bounds its energy fraction directly:
+profiling out the one exact degeneracy (a CMB temperature shift), the
+admissible fraction is $f<\CFGKFirasBest$--$\CFGKFirasWorst$ across
+$\beta_{d}\in[0.5,2]$, a factor $7$--$50$ below the conservative
+claim. If instead the component is \emph{spectrally exact} ---
+optically thick emission indistinguishable from the CMB monopole, the
+authors' own consistency argument --- the spectrum is silent but the
+sources are not: the field consists of $4.4\times10^{7}$ discrete
+objects, $\CFGKPerBeam$ per Planck beam by their own count, and its
+Poisson shot noise is an anisotropy floor. In the maximally
+conservative configuration (equal luminosities, no clustering, both of
+which can only raise the power), a fraction $f=0.014$ predicts
+$D_{\ell=3000}^{\rm shot}$ exceeding the \emph{total} measured
+$150\,$GHz sky power --- CMB plus every foreground, no component
+separation assumed --- by a factor $\CFGKOverpred$; the requirement
+of not outshining everything measured gives $f<\CFGKShotFmax$, a
+factor $\CFGKClaimedOverAllowed$ below the claim.
+
+The impact on this paper's verdicts is then arithmetic. Appending an
+ETG shot-noise template to the smooth-direction block of the
+layer-two fit moves the joint bound from $\CFULTri$ to
+$\CFULTriShot$; at the spectrally and statistically admissible
+$f\lesssim3\times10^{-5}$, the perturbation to the $EB$-derived
+birefringence angle and to every band-power fit is
+$\mathcal{O}(f)$, three orders of magnitude below the quoted
+uncertainties. The sigma ratings of \cref{sec:parity,sec:search}
+stand unchanged --- with the foreground now priced rather than
+ignored, which is what this series means by taking a proposal seriously.
+
+% =====================================================================
+\section{The calibration era}
+\label{sec:calibration}
+
+The parity question is calibration-limited: the joint $\beta$
+measurement leans on instrument-angle priors, and its
+$\CFBetaZFace\sigma$ face value relaxes to $\CFBetaZDust\sigma$ under
+conservative dust modeling. What removes the priors from the argument
+is hardware --- absolute polarization-angle calibration. The
+arithmetic of the coming era, with $\beta_{\rm pred}$ from
+\cref{spec:beta}:
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+$\sigma_{\rm cal}$ [deg] & test of $\beta_{\rm pred}$ vs.\ $0$ &
+$\beta_{\rm pred}$ vs.\ $0.342$\\
+\midrule
+$0.5$ & $\CFDetectHalf\sigma$ & $\CFDiscHalf\sigma$\\
+$0.277$ (today, joint) & $\CFDetectToday\sigma$ & $\CFDiscToday\sigma$\\
+$0.1$ & $\CFDetectPointOne\sigma$ & $\CFDiscPointOne\sigma$\\
+$0.05$ (Simons Observatory class) & $\CFDetectSO\sigma$ &
+$\CFDiscSO\sigma$\\
+$0.01$ (LiteBIRD class) & $\CFDetectLB\sigma$ & $\CFDiscLB\sigma$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+At the $0.05^{\circ}$ class the candidate \cref{eq:betapred} is tested
+against zero at $\CFDetectSO\sigma$; at the $0.01^{\circ}$ class it
+is separated from the WMAP$+$Planck central value $0.342^{\circ}$ at
+$\CFDiscLB\sigma$ --- the era does not merely detect parity
+violation, it discriminates between candidate values of it. The
+program goals invoked are the published calibration science cases of
+Simons Observatory and LiteBIRD \cite{LiteBIRDBiref}; the table is
+arithmetic, not forecasted likelihoods, and inherits their timelines.
+
+% =====================================================================
+\section{The boundary, restated for data}
+\label{sec:boundary}
+
+\begin{enumerate}[leftmargin=2em]
+\item \emph{Measured.} The sky's parity: odd, at
+$\CFBetaZDust$--$\CFBetaZFace\sigma$ depending on the systematic
+concession. Conjecture~1's disfavoring branch is not triggered.
+\item \emph{Bounded.} The substrate's layer-two imprint:
+$|A|<\CFULTri$ at the parameter-free frequency, $|a_{2}|<\CFULHarmTwo$
+at its second harmonic. A null with a number is worth more than a
+prediction without one.
+\item \emph{Predicted, and honestly graded.} $\beta_{\rm pred}=
+\CFBetaPred^{\circ}$, exact in $\mathbb{Q}(\sqrt{15})$, speculation-%
+grade because of one stated unit postulate, currently at
+$\CFBetaPull\sigma$ --- and scheduled for judgment by hardware.
+\item \emph{Does not yet exist.} The chirality of the tensor
+background, pending a detection of the background itself; and a
+\emph{derived} amplitude for the layer-two modulation --- discrete
+scale invariance fixes the frequency and nothing else, and pretending
+otherwise would be a free parameter wearing a costume.
+\item \emph{Stated limitations.} The fiducial cosmology is fixed at
+Planck 2018 rather than refit jointly (protected by marginalized smooth
+directions; a full joint fit is the obvious upgrade); the plik-lite
+$EE$ data enter with their published foreground marginalization; and
+the ground-experiment nuisance treatment uses each likelihood's default
+prior centers. None of these plausibly manufactures or hides a
+percent-level log-periodic signal, but all three belong in this list.
+\end{enumerate}
+
+% =====================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+The parity conjecture survives its first confrontation in the strongest way available to a
+qualitative claim: the sky is measured to be parity-odd \cite{Shamir2025},
+such as specific configurations of the CMB bispectrum or B-mode polarization patterns \cite{Eskilt2026, Kamionkowski2010, BenDavid2011, Shiraishi2014, Murai2023},
+and the Spectre substrate's one intrinsic chiral
+number lands within a twentieth of a standard deviation of the measured
+angle under a single stated postulate. The log-periodic prediction
+survives in the way quantitative claims survive: bounded, at the
+percent level, at a frequency it named in advance.
+
+\newpage
+
+% =====================================================================
+\appendix
+\footnotesize
+
+\section{Source code and data}
+\label{sec:source}
+
+The analysis module is \texttt{pyCICY.theories.parity} at
+\url{https://github.com/brentharts/CICY}, with the suite
+\texttt{tests/test\_parity.py} (exact rotation identities, the exact
+form of \cref{eq:betapred} verified against the spectre module's
+$\mathbb{Q}(\sqrt{15})$ arithmetic, forecast logic, and --- gated
+behind \texttt{RUN\_DATA=1} --- the searches themselves). Every number
+in this paper regenerates via \texttt{paper/make\_crossover\_facts.py}.
+Data: SPT-3G 2018, ACT DR6 and SPTpol $BB$ band powers via candl
+\cite{candl}; Planck plik-lite band powers, covariance and bin weights
+via \cite{PlanckLitePy}; and the BICEP/Keck BK18 release \cite{BK18},
+all under \texttt{external/} via
+\texttt{scripts/get\_external\_data.sh}. The remaining external item
+is the $EB$ band powers behind \cite{EskiltKomatsu2022,Eskilt2026},
+whose addition would upgrade the parity channel from quoting $\beta$
+to refitting it.
+
+\begin{thebibliography}{99}
+
+\bibitem{SuppMath}
+B.S.~Hartshorn,
+\emph{What a configuration matrix determines, and what it does not: exact
+methods for heterotic compactifications on CICYs},
+Pre-print (2026), \url{https://doi.org/10.5281/zenodo.21844007}.
+
+\bibitem{SuppStrings}
+B.S.~Hartshorn,
+\emph{What anomaly cancellation determines, and what does not exist: exact
+methods for F-theory and Type IIB orientifolds},
+Pre-print (2026), \url{https://doi.org/10.5281/zenodo.21865768}.
+
+\bibitem{SuppTwistor}
+B.S.~Hartshorn,
+\emph{What holomorphy determines, and what a rank cannot see: exact methods
+for twistor geometry and tree amplitudes},
+Pre-print (2026), \url{https://doi.org/10.5281/zenodo.21892738}.
+
+\bibitem{SuppNariai}
+B.S.~Hartshorn,
+\emph{What Wedge-Locality Determines, and What the Phase Averages Out: Exact Tests and a Universal Negativity Bound for Entropic Gravity on the Nariai Horizon},
+Pre-print (2026),
+\url{https://doi.org/10.5281/zenodo.21908671}
+
+\bibitem{SuppMonotile}
+B.S.~Hartshorn,
+\emph{What Real-Space Geometry Determines, and What Has No Momentum Space: Exact Methods for the Aperiodic Monotile Family}, 
+Pre-print (2026),
+\url{https://doi.org/10.5281/zenodo.21893694}
+
+\bibitem{MinamiKomatsu2020}
+Y.~Minami and E.~Komatsu,
+\emph{New Extraction of the Cosmic Birefringence from the Planck 2018
+Polarization Data},
+Phys.\ Rev.\ Lett.\ \textbf{125}, 221301 (2020).
+
+\bibitem{DiegoPalazuelos2022}
+P.~Diego-Palazuelos et al.,
+\emph{Cosmic Birefringence from the Planck Data Release 4},
+Phys.\ Rev.\ Lett.\ \textbf{128}, 091302 (2022).
+
+\bibitem{EskiltKomatsu2022}
+J.R.~Eskilt and E.~Komatsu,
+\emph{Improved constraints on cosmic birefringence from the WMAP and
+Planck cosmic microwave background polarization data},
+Phys.\ Rev.\ D \textbf{106}, 063503 (2022).
+
+\bibitem{Cosmoglobe2023}
+J.R.~Eskilt et al.\ (Cosmoglobe),
+\emph{Cosmoglobe DR1 results. II. Constraints on isotropic cosmic
+birefringence from reprocessed WMAP and Planck LFI data},
+Astron.\ Astrophys.\ \textbf{679}, A144 (2023).
+
+\bibitem{ACTDR6}
+T.~Louis et al.\ (ACT),
+\emph{The Atacama Cosmology Telescope: DR6 power spectra, likelihoods
+and $\Lambda$CDM parameters},
+JCAP \textbf{11}, 062 (2025); arXiv:2503.14452.
+
+\bibitem{DPK2025}
+P.~Diego-Palazuelos and E.~Komatsu,
+\emph{Cosmic Birefringence from the Atacama Cosmology Telescope Data
+Release 6},
+arXiv:2509.13654 (2025).
+
+\bibitem{Eskilt2026}
+J.R.~Eskilt,
+\emph{Cosmic birefringence from a joint analysis of ACT and Planck},
+arXiv:2608.06480 (2026). \url{https://doi.org/10.1103/hcsm-39qw}
+
+\bibitem{BK18}
+P.A.R.~Ade et al.\ (BICEP/Keck),
+\emph{Improved Constraints on Primordial Gravitational Waves using
+Planck, WMAP, and BICEP/Keck Observations through the 2018 Observing
+Season},
+Phys.\ Rev.\ Lett.\ \textbf{127}, 151301 (2021).
+
+\bibitem{candl}
+L.~Balkenhol et al.,
+\emph{candl: cosmic microwave background analysis with a differentiable
+likelihood},
+Astron.\ Astrophys.\ \textbf{686}, A10 (2024);
+\url{https://github.com/Lbalkenhol/candl}.
+
+\bibitem{SPT3G}
+L.~Balkenhol et al.\ (SPT-3G),
+\emph{Measurement of the CMB temperature power spectrum and constraints
+on cosmology from the SPT-3G 2018 TT, TE, and EE dataset},
+Phys.\ Rev.\ D \textbf{108}, 023510 (2023).
+
+\bibitem{PlanckLikelihood}
+N.~Aghanim et al.\ (Planck),
+\emph{Planck 2018 results. V. CMB power spectra and likelihoods},
+Astron.\ Astrophys.\ \textbf{641}, A5 (2020).
+
+\bibitem{PlanckLitePy}
+H.~Prince and J.~Dunkley,
+\emph{Data compression in cosmology: A compressed likelihood for Planck
+data},
+Phys.\ Rev.\ D \textbf{100}, 083502 (2019);
+\url{https://github.com/heatherprince/planck-lite-py}.
+
+\bibitem{GjergoKroupa}
+E.~Gjergo and P.~Kroupa,
+\emph{The impact of early massive galaxy formation on the cosmic
+microwave background},
+Nucl.\ Phys.\ B \textbf{1017}, 116931 (2025).
+
+\bibitem{FIRAS}
+D.J.~Fixsen et al.,
+\emph{The cosmic microwave background spectrum from the full COBE
+FIRAS data set},
+Astrophys.\ J.\ \textbf{473}, 576 (1996).
+
+\bibitem{LiteBIRDBiref}
+LiteBIRD Collaboration,
+\emph{LiteBIRD science goals and forecasts: constraining isotropic
+cosmic birefringence},
+JCAP \textbf{07}, 083 (2025).
+
+\bibitem{Shamir2025}
+Lior Shamir (2025)
+\emph{The distribution of galaxy rotation in JWST Advanced Deep Extragalactic Survey}
+Royal Astronomical Society, Volume 538, Issue 1, March 2025, Pages 76–91
+\url{https://doi.org/10.1093/mnras/staf292}
+
+\bibitem{Kamionkowski2010}
+M.~Kamionkowski, T.~Souradeep (2010)
+\emph{The Odd-Parity CMB Bispectrum}
+\url{https://doi.org/10.48550/arXiv.1010.4304}
+
+\bibitem{BenDavid2011}
+A.~Ben-David, E.D.~Kovetz, N.~Itzhaki
+\emph{Parity in the CMB: Space Oddity} Astrophys.J. 748 (2012) 39
+\url{https://doi.org/10.1088/0004-637X/748/1/39}
+
+\bibitem{Shiraishi2014}
+M.~Shiraishi, M.~Liguori, J.R.~Fergusson (2014)
+\emph{Observed parity-odd CMB temperature bispectrum}
+\url{https://doi.org/10.48550/arXiv.1409.0265}
+
+\bibitem{Murai2023} Kai Murai, et al.
+\emph{Isotropic cosmic birefringence from early dark energy}
+Phys. Rev. D 107, L041302 – (2023)
+\url{https://doi.org/10.1103/PhysRevD.107.L041302}
+
+
+
+\end{thebibliography}
+\end{document}
