@@ -25,8 +25,9 @@ estimate.
 - What Holomorphy Determines, and What a Rank Cannot See: Exact Methods for Twistor Geometry and Tree Amplitudes https://doi.org/10.5281/zenodo.21892738
 - What Anomaly Cancellation Determines, and What Does Not Exist: Exact Methods for F-theory and Type IIB Orientifolds https://doi.org/10.5281/zenodo.21865768
 - What a Configuration Matrix Determines, and What It Does Not: Exact Methods for Heterotic Compactifications on CICYs https://doi.org/10.5281/zenodo.21844007
-- Supplementary material: figures for the pyCICY-X package —
-  [https://doi.org/10.5281/zenodo.21798923](https://doi.org/10.5281/zenodo.21843383)
+- Supplementary material: figures for the pyCICY-X package
+  - [https://doi.org/10.5281/zenodo.21798923](https://doi.org/10.5281/zenodo.21843383)
+  - https://dx.doi.org/10.2139/ssrn.7250858
 
 What follows is a tour of the results, roughly in the order the modules were
 built.
