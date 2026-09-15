@@ -782,6 +782,100 @@ def _det(T):
     return T[0][0] * T[1][1] - T[0][1] * T[1][0]
 
 
+def _spectre_scaffold():
+    """Base tiles, the Mystic pair, and the starting quad, exactly.
+
+    Extracted from :func:`geometric_census` so that the boundary operator
+    below runs on the SAME placed geometry rather than a second
+    transcription of it. The two routes this module deliberately keeps
+    apart are the matrix census and the geometric one; duplicating the
+    geometry inside the geometric route would not be independence, only
+    drift waiting to happen.
+    """
+    IDENT = [[_q3(1), _q3(0), _q3(0)], [_q3(0), _q3(1), _q3(0)]]
+    pts = _tile_points(1, 1)
+    quad = [pts[3], pts[5], pts[7], pts[11]]
+    base = {}
+    for label in SPECIES:
+        if label != "Gamma":
+            base[label] = ("tile", label)
+    t8 = pts[8]
+    mystic2 = _mul([[_q3(1), _q3(0), t8[0]], [_q3(0), _q3(1), t8[1]]],
+                   _rot(30))
+    base["Gamma"] = ("meta", [(("tile", "Gamma1"), IDENT),
+                              (("tile", "Gamma2"), mystic2)], quad)
+    return IDENT, pts, quad, base
+
+
+_RULES_PLACED = {}
+for _label, _seq in {
+        "Gamma": ("Pi", "Delta", None, "Theta", "Sigma", "Xi", "Phi",
+                  "Gamma"),
+        "Delta": ("Xi", "Delta", "Xi", "Phi", "Sigma", "Pi", "Phi", "Gamma"),
+        "Theta": ("Psi", "Delta", "Pi", "Phi", "Sigma", "Pi", "Phi",
+                  "Gamma"),
+        "Lambda": ("Psi", "Delta", "Xi", "Phi", "Sigma", "Pi", "Phi",
+                   "Gamma"),
+        "Xi": ("Psi", "Delta", "Pi", "Phi", "Sigma", "Psi", "Phi", "Gamma"),
+        "Pi": ("Psi", "Delta", "Xi", "Phi", "Sigma", "Psi", "Phi", "Gamma"),
+        "Sigma": ("Xi", "Delta", "Xi", "Phi", "Sigma", "Pi", "Lambda",
+                  "Gamma"),
+        "Phi": ("Psi", "Delta", "Psi", "Phi", "Sigma", "Pi", "Phi", "Gamma"),
+        "Psi": ("Psi", "Delta", "Psi", "Phi", "Sigma", "Psi", "Phi",
+                "Gamma"),
+}.items():
+    _RULES_PLACED[_label] = [(i, sname) for i, sname in enumerate(_seq)
+                             if sname is not None]
+
+
+def _spectre_build(tiles, quad):
+    """One substitution step: place the eight children by the fixed chain."""
+    q = tiles["Delta"][2] if tiles["Delta"][0] == "meta" else quad
+    total_angle = 0
+    rotation = _rot(0)
+    trs = [rotation]
+    tq = q
+    for ang, frm, to in ((60, 3, 1), (0, 2, 0), (60, 3, 1), (60, 3, 1),
+                         (0, 2, 0), (60, 3, 1), (-120, 3, 3)):
+        if ang:
+            total_angle += ang
+            rotation = _rot(total_angle % 360)
+            tq = [_apply(rotation, p) for p in q]
+        src = _apply(trs[-1], q[frm])
+        ttrans = [[_q3(1), _q3(0), src[0] - tq[to][0]],
+                  [_q3(0), _q3(1), src[1] - tq[to][1]]]
+        trs.append(_mul(ttrans, rotation))
+    R = [[_q3(-1), _q3(0), _q3(0)], [_q3(0), _q3(1), _q3(0)]]
+    trs = [_mul(R, t) for t in trs]
+    squad = [_apply(trs[6], q[2]), _apply(trs[5], q[1]),
+             _apply(trs[3], q[2]), _apply(trs[0], q[1])]
+    out = {}
+    for label in SPECIES:
+        out[label] = ("meta",
+                      [(tiles[sname], trs[i])
+                       for i, sname in _RULES_PLACED[label]],
+                      squad)
+    return out
+
+
+def _placed_leaves(depth, seed="Delta"):
+    """Every tile of the depth-k supertile, with its exact Q(sqrt3) frame."""
+    IDENT, pts, quad, tiles = _spectre_scaffold()
+    for _ in range(depth):
+        tiles = _spectre_build(tiles, quad)
+    out = []
+
+    def walk(node, T):
+        if node[0] == "tile":
+            out.append((node[1], T))
+        else:
+            for child, tr in node[1]:
+                walk(child, _mul(T, tr))
+
+    walk(tiles[seed], IDENT)
+    return out, pts
+
+
 def geometric_census(depth=3):
     r"""The census by the second route: the actual supertile construction.
 
@@ -803,69 +897,10 @@ def geometric_census(depth=3):
       depth computed. This is the parity-avatar proposition of the source
       paper, verified with its precise phase.
     """
-    IDENT = [[_q3(1), _q3(0), _q3(0)], [_q3(0), _q3(1), _q3(0)]]
-    pts = _tile_points(1, 1)
-    quad = [pts[3], pts[5], pts[7], pts[11]]
-
-    base = {}
-    for label in SPECIES:
-        if label != "Gamma":
-            base[label] = ("tile", label)
-    t8 = pts[8]
-    mystic2 = _mul([[_q3(1), _q3(0), t8[0]], [_q3(0), _q3(1), t8[1]]],
-                   _rot(30))
-    base["Gamma"] = ("meta", [(("tile", "Gamma1"), IDENT),
-                              (("tile", "Gamma2"), mystic2)], quad)
+    IDENT, pts, quad, base = _spectre_scaffold()
 
     def build(tiles):
-        q = tiles["Delta"][2] if tiles["Delta"][0] == "meta" else quad
-        total_angle = 0
-        rotation = _rot(0)
-        trs = [rotation]
-        tq = q
-        for ang, frm, to in ((60, 3, 1), (0, 2, 0), (60, 3, 1), (60, 3, 1),
-                             (0, 2, 0), (60, 3, 1), (-120, 3, 3)):
-            if ang:
-                total_angle += ang
-                rotation = _rot(total_angle % 360)
-                tq = [_apply(rotation, p) for p in q]
-            src = _apply(trs[-1], q[frm])
-            ttrans = [[_q3(1), _q3(0), src[0] - tq[to][0]],
-                      [_q3(0), _q3(1), src[1] - tq[to][1]]]
-            trs.append(_mul(ttrans, rotation))
-        R = [[_q3(-1), _q3(0), _q3(0)], [_q3(0), _q3(1), _q3(0)]]
-        trs = [_mul(R, t) for t in trs]
-        squad = [_apply(trs[6], q[2]), _apply(trs[5], q[1]),
-                 _apply(trs[3], q[2]), _apply(trs[0], q[1])]
-        out = {}
-        for label in SPECIES:
-            subs = RULES_PLACED[label]
-            out[label] = ("meta",
-                          [(tiles[s], trs[i]) for i, s in subs],
-                          squad)
-        return out
-
-    # placement order with original slot indices (None slots dropped)
-    RULES_PLACED = {}
-    ORDERED = {
-        "Gamma": ("Pi", "Delta", None, "Theta", "Sigma", "Xi", "Phi",
-                  "Gamma"),
-        "Delta": ("Xi", "Delta", "Xi", "Phi", "Sigma", "Pi", "Phi", "Gamma"),
-        "Theta": ("Psi", "Delta", "Pi", "Phi", "Sigma", "Pi", "Phi",
-                  "Gamma"),
-        "Lambda": ("Psi", "Delta", "Xi", "Phi", "Sigma", "Pi", "Phi",
-                   "Gamma"),
-        "Xi": ("Psi", "Delta", "Pi", "Phi", "Sigma", "Psi", "Phi", "Gamma"),
-        "Pi": ("Psi", "Delta", "Xi", "Phi", "Sigma", "Psi", "Phi", "Gamma"),
-        "Sigma": ("Xi", "Delta", "Xi", "Phi", "Sigma", "Pi", "Lambda",
-                  "Gamma"),
-        "Phi": ("Psi", "Delta", "Psi", "Phi", "Sigma", "Pi", "Phi", "Gamma"),
-        "Psi": ("Psi", "Delta", "Psi", "Phi", "Sigma", "Psi", "Phi",
-                "Gamma"),
-    }
-    for label, seq in ORDERED.items():
-        RULES_PLACED[label] = [(i, s) for i, s in enumerate(seq)
-                               if s is not None]
+        return _spectre_build(tiles, quad)
 
     tiles = base
     results = []
@@ -1375,3 +1410,126 @@ def _demo():
 
 if __name__ == "__main__":
     _demo()
+
+
+# ---------------------------------------------------------------------------
+# the boundary operator: what grades the perimeter
+# ---------------------------------------------------------------------------
+
+def boundary_sequence(max_order=6):
+    """P(k), boundary edges of the order-k supertile, in exact Q(sqrt3).
+
+    Every edge is a pair of exact Q(sqrt3) points, so two tiles share an
+    edge when their vertex pairs are *equal* -- not when they agree to some
+    number of decimals. That matters more here than elsewhere in this
+    module: the companion repository counts the same sequence with floats
+    rounded to four places, and a rounding key can both merge edges that
+    differ and split edges that do not. Exact arithmetic removes the
+    question rather than bounding it.
+
+    Returns the list P(0), ..., P(max_order).
+    """
+    out = []
+    for k in range(max_order + 1):
+        leaves, pts = _placed_leaves(k)
+        seen = {}
+        for _label, T in leaves:
+            w = [_apply(T, p) for p in pts[:14]]
+            for i in range(14):
+                a, b = w[i], w[(i + 1) % 14]
+                key = tuple(sorted([(a[0].a, a[0].b, a[1].a, a[1].b),
+                                    (b[0].a, b[0].b, b[1].a, b[1].b)]))
+                seen[key] = seen.get(key, 0) + 1
+        out.append(sum(1 for n in seen.values() if n == 1))
+    return out
+
+
+def boundary_operator(max_order=6):
+    """The operator that governs the perimeter, and the unit it produces.
+
+    The area of a supertile inflates by lambda^2 = 4 + sqrt(15), the
+    fundamental unit of Z[sqrt15]. The perimeter does not: it obeys an
+    exact integer recurrence whose characteristic polynomial factors as
+    (x - 1)(x^2 - 4x - 1), so the boundary growth rate is
+
+        nu = 2 + sqrt(5) = phi^3 = 4.2360679...
+
+    which lives in Q(sqrt5), not Q(sqrt15). Area and perimeter of the same
+    tile inflate in different quadratic fields, and the marginal eigenvalue
+    +1 is a conserved boundary quantity of the same kind as Q_plus.
+
+    Since nu > lambda the boundary is fractal, of box dimension
+    log(nu)/log(lambda). Reported here with the recurrence verified against
+    the exactly counted sequence rather than assumed from it.
+    """
+    P = boundary_sequence(max_order)
+    coeffs = (5, -3, -1)
+    resid = [P[k] - (coeffs[0] * P[k - 1] + coeffs[1] * P[k - 2]
+                     + coeffs[2] * P[k - 3]) for k in range(3, len(P))]
+    nu = 2 + math.sqrt(5)
+    phi = (1 + math.sqrt(5)) / 2
+    lam = float(inflation_data()["lambda"])
+    area = lam * lam
+    # the quadratic factor applied to the sequence annihilates the growing
+    # part and leaves the constant belonging to the marginal eigenvalue
+    invariant = set(P[k + 2] - 4 * P[k + 1] - P[k]
+                    for k in range(len(P) - 2))
+    return {
+        "sequence": P,
+        "recurrence": coeffs,
+        "residuals": resid,
+        "exact": all(r == 0 for r in resid),
+        "charpoly": ((1, -5, 3, 1), "(x - 1)(x^2 - 4x - 1)"),
+        "nu": nu,
+        "nu_is_phi_cubed": abs(nu - phi ** 3) < 1e-12,
+        "nu_min_poly": (1, -4, -1),
+        "invariant": sorted(invariant),
+        "area_field": "Q(sqrt15)",
+        "perimeter_field": "Q(sqrt5)",
+        "fractal": nu > lam,
+        "box_dimension": math.log(nu) / math.log(lam),
+        "balanced_exponent": 1 - math.log(nu) / math.log(area),
+    }
+
+
+def golden_is_not_the_hat(max_order=6):
+    """Is nu = phi^3 evidence that the boundary combinatorics are the Hat's?
+
+    The Hat's substitution matrix has Perron eigenvalue phi^4, and the
+    Spectre boundary grows by phi^3. Adjacent powers of the golden ratio in
+    the same repository invite the conjecture that one operator is built
+    from the other. It is not, and the refutation is cheap:
+
+    * x^2 - 4x - 1 divides neither the Spectre substitution charpoly nor
+      the Hat's;
+    * phi^n has minimal polynomial x^2 - L_n x + (-1)^n with L_n Lucas, so
+      x^2 - 4x - 1 IS phi^3 and x^2 - 7x + 1 IS phi^4. Once two quantities
+      are powers of phi their minimal polynomials are forced to be adjacent
+      Lucas quadratics, and the resemblance carries no information beyond
+      Q(sqrt5).
+
+    The Spectre's own unit is not golden: its trace is 8, and 8 is not a
+    Lucas number.
+
+    What survives is weaker and true: mu = lambda^2 / nu has degree four,
+    so it lies in the compositum Q(sqrt3, sqrt5) and in neither quadratic
+    field alone. The Spectre and the Hat meet there, rather than by either
+    containing the other.
+    """
+    lucas = [2, 1, 3, 4, 7, 11, 18, 29]
+    target = (1, -4, -1)                      # x^2 - 4x - 1
+    spectre_factors = [(1, -8, 1), (1, -1), (1, 1)]   # from charpoly()
+    hat_factors = [(1, -7, 1), (1, -1), (1, 1)]
+    return {
+        "target": target,
+        "in_spectre_charpoly": target in spectre_factors,
+        "in_hat_charpoly": target in hat_factors,
+        "lucas_table": [(n, (1, -lucas[n], (-1) ** n)) for n in range(1, 7)],
+        "phi3_is_lucas_3": (1, -lucas[3], -1) == target,
+        "phi4_is_lucas_4": (1, -lucas[4], 1) == (1, -7, 1),
+        "spectre_trace": 8,
+        "spectre_trace_is_lucas": 8 in lucas,
+        "mu_min_poly": (1, 32, -46, -32, 1),
+        "mu_degree": 4,
+        "compositum": "Q(sqrt3, sqrt5)",
+    }

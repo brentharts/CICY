@@ -583,8 +583,17 @@ def universal_negativity_ratio(r):
 
         D(W)/pos = (sin psi_0 - T psi_0) / (T (pi - psi_0) + sin psi_0).
 
-    Universal in the packet and in theta; a strictly decreasing function of
-    r, from 1 at r = 0 (where any negativity would be unfunded, and indeed
+    Universal in theta, and in the packet WITHIN THE UNIFORMLY-WINDING
+    CLASS -- the qualifier above is load-bearing and the word "universal"
+    should not be read past it. A wedge-local packet whose phase does not
+    wind, but instead takes the two values 0 and pi with equal weight,
+    gives 0.3677 at r = 0.5 against this formula's 0.2087: a 76 per cent
+    difference, inside the same class of I_2 = 0 data. What is universal
+    over all wedge-local packets is the BOUND of
+    :func:`negativity_bound`, which that two-valued packet saturates; this
+    ratio is the value taken on the generic, phase-winding subclass.
+
+    A strictly decreasing function of r, from 1 at r = 0 (where any negativity would be unfunded, and indeed
     the flux vanishes) toward 0 as r -> inf (deep squeezes are almost all
     particles). This sharpens the paper's budget (61) into a *ratio law*:
     the fraction of the horizon ledger a squeezed excitation may hold in
@@ -623,12 +632,29 @@ def negativity_bound(r):
     depth available to the anti-evaporating branch is exponentially small in
     the squeeze parameter relative to the deposit that funds it.
 
-    Equality holds only for phase mass concentrated on {0, pi} -- data whose
-    (d chi)^2 is real, which is exactly the boost-blind configuration with
-    |I_2|/I_1 = 1 that wedge-locality excludes. The paper's 0-or-1
-    wedge-locality dichotomy reappears here as the extremal configuration of
-    the bound: the bound is strict on the wedge-local class and saturated
-    precisely on its boundary.
+    EQUALITY IS ATTAINED INSIDE THE CLASS, NOT ON ITS BOUNDARY. An earlier
+    version of this note claimed the extremal configuration was the
+    boost-blind one with |I_2|/I_1 = 1. That is wrong, and the two-point
+    phase distribution settles it. Put weight w at x = +1 and 1 - w at
+    x = -1; then rho_1 = |2w - 1| and
+
+        D/pos = w (1 - T) / ((1 - w)(1 + T)),
+
+    which equals e^{-2r} exactly at w = 1/2 -- where rho_1 = 0, the
+    *most* wedge-local value there is. At w = 1 the data is boost-blind
+    (rho_1 = 1) and the positive part vanishes outright, so the ratio
+    diverges rather than saturating; at w = 0 it is zero.
+
+    The confusion was in the phrase "real (d chi)^2", which covers two
+    different things: real of constant sign, which has rho_1 = 1, and real
+    with balanced sign, which has rho_1 = 0. Only the second is extremal.
+    A packet realising it -- d chi real on one half of its support and
+    purely imaginary on the other -- is wedge-local to 3e-4 and reaches
+    e^{-2r} to four digits at every r tested (see tests/test_nariai.py).
+
+    So the bound is sharp, and sharp within the wedge-local class. The
+    0-or-1 dichotomy is a statement about I_2; it is not the extremality
+    structure of this inequality.
     """
     return math.exp(-2.0 * r)
 
@@ -995,3 +1021,49 @@ def _demo():
 
 if __name__ == "__main__":
     _demo()
+
+
+class BalancedPhasePacket(object):
+    r"""A wedge-local packet that SATURATES the negativity bound.
+
+    ``d chi`` is real on one half of its support and purely imaginary on the
+    other, so ``(d chi)^2`` is real with balanced sign: its phase mass sits
+    at 0 and pi in equal measure. Hence
+
+    * ``I_2 = 0`` -- the packet is wedge-local, as much so as any;
+    * the phase does not wind, so
+      :func:`universal_negativity_ratio` does not apply to it;
+    * ``D(W)/pos`` reaches ``e^{-2r}`` to four digits at every r tested.
+
+    It exists to make two claims falsifiable at once. It shows the bound of
+    :func:`negativity_bound` is sharp, and it shows the extremal
+    configuration is wedge-local rather than boost-blind -- which is the
+    opposite of what the extremality note used to say.
+    """
+
+    def __init__(self, width=3.0, kappa=1.0):
+        self.width = float(width)
+        self.kappa = float(kappa)
+
+    def dchi(self, u):
+        a = np.exp(-(np.asarray(u, dtype=float) / self.width) ** 2)
+        return np.where(np.asarray(u) < 0.0, a + 0j, 1j * a)
+
+    def i1_exact(self):
+        u = np.linspace(-200.0, 200.0, 400001)
+        return float(np.trapezoid(np.abs(self.dchi(u)) ** 2, u))
+
+
+def two_point_phase_ratio(r, w):
+    r"""``D/pos`` for phase mass ``w`` at ``x = +1`` and ``1 - w`` at ``-1``.
+
+    The distribution that settles where the negativity bound is attained.
+    ``rho_1 = |2w - 1|``, so ``w = 1/2`` is the most wedge-local point of the
+    family and ``w = 0`` or ``1`` the boost-blind ones. The ratio equals
+    ``e^{-2r}`` exactly at ``w = 1/2`` and diverges at ``w = 1``.
+    """
+    t = math.tanh(r)
+    pos = (1.0 - w) * (1.0 + t)
+    if pos <= 0.0:
+        return float("inf")
+    return w * (1.0 - t) / pos
