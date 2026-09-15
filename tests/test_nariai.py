@@ -474,6 +474,40 @@ def test_one_mode():
 # [10] the categories
 # ---------------------------------------------------------------------------
 
+def test_extremality():
+    """Where the negativity bound is attained -- inside the class, not on it."""
+    print("\n-- where the negativity bound is attained --")
+    bal = N.BalancedPhasePacket()
+    uu = np.linspace(-200.0, 200.0, 400001)
+    dd = bal.dchi(uu)
+    rho1 = abs(float(np.trapezoid(dd ** 2, uu))) / float(
+        np.trapezoid(np.abs(dd) ** 2, uu))
+    check_true("the balanced-phase packet is wedge-local (I2 = 0)",
+               rho1 < 1e-3)
+    for r in (0.25, 0.5, 1.0, 1.5):
+        b = N.squeezed_flux_budget(r, 0.0, packet=bal)
+        got = b["funded_depth"] / b["positive_part"]
+        check_true("r=%.2f: it saturates e^-2r to 1e-3" % r,
+                   abs(got - N.negativity_bound(r)) < 1e-3)
+        check_true("r=%.2f: the bound is respected" % r,
+                   got <= N.negativity_bound(r) * (1.0 + 1e-9))
+    check_true("so saturation happens INSIDE the wedge-local class",
+               rho1 < 1e-3)
+    check_true("and the winding-phase ratio does not describe it",
+               abs(N.universal_negativity_ratio(0.5)
+                   - N.negativity_bound(0.5)) > 0.1)
+
+    print("\n-- the two-point phase family --")
+    for r in (0.5, 1.0):
+        check_close("r=%.1f: w=1/2 gives exactly e^-2r" % r,
+                    N.two_point_phase_ratio(r, 0.5),
+                    N.negativity_bound(r), 1e-12)
+        check_true("r=%.1f: w=1 (boost-blind) diverges, not saturates" % r,
+                   N.two_point_phase_ratio(r, 1.0) == float("inf"))
+        check_true("r=%.1f: w=0 (boost-blind) gives zero, not e^-2r" % r,
+                   N.two_point_phase_ratio(r, 0.0) == 0.0)
+
+
 def test_categories():
     banner("[10] the right refusals, and the theory object")
 
@@ -541,6 +575,7 @@ def main():
     test_ratio_law()
     test_one_mode()
     test_categories()
+    test_extremality()
 
     print("\n" + "=" * 72)
     if FAILURES:

@@ -259,6 +259,48 @@ def main():
                len(missing) >= 4)
     check_true("describe() runs", len(th.describe()) > 100)
 
+    # ------------------------------------------------------------------
+    print("\n-- the boundary operator: the other unit --")
+    # ------------------------------------------------------------------
+    b = S.boundary_operator(6)
+    check_true("perimeter counted in exact Q(sqrt3), no rounding key",
+               b["sequence"][:4] == [14, 46, 182, 758])
+    check_true("P(0) is 14, the tile's own edge count",
+               b["sequence"][0] == 14)
+    check_true("the order-3 recurrence is exact at every order",
+               b["exact"] and all(r == 0 for r in b["residuals"]))
+    check_true("its charpoly factors as (x-1)(x^2-4x-1)",
+               b["charpoly"][0] == (1, -5, 3, 1))
+    check_close("nu = 2 + sqrt5", b["nu"], 2 + math.sqrt(5), 1e-12)
+    check_true("nu is phi^3", b["nu_is_phi_cubed"])
+    check_true("the quadratic factor leaves the constant -16",
+               b["invariant"] == [-16])
+    check_true("perimeter outruns the linear inflation", b["fractal"])
+    check_close("box dimension of the boundary", b["box_dimension"],
+                math.log(2 + math.sqrt(5))
+                / math.log(float(S.inflation_data()["lambda"])), 1e-12)
+    check_true("area lives in Q(sqrt15), perimeter in Q(sqrt5)",
+               b["area_field"] == "Q(sqrt15)"
+               and b["perimeter_field"] == "Q(sqrt5)")
+
+    # ------------------------------------------------------------------
+    print("\n-- phi^3 next to the Hat's phi^4 is a Lucas identity --")
+    # ------------------------------------------------------------------
+    g = S.golden_is_not_the_hat()
+    check_true("x^2-4x-1 divides neither substitution charpoly",
+               not g["in_spectre_charpoly"] and not g["in_hat_charpoly"])
+    check_true("phi^3 has minimal polynomial x^2 - 4x - 1",
+               g["phi3_is_lucas_3"])
+    check_true("phi^4 has minimal polynomial x^2 - 7x + 1",
+               g["phi4_is_lucas_4"])
+    check_true("so adjacency is forced, not evidence",
+               g["phi3_is_lucas_3"] and g["phi4_is_lucas_4"])
+    check_true("the Spectre's own unit is NOT golden (trace 8 is not Lucas)",
+               not g["spectre_trace_is_lucas"])
+    check_true("what survives: mu has degree 4, not 2", g["mu_degree"] == 4)
+    check_true("so Spectre and Hat meet in a compositum",
+               g["compositum"] == "Q(sqrt3, sqrt5)")
+
     dt = time.time() - t0
     if FAILURES:
         print("test_spectre: %d FAILURES in %.1fs" % (len(FAILURES), dt))
