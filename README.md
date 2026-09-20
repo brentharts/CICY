@@ -77,7 +77,7 @@ forms, the split web over the published list of 7890 threefolds.
 
 **String constructions (`theories/`)**
 A subpackage where different constructions live, sharing the exact machinery
-underneath and each declaring what it can compute. Fourteen are registered:
+underneath and each declaring what it can compute. Fifteen are registered:
 `StandardEmbedding` (V = TX, E₆), `LineBundleModel` (SU(5) and the Standard
 Model), `FTheory6D` (elliptic threefold over a surface, six-dimensional
 N=(1,0), spectrum exact from anomaly cancellation), `FTheory4D` (elliptic
@@ -94,7 +94,10 @@ modules, the first entries that are not compactifications at all:
 `GluonLeadingSingularity`, a maximal residue computed by counting coverings of
 a fatgraph, `SoftFactorisation`, the infrared structure of a Feynman integrand
 read off a graph Laplacian, and `CutsAndContours`, unitarity cuts of a surface
-integral taken as residues. Type IIA orientifolds would go here; they
+integral taken as residues. Newest of all is `NineLinkTexture`, under a third
+base class again: the sparsest Yukawa matrices that can carry the ten flavour
+parameters, where the whole structure is a link diagram and the physics is
+graph theory. Type IIA orientifolds would go here; they
 are not implemented.
 
 The interface is a contract about epistemic status rather than about geometry,
@@ -715,7 +718,7 @@ Next, in order of what would change what this package can claim:
 ```bash
 git clone https://github.com/brentharts/CICY.git && cd CICY
 pip install -r requirements.txt
-python3 run_tests.py            # 35 suites
+python3 run_tests.py            # 36 suites
 make help                       # every worked example
 ```
 
@@ -2491,6 +2494,79 @@ ships none. Nothing was copied from any of them, and given the house rule at
 the top of this file — no Mathematica — an independent Python implementation
 is the point rather than a limitation: a quantity computed once is a result,
 computed twice by unrelated routes it is a test.
+
+
+## Nine-link Yukawa textures
+
+*Implemented. The exact layer only; the numerical scan is declined and says
+so.*
+
+Flavour space is ten-dimensional, and Arkani-Hamed, Figueiredo, Hall and
+Manzari observe that the same ten numbers can be carried by Yukawa matrices
+with exactly nine non-zero entries between them and a single irremovable
+phase. Fit every such texture to the data and the fitted phase piles up at
+multiples of π/8 rather than spreading out — and the reason it does is not a
+fact about fits but about which links are absent, since texture zeros are what
+let one angle of the unitarity triangle equal that phase at leading order.
+
+That makes the interesting layer combinatorial, which is this package's home
+ground. `theories.ninelink` enumerates the textures from the conditions alone
+— nine links, both sectors full rank, the diagram connected, the (3,3) entries
+present — and two counts drop out that are not in the paper: there are **1592**
+nine-link textures, in **36** orbits under relabelling the quark fields. The
+paper's counts are of *fits*, not diagrams, so they are larger and not
+comparable; saying which is which is the point.
+
+Nine links on nine nodes means the cycle rank equals the number of components,
+so "connected" and "exactly one closed loop" are the same condition — which is
+where the single rephasing invariant comes from. The loop lengths come out 4
+and 6, as the paper says. The invariant itself is tested by rotating all nine
+fields by arbitrary phases and requiring the monomial's argument not to move.
+
+The strong-CP claim is graph theory: each determinant term is a perfect
+matching, so the phase can be placed harmlessly exactly when some loop link
+lies in no matching. Over the full enumeration, 1376 of 1592 textures are safe,
+and those are *precisely* the ones with a single perfect matching in each
+sector. The paper's stronger remark — that the failures are all diagonal in one
+sector — holds for its fitted subset but not in general: of 216 failures only
+56 are diagonal, and the module reports the counts rather than the claim.
+
+### Two of three worked examples reproduce
+
+The paper derives next-to-leading corrections for three example textures.
+Rather than repeat the expansion, the module diagonalises the same matrices
+exactly and evaluates the published closed form on the CKM matrix that
+produces. Examples 1 and 3 agree, with the residual falling like ε⁴.
+
+Example 2 does not, and the reason is specific enough to be worth recording.
+Its diagram has one loop, `{Yu13, Yu33, Yd13, Yd33}`, and **the entry the paper
+marks with the phase, `Yd32`, is not in it** — so the phase is removable by
+rephasing and diagonalising the matrices as printed gives β = 0 exactly, not
+π/8. Moving it to `Yd13`, the down-type loop entry with the smallest indices
+and the paper's own stated placement rule, restores β = π/8 at leading order;
+but then the printed correction does not describe the residual, which falls
+like ε⁴ while the quoted correction is of order ε². The first looks like a
+transcription slip; whether the second follows from it, `example_two_anomaly`
+returns the numbers and takes no view.
+
+Two smaller pieces of arithmetic. The side ratios of the (π/2, π/8, 3π/8)
+triangle are derived from the right triangle rather than quoted, giving
+`|R_α| = cot(π/8) = 1 + √2`, `|R_β| = 1/cos(π/8)`, `|R_γ| = sin(π/8) =
+cos(3π/8)`. And the π/4 peak's condition, `(y_s/y_b)²|V_us/V_ub|² ≈ √2`,
+evaluates to 1.262 against 1.414 on the paper's own Table S2 inputs — about
+11%, where the paper says 9%.
+
+One more exact check worth its line: the Z8 sketch for fixing the whole
+triangle gives `i(1−e^{iπ/4})/(1+e^{iπ/4})`, which the paper identifies with
+`i·tan(π/8)`. In exact arithmetic `(1−e^{iθ})/(1+e^{iθ}) = −i·tan(θ/2)`, so
+the expression is `tan(π/8)` — real, hence a degenerate triangle rather than a
+right one. A single factor of i. Reported as computed.
+
+Declined: the phase histogram and every count derived from it, the predicted
+ellipses, and any claim to have derived a texture rather than assumed one. All
+raise `NeedsFit`, which is not a fifth ledger category but the flavour-side
+`NeedsMetric` — a fit is numerical, and a scan reports the minima it found in
+the box it searched, never "the solutions".
 
 ## The aperiodic monotile, exactly
 
