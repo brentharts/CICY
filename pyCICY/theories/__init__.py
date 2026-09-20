@@ -63,6 +63,14 @@ Currently implemented:
                                    which a candidate stringy integral stops
                                    being unitary; convergence of the contour
                                    is a theorem and is declined
+    nine-link-texture              the sparsest Yukawa matrices that carry the
+                                   ten flavour parameters: the enumeration of
+                                   link diagrams, their loops and rephasing
+                                   invariants, the determinant terms that
+                                   settle strong CP, and the unitarity angles
+                                   by exact diagonalisation; the phase
+                                   histogram is the output of a fit and is
+                                   declined
 
 Not every construction here is a compactification any more, and one of them is
 not even shaped like `Theory`. `surface` adds a sibling base class,
@@ -85,6 +93,17 @@ the only construction in this package whose headline result is a failure: a
 candidate stringy completion that satisfies unitarity at six mass levels and
 cannot satisfy it at the seventh. Reproducing a contradiction is a stronger
 test of an implementation than reproducing a value.
+
+`flavorbase` adds the third base class. A theory of flavour asks neither what
+comes out of a geometry nor what an amplitude equals, but what structure in
+the Yukawa matrices accounts for the measured masses, mixings and CP
+violation, so it gets its own verbs -- `texture`, `rephasing_invariant`,
+`predicted_angle`, `deviation`. It was tempting to reuse `Theory`, since for
+once its verbs nearly apply; the reason not to is that `holomorphic_yukawa`
+here means a cup product of cohomology classes and there it means a
+phenomenological ansatz for the same matrix. `NeedsFit` is not a fifth ledger
+entry but the flavour-side `NeedsMetric`: a fit is numerical, and worse, a
+scan reports the minima it found in the box it searched.
 
 The Yukawa side is layered by how much of the class each step needs: `yukawa`
 decides the texture from dimensions, `representatives` labels the Koszul origin
@@ -170,6 +189,10 @@ from .softgraph import SoftFactorisation
 from . import softgraph
 from .contours import CutsAndContours
 from . import contours
+from .flavorbase import FlavorTheory, NeedsFit
+from . import flavorbase
+from .ninelink import NineLinkTexture
+from . import ninelink
 from . import surfaceology
 
 __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
@@ -187,4 +210,6 @@ __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "SurfaceTheory", "NotAnalytic", "NeedsIntegration", "surface",
            "GluonLeadingSingularity", "gluons", "surfaceology",
            "SoftFactorisation", "softgraph",
-           "CutsAndContours", "contours"]
+           "CutsAndContours", "contours",
+           "FlavorTheory", "NeedsFit", "flavorbase",
+           "NineLinkTexture", "ninelink"]
