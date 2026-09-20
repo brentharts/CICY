@@ -1,8 +1,12 @@
-# pyCICY-X
+# pyEXACT
 
-## exact methods for string compactifications, from a configuration matrix to a verdict
+## exact methods in string theory and quantum field theory, from a configuration matrix to a curve on a surface
 
-### Calabi–Yau topology, heterotic model building, gauge couplings and moduli — and a sharp account of where exactness ends
+### Calabi–Yau topology, heterotic model building, F-theory, orientifolds, M-theory, entropic gravity, aperiodic order — and now scattering amplitudes — each with a sharp account of where exactness ends
+
+*Formerly pyCICY-X. The repository is still `CICY` and the import is still
+`pyCICY`; only the name of the project has changed, because the old one
+described a third of it.*
 
 A pure-Python toolkit: `numpy`, `scipy`, `sympy`. No SageMath, no Mathematica,
 no GPU, no training runs. Everything is exact integer or rational arithmetic
@@ -19,7 +23,17 @@ at the Ricci-flat metric, at cohomology representatives, at moduli
 stabilisation — it stops explicitly, with an exception rather than an
 estimate.
 
-## pyCICY-X Papers and figures
+What the rename records is that the configuration matrix stopped being the
+only starting point. The Nariai horizon is Lorentzian and not even Kähler; the
+Spectre substrate is a tiling of the plane; and the next arrival —
+amplitudes — is built from graphs, curves on surfaces and tropical fans rather
+than from intersection numbers and cohomology. What all of them share is not a
+geometry. It is a discipline: exact arithmetic where the mathematics allows
+it, two independent routes wherever a number admits them, and a ledger that
+distinguishes what is exact from what needs input this package cannot supply
+from what does not exist at all.
+
+## Papers and figures
 - What Wedge-Locality Determines, and What the Phase Averages Out: Exact Tests and a Universal Negativity Bound for Entropic Gravity on the Nariai Horizon https://doi.org/10.5281/zenodo.21908671
 - What Real-Space Geometry Determines, and What Has No Momentum Space: Exact Methods for the Aperiodic Monotile Family https://doi.org/10.5281/zenodo.21893694
 - What Holomorphy Determines, and What a Rank Cannot See: Exact Methods for Twistor Geometry and Tree Amplitudes https://doi.org/10.5281/zenodo.21892738
@@ -59,15 +73,27 @@ forms, the split web over the published list of 7890 threefolds.
   generation counts.
 
 **String constructions (`theories/`)**
-A subpackage where different compactifications live, sharing the exact
-machinery underneath and each declaring what it can compute. Five so far:
+A subpackage where different constructions live, sharing the exact machinery
+underneath and each declaring what it can compute. Eleven are registered:
 `StandardEmbedding` (V = TX, E₆), `LineBundleModel` (SU(5) and the Standard
 Model), `FTheory6D` (elliptic threefold over a surface, six-dimensional
 N=(1,0), spectrum exact from anomaly cancellation), `FTheory4D` (elliptic
-fourfold, D3 tadpole exact, spectrum flux-dependent) and `Orientifold` (a
+fourfold, D3 tadpole exact, spectrum flux-dependent), `Orientifold` (a
 holomorphic involution of a CICY, equivariant Hodge numbers computed two
-independent ways). Type IIA orientifolds and M-theory would go here; they are
-not implemented.
+independent ways), `MTheory5D`, `MTheoryG2` and `MTheory3D` (five, four and
+three dimensions, the cubic prepotential exact and chiral matter absent as a
+theorem), `NariaiEntropic` (entropic gravity on the Nariai horizon, where the
+von Neumann entropy does not exist), and the pair `SpectreSubstrate` and
+`CrossoverParityProbe`, which check each other: the first computes a
+log-period with no free parameter in it, the second searches real CMB band
+powers at exactly that frequency. Type IIA orientifolds would go here; they
+are not implemented.
+
+The interface is a contract about epistemic status rather than about geometry,
+which is why `X = None` is allowed and why the subpackage has outgrown
+compactification. The next thing to go in is not a compactification at all:
+see **Amplitudes on surfaces**, below, for the `SurfaceTheory` base and the
+three papers it is being built from.
 
 **The metric bridge (`export`)**
 Hands verified models to the numerical-metric packages. Generates a defining
@@ -662,6 +688,15 @@ Next, in order of what would change what this package can claim:
    additionally need the metric, and masses additionally need moduli
    stabilisation. That chain is the remaining distance between this toolkit
    and a prediction.
+4. **Amplitudes on surfaces.** *Next.* A `SurfaceTheory` base alongside
+   `Theory`, sharing the registry and the exception hierarchy but with its own
+   verbs, and three modules under it: gluon leading singularities as a
+   covering problem, soft factorisation from graph Laplacians, and cuts and
+   contours in the positive parametrisation. The argument for the interface,
+   the exact layer of each paper and the line where each stops are set out
+   under **Amplitudes on surfaces** above. This is the first part of the
+   package whose objects are graphs and curves rather than configuration
+   matrices, and it is why the project is no longer called pyCICY-X.
 
 
 ---
@@ -671,7 +706,7 @@ Next, in order of what would change what this package can claim:
 ```bash
 git clone https://github.com/brentharts/CICY.git && cd CICY
 pip install -r requirements.txt
-python3 run_tests.py            # 14 suites, ~3 minutes
+python3 run_tests.py            # 32 suites
 make help                       # every worked example
 ```
 
@@ -2154,6 +2189,188 @@ make twistor
 make twistor-paper      # the write-up, with every number recomputed
 ```
 
+## Amplitudes on surfaces
+
+*Design, not code. Nothing in this section is implemented yet; it is here so
+that the interface is argued for in public before it is written.*
+
+The twistor module above ends by saying that loops are absent: the trees are
+exact and complete, and no loop amplitude is computed. Three recent papers
+close most of that gap, and they close it with arithmetic this package is
+already built for — enumerating coverings of a graph, inverting integer
+matrices, and reading residues off a polynomial. No metric, no Monte Carlo,
+no regulator.
+
+### Why they need their own base class
+
+Everything in `theories/` so far answers one question: what four-dimensional
+physics comes out of this geometry. `Theory` therefore has `gauge_group`,
+`spectrum` and `holomorphic_yukawa`. None of those three means anything for a
+leading singularity. `NariaiEntropic` already stretched the interface by
+setting `X = None` and keeping only the ledger, and the subpackage docstring
+says as much — but three more classes for which the interface's own verbs are
+meaningless would be a sign that the interface is wrong, not that the physics
+is unusual.
+
+So amplitudes get a sibling: `SurfaceTheory`, alongside `Theory`, sharing
+`NeedsMetric`, `NoSuchTheory` and the same registry, with its own verbs —
+`leading_singularity`, `cuts`, `soft_limit`. The shared machinery is graphs,
+curves on surfaces and tropical fans rather than intersection numbers and
+cohomology, and the registry is the only thing the two halves genuinely have
+in common. That is enough: the point of the registry was never the geometry,
+it was that one lookup tells you what a construction claims.
+
+### Gluon leading singularities are a counting problem
+
+Carrôlo and Figueiredo compute the leading singularity of a pure-gluon
+amplitude by gluing three-point vertices and drawing the Lorentz contractions
+as curves on the fatgraph. What falls out is combinatorics: each monomial in
+the answer is one way of covering every edge of the fatgraph exactly once with
+non-overlapping curves, where a curve may be used as its *core* or extended by
+turning right once and then left repeatedly. The sign of a monomial is
+`(−1)^Ne` with `Ne` the number of extensions used. Both the monomials and the
+signs match the maximal residue of the surface integral term by term.
+
+That is a `while` loop over subsets, not an integral, and it is exactly the
+kind of thing `spectre.census` and `ftheory.cluster` already do. Three
+checkable outputs, in increasing order of how much they would test:
+
+- the three-point vertex, six monomials in the scaffolded variables, which the
+  gluing and the residue must produce identically;
+- the one-loop bubble, `(D−2) X₂ₚ X₄ₚ`, where the closed-curve contribution
+  `(1−D)` and the three extension terms must combine to `(2−D)` before the
+  overall sign;
+- the closed-curve exponent at any loop order, which the paper settles: a
+  closed curve homotopic to an internal boundary — equivalently, one that
+  turns only left — carries `1−D`, and every other closed curve carries `−D`.
+  For a planar graph that reduces to `1−D` for a curve around one puncture and
+  `−D` for a curve around more, but the left-turning formulation is the one
+  that survives non-planarity, and the paper gives a non-planar example where
+  the puncture-counting version is not even well defined.
+
+And one output that is a genuine test rather than a reproduction. Taking the
+n-gon leading singularity in the limit where every loop-dependent variable
+goes to `Y` and every purely external one to `X`, the coefficients organise as
+`(2−D)Yⁿ` minus a polynomial whose coefficients are those of the Lucas
+polynomials `Lₙ(x) = x Lₙ₋₁(x) − Lₙ₋₂(x)`, checked in the paper to n = 13 with
+the box and triangle as stated exceptions. An independent implementation that
+reproduces a two-term integer recurrence it was never told about is a test in
+the sense this package means the word. There is no explanation for the match
+yet, which makes it exactly the sort of thing worth recomputing.
+
+The paper also gives the V-rule, which decides cancellations without summing:
+if two cores in a monomial have overlapping extensions the monomial does not
+survive, because the overlap always admits a second covering differing by one
+extension and hence by a sign. That is a filter, and filters that cut a search
+box before it is enumerated are the design rule of `yukawa` and `bundles`
+restated in a new domain.
+
+Fermion loops are sketched in the paper rather than settled — the sign of a
+monomial there depends on the whole intersection pattern inside the loop, not
+just on the extension count — so a `NoSuchTheory`-shaped decline is the right
+answer for QCD until that is worked out, not an implementation.
+
+### Soft factorisation is linear algebra on a graph Laplacian
+
+Figueiredo, Gambuti and Hannesdottir build the infrared structure of a Feynman
+integral out of the reduced graph Laplacian `L`, with `U = (∏ α) det L` and
+`F = U[p·p (L⁻¹) − Σ m² α]` by the matrix-tree theorem. Under a soft scaling
+`L` becomes block-diagonal, `det L` factorises, and the worldline action
+splits as `V → V_H + V_S`. Everything in that sentence is exact rational
+arithmetic on a graph.
+
+The exact layer is large and unusually testable:
+
+- the divergent directions come from the outer normals of the Minkowski sum of
+  the Newton polytopes of `U` and `F`, and a ray is logarithmically divergent
+  when the tropical function vanishes on it, power divergent when it is
+  positive. The one-loop ray is `(1,1,2)`; the planar two-loop ladder has
+  `(0,1,0,1,0,2)` and `(1,1,1,1,2,2)`; the non-planar ladder has only the
+  second. Those are integer vectors from a convex hull, computable without
+  `polymake`;
+- the worldline variables are not a change of notation but a matrix identity:
+  inverting the tridiagonal jet block gives `(Jᵢ⁻¹)ᵥᵥ' = β_{i,min(v,v')}` with
+  `β_{i,k} = α_{i,1} + ⋯ + α_{i,k}`, the distance along the worldline from the
+  hard vertex. Assert it symbolically for a jet of any length and the whole
+  factorisation argument rests on something a test can see;
+- written in those variables the planar and non-planar ladders have the *same*
+  soft integrand and differ only in their integration region — planar
+  `0 < β₁,₁ < β₁,₂`, `0 < β₂,₁ < β₂,₂`; non-planar the same on one jet and
+  reversed on the other — so that summing the two fills the positive octant
+  and produces the `1/2` that becomes `1/ℓ!` and hence the exponential.
+
+What is *not* exact here is worth naming precisely, because it is a different
+kind of gap from the metric. Combining the rays requires extending each
+expansion beyond where it is valid and subtracting the overlap: the modified
+soft integrand `dS₂ − dS₁ × dS₁`, which geometrically is a blow-up adding the
+ray `r_[2] + r_[1,2]` to the fan, with an alternating sign. The combinatorics
+of that inclusion–exclusion over rays is exact; the statement that the
+remainder is infrared finite is a theorem in the paper, not something a
+computation here would verify. And the exponentiated soft anomalous dimension
+is a perturbative series. So this module would export exact ray data, exact
+Laplacian blocks and exact domain decompositions, and decline the resummed
+answer — which connects it to `running` and `couplings`, where an anomalous
+dimension already arrives from the other end of the package.
+
+### Cuts and contours: the part that is exact is the part that is combinatorial
+
+Figueiredo and Skowronek work in the positive `y` parametrisation, where every
+singularity is blown up at once. Three layers, and they sit in three different
+places on the ledger.
+
+Exact and immediate: the `u`-variables from the word of a curve on the
+fatgraph, as a product of the two 2×2 matrices for left and right turns
+followed by the cross-ratio `u = M₁₂M₂₁/(M₁₁M₂₂)`; the g-vector of a curve as
+valleys minus peaks of its word; the resulting fan, whose cones are the planar
+diagrams and have unit volume, so the map taking any cone to the positive
+orthant has Jacobian one. This is `spectre`-style symbolic combinatorics and
+it is the layer a Python package should own.
+
+Exact but arithmetic on top of it: the residues. The one-loop two-point
+integrand truncates at winding `min(n₁,n₂)` because a curve of self-intersection
+`q` first contributes at order `y^q`, so each massive threshold is a *finite*
+residue computation. Matching those against three-point couplings fixed at
+tree level gives a tower of unitarity constraints, and the paper uses it to
+rule things out: the `D̂ₙ` integral forces `X₁,₁ = X₂,₂ = 0` and then `d = 4`
+from the `(1,1)` level, and with those fixed the `(2,1)` level cannot be
+matched at all. The truncated "baby" integrals fail too, by giving the same
+value at three different levels. Reproducing a *contradiction* is a sharper
+test than reproducing a value, and the tachyon exponents —
+`Δ(q) = (1−d/2)q² − (d/2)q`, with the open-curve exponents fixed by homology —
+are the control case that must still match.
+
+Not exact, and a category the package has not had to name before: the contour
+prescriptions. That the `iε` contour needs `R⋆ > ln(n−3)` to avoid the branch
+cuts of the F-polynomials is a derivation, and the count of pieces in the
+generalised Pochhammer contour — `2^{n(n−3)/2}` sheets, at five points 32
+sheets glued by 80 tubes and 40 tori — is combinatorics this package can
+produce. But the *convergence* of the resulting integral is an analytic
+statement, true by argument rather than by arithmetic, checkable here only in
+examples. It is neither exact, nor waiting on a metric, nor non-existent. If
+this module is built, the interface will need a fourth category and should say
+so plainly rather than filing it under one of the three it has.
+
+### What would be in the package, and what would not
+
+Exact, and the reason to build it: coverings of a fatgraph and the leading
+singularity polynomial; the ∆ rule; the V-rule; Symanzik polynomials from a
+Laplacian; tropical rays from a Newton polytope; worldline variables and the
+domain decomposition; `u`-variables, words, g-vectors and the Feynman fan;
+threshold residues and the unitarity constraints they impose.
+
+Declined: physical cross-sections, resummed anomalous dimensions, numerical
+worldsheet integration at large kinematics — where, as the paper shows, the
+answer is a fine cancellation between two exponentially large pieces and
+finite precision is the binding constraint, not the method.
+
+The companion code for two of the three papers is a Mathematica notebook
+(arXiv ancillary material for the soft-factorisation paper; a 325 kB ZIP of
+supplementary material for cuts-and-contours). The leading-singularity paper
+ships none. Nothing was copied from any of them, and given the house rule at
+the top of this file — no Mathematica — an independent Python implementation
+is the point rather than a limitation: a quantity computed once is a result,
+computed twice by unrelated routes it is a test.
+
 ## The aperiodic monotile, exactly
 
 `pyCICY.monotile` takes the package's habit of exact arithmetic to the Hat —
@@ -2436,6 +2653,13 @@ The module has been developed in the context of the following papers:
   - https://arxiv.org/pdf/2606.27588
 - Lara B. Anderson, James Gray, Sunit A. Patil, Caoimhín Scanlon (2025) Mapping moduli across heterotic conifolds
   - https://arxiv.org/pdf/2512.18124
+
+- Sérgio Carrôlo, Carolina Figueiredo (2025) How gluon leading singularities discover curves on surfaces
+  - https://arxiv.org/abs/2512.17019 ; JHEP 07 (2026) 101
+- Carolina Figueiredo, Giulio Gambuti, Holmfridur S. Hannesdottir (2026) Soft factorisation and exponentiation from Schwinger-space geometry
+  - https://doi.org/10.1007/JHEP05(2026)040 ; arXiv:2506.15603 ; J. High Energ. Phys. 2026, 40
+- Carolina Figueiredo, Marcos Skowronek (2025) Cuts and contours
+  - https://doi.org/10.1007/JHEP12(2025)024 ; arXiv:2506.05456 ; J. High Energ. Phys. 2025, 24
 
 - Pasquale Marra, Valerio Proietti, Xiaobing Sheng (2024) Hofstadter-Toda spectral duality and quantum groups
   - https://arxiv.org/abs/2312.14242 ; J. Math. Phys. 65, 072102
