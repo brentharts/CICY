@@ -39,6 +39,9 @@ from what does not exist at all.
 - What Holomorphy Determines, and What a Rank Cannot See: Exact Methods for Twistor Geometry and Tree Amplitudes https://doi.org/10.5281/zenodo.21892738
 - What Anomaly Cancellation Determines, and What Does Not Exist: Exact Methods for F-theory and Type IIB Orientifolds https://doi.org/10.5281/zenodo.21865768
 - What a Configuration Matrix Determines, and What It Does Not: Exact Methods for Heterotic Compactifications on CICYs https://doi.org/10.5281/zenodo.21844007
+- What Curves on Surfaces Determine, and What Only Converges: Exact Methods
+  for Gluon Leading Singularities, Soft Factorisation and Unitarity Cuts
+  - [FigueiredoSurfaceology.md](FigueiredoSurfaceology.md) (in this repository)
 - Supplementary material: figures for the pyCICY-X package
   - [https://doi.org/10.5281/zenodo.21798923](https://doi.org/10.5281/zenodo.21843383)
   - https://dx.doi.org/10.2139/ssrn.7250858
@@ -2205,6 +2208,9 @@ close most of that gap, and they close it with arithmetic this package is
 already built for — enumerating coverings of a graph, inverting integer
 matrices, and reading residues off a polynomial. No metric, no Monte Carlo,
 no regulator.
+
+The full write-up — every number, every check, and the ledger filled in — is
+[FigueiredoSurfaceology.md](FigueiredoSurfaceology.md).
 
 ### What is in the package now
 
