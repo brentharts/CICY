@@ -30,6 +30,17 @@ Currently implemented:
                                    relative entropy, Clausius relation, and
                                    the Einstein coupling 8pi exact; the von
                                    Neumann entropy does not exist (type III)
+    spectre-substrate              the chiral Spectre monotile phase proposed
+                                   for the conformal crossover surface:
+                                   substitution spectrum, census, charges and
+                                   tile geometry exact in Q(sqrt15) and
+                                   Q(sqrt3); the crossover itself is a
+                                   conjecture and is not tested
+    crossover-parity               the observational layer of the same
+                                   proposal: the rotation algebra exact, the
+                                   log-periodic band-power search a stated
+                                   modeling step, the chirality of the tensor
+                                   sector not yet observable at all
 
 The Yukawa side is layered by how much of the class each step needs: `yukawa`
 decides the texture from dimensions, `representatives` labels the Koszul origin
@@ -67,6 +78,19 @@ multiplet counts read off the Hodge numbers must equal the ones read off the
 six-dimensional anomaly conditions. :func:`~pyCICY.theories.mtheory.
 circle_reduction_of_6d` compares them. They agree.
 
+`spectre` and `parity` are the two halves of one proposal and are the third
+pair in the package that checks itself: `spectre` computes the substitution's
+spectral theory exactly, including the log-period log(4 + sqrt15) that has no
+free parameter in it, and `parity` takes that same number to real band powers
+and asks whether it is there. The frequency the second searches at is not
+fitted; it is the first one's output.
+
+Beside the constructions are the modules that take an exact spectrum
+downstream: `running` to the beta coefficients and the QCD scale, `couplings`
+to unification and what can honestly be said about 137, `moduli` to the
+racetrack dilaton, and `etg_foreground` to the foreground that would sit
+underneath the parity verdicts if it were real.
+
 Type IIA orientifolds would go here too. They are not implemented.
 """
 
@@ -86,6 +110,14 @@ from . import orientifold
 from . import mtheory
 from .nariai import NariaiEntropic, TypeIIIFactor
 from . import nariai
+from .spectre import SpectreSubstrate
+from . import spectre
+from .parity import CrossoverParityProbe
+from . import parity
+from . import moduli
+from . import running
+from . import couplings
+from . import etg_foreground
 
 __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "StandardEmbedding", "LineBundleModel", "yukawa",
@@ -95,4 +127,7 @@ __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "MTheory5D", "MTheoryG2", "MTheory3D", "BarelyG2",
            "NoChiralMatter", "circle_reduction_of_6d",
            "horava_witten_scales", "mtheory",
-           "NariaiEntropic", "TypeIIIFactor", "nariai"]
+           "NariaiEntropic", "TypeIIIFactor", "nariai",
+           "SpectreSubstrate", "spectre",
+           "CrossoverParityProbe", "parity",
+           "moduli", "running", "couplings", "etg_foreground"]
