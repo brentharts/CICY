@@ -74,7 +74,7 @@ forms, the split web over the published list of 7890 threefolds.
 
 **String constructions (`theories/`)**
 A subpackage where different constructions live, sharing the exact machinery
-underneath and each declaring what it can compute. Thirteen are registered:
+underneath and each declaring what it can compute. Fourteen are registered:
 `StandardEmbedding` (V = TX, E₆), `LineBundleModel` (SU(5) and the Standard
 Model), `FTheory6D` (elliptic threefold over a surface, six-dimensional
 N=(1,0), spectrum exact from anomaly cancellation), `FTheory4D` (elliptic
@@ -89,8 +89,9 @@ log-period with no free parameter in it, the second searches real CMB band
 powers at exactly that frequency. Newest are the two amplitude
 modules, the first entries that are not compactifications at all:
 `GluonLeadingSingularity`, a maximal residue computed by counting coverings of
-a fatgraph, and `SoftFactorisation`, the infrared structure of a Feynman
-integrand read off a graph Laplacian. Type IIA orientifolds would go here; they
+a fatgraph, `SoftFactorisation`, the infrared structure of a Feynman integrand
+read off a graph Laplacian, and `CutsAndContours`, unitarity cuts of a surface
+integral taken as residues. Type IIA orientifolds would go here; they
 are not implemented.
 
 The interface is a contract about epistemic status rather than about geometry,
@@ -692,9 +693,8 @@ Next, in order of what would change what this package can claim:
    additionally need the metric, and masses additionally need moduli
    stabilisation. That chain is the remaining distance between this toolkit
    and a prediction.
-4. **Amplitudes on surfaces.** *Two of three in.* The `SurfaceTheory` base,
-   the gluon leading-singularity module and the soft-factorisation module are
-   in and tested; cuts and contours is next. A `SurfaceTheory` base alongside
+4. **Amplitudes on surfaces.** *Done.* The `SurfaceTheory` base and all three
+   modules are in and tested. A `SurfaceTheory` base alongside
    `Theory`, sharing the registry and the exception hierarchy but with its own
    verbs, and three modules under it: gluon leading singularities as a
    covering problem, soft factorisation from graph Laplacians, and cuts and
@@ -712,7 +712,7 @@ Next, in order of what would change what this package can claim:
 ```bash
 git clone https://github.com/brentharts/CICY.git && cd CICY
 pip install -r requirements.txt
-python3 run_tests.py            # 34 suites
+python3 run_tests.py            # 35 suites
 make help                       # every worked example
 ```
 
@@ -2197,9 +2197,7 @@ make twistor-paper      # the write-up, with every number recomputed
 
 ## Amplitudes on surfaces
 
-*Partly implemented. The base class and two of the three modules are in; the
-cuts-and-contours half is still design. What is code and what is not is marked
-below.*
+*Implemented. The base class and all three modules are in and tested.*
 
 The twistor module above ends by saying that loops are absent: the trees are
 exact and complete, and no loop amplitude is computed. Three recent papers
@@ -2281,7 +2279,42 @@ and this module can exhibit the subtraction and check examples but an example
 is not the statement), and the soft anomalous dimension (`NeedsIntegration` —
 a resummed series).
 
-Still design, not code: the cuts-and-contours module described below.
+`theories.contours` is the third, and the only construction in this package
+whose headline result is a failure. Leading singularities of the one-loop
+two-point integrand are residues in the positive coordinates, and because a
+curve with `q` self-intersections first contributes at order `y^q`, every
+massive threshold is a finite residue rather than a truncated infinite
+product — which is what makes this arithmetic rather than analysis. The five
+rows of the published table come out exactly, and the mirror rows are produced
+rather than assumed, since the integrand is symmetric under swapping the two
+coordinates together with the two curve exponents.
+
+Then the matching runs level by level: the two massless-massive levels and
+their mirrors force both open-curve exponents to vanish, the first
+doubly-massive level forces `d = 4`, and at the next level the two sides are
+`2` and `45/16` with nothing left to adjust. The function returns the whole
+sequence rather than a boolean, because the shape of the failure is the
+result. The truncated "baby" integrals fail differently and more cheaply:
+three different mass levels all return `−Δ₁−Δ₂` while the tree side does not.
+
+One thing the implementation taught me, recorded in the tests as a check in
+its own right: **without the mirror levels the same system looks satisfiable.**
+Only one exponent ever gets determined, the dimension is never pinned, and
+every level solves — for a wrong value of `d`. A contradiction has to be
+reproduced carefully, not asserted, and the near miss is worth keeping visible.
+
+Also exact and much simpler: the contour as combinatorics. The pieces of the
+generalised Pochhammer contour are counted as faces of the associahedron — 32
+sheets, 80 tubes and 40 tori at five points — with the top face count coming
+out as the Catalan number, which was not put in. The cutoff `log(n−3)` that
+keeps the deformation off the branch cuts is an exact bound.
+
+Declined there: that the contour converges everywhere (`NotAnalytic` — the
+fourth ledger entry doing exactly the work it was added for), numerical
+evaluation at large kinematics (`NotAnalytic` again, but for a different
+reason: the answer is a fine cancellation between two exponentially large
+pieces, so finite precision is the binding constraint, not method), and the
+α′ expansion (`NeedsIntegration`).
 
 ### Why they need their own base class
 
