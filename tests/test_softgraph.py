@@ -25,7 +25,14 @@ by enumeration, and the two must agree.
                     graphs with different Symanzik polynomials, and in
                     worldline variables their soft integrands are identical.
                     The whole difference has moved into the domain
-  [6] ledger        NotAnalytic for the finiteness theorem, NeedsIntegration
+  [6] blobs         past the ladders: a soft web containing an unscaled
+                    subgraph. The blob is pinched to a point, and the claim
+                    splits in two -- the action is independent of its internal
+                    parameters, while U is not, since a blob with a loop of
+                    its own contributes a factor. The pinch is a graph
+                    operation, so the comparison is a statement about the
+                    expansion rather than about two graphs drawn to agree
+  [7] ledger        NotAnalytic for the finiteness theorem, NeedsIntegration
                     for the resummed anomalous dimension, registration
 
 Run with:  python3 tests/test_softgraph.py
@@ -235,11 +242,65 @@ def test_topology():
 
 
 # ---------------------------------------------------------------------------
-# [6] the ledger
+# [6] blobs and pinching
+# ---------------------------------------------------------------------------
+
+def test_blobs():
+    print("\n[6] past the ladders: a blob inside a soft web, pinched")
+
+    sf = SG.SoftFactorisation()
+
+    tree = SG.blob_web(blob_edges=1)
+    loop = SG.blob_web(blob_edges=3)
+    check("a tree blob adds no loop of its own", tree.loops, 2)
+    check("a triangle blob does", loop.loops, 3)
+
+    # the pinch is a graph operation, so the comparison has content
+    p = SG.pinch(tree, tree.blob)
+    check("pinching removes the blob's internal edges",
+          len(p.edges), len(tree.edges) - 1)
+    check_true("and leaves the rest of the graph alone",
+               set(p.alpha) | {"ab1"} == set(tree.alpha))
+
+    for g, has_loop in ((tree, False), (loop, True)):
+        r = sf.pinching(g)
+        kind = "loop" if has_loop else "tree"
+        check_true("%s blob: the action is blob-independent" % kind,
+                   not r["blob_in_action"])
+        check_true("%s blob: and equals the pinched graph's action" % kind,
+                   r["action_agrees"])
+        check("%s blob: U carries the blob's own loops" % kind,
+              r["blob_in_U"], has_loop)
+
+    # U factorises into connected webs, one factor per web
+    a = loop.alpha
+    r = sf.pinching(loop)
+    want = (a["g1"] * (a["g2"] + a["g3"])
+            * (a["ab1"] + a["ab2"] + a["ab3"]))
+    check_true("U is a product over connected webs",
+               sp.expand(r["U"] - want) == 0)
+    check_true("the blob enters U only through its own loop",
+               sp.expand(sp.cancel(r["U"] / r["U_pinched"])
+                         - (a["ab1"] + a["ab2"] + a["ab3"])) == 0)
+
+    # and the action still splits web by web, in worldline variables
+    b11, b12, b21, b22 = sp.symbols("beta11 beta12 beta21 beta22",
+                                    positive=True)
+    V = SG.soft_action(loop, loop.soft_ray, worldline=True)
+    want = (SG.one_loop_F(b11, b21) / a["g1"]
+            + SG.one_loop_F(b12, b22) / (a["g2"] + a["g3"]))
+    check_true("the action is a sum of one-loop factors, one per web",
+               sp.simplify(V - want) == 0)
+    check_true("the pinched web's U is the sum of its two photons",
+               not (a["g2"] + a["g3"]).has(a["ab1"]))
+
+
+# ---------------------------------------------------------------------------
+# [7] the ledger
 # ---------------------------------------------------------------------------
 
 def test_ledger():
-    print("\n[6] registration, and refusals of the right kind")
+    print("\n[7] registration, and refusals of the right kind")
 
     check_true("registered", "soft-factorisation" in T.registry)
     cls = T.get("soft-factorisation")
@@ -286,6 +347,7 @@ def main():
     test_rays()
     test_factorisation()
     test_topology()
+    test_blobs()
     test_ledger()
 
     print("\n" + "=" * 72)
