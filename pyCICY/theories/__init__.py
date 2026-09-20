@@ -105,6 +105,20 @@ phenomenological ansatz for the same matrix. `NeedsFit` is not a fifth ledger
 entry but the flavour-side `NeedsMetric`: a fit is numerical, and worse, a
 scan reports the minima it found in the box it searched.
 
+`nariai_lean` adds something orthogonal to the ledger: a *grade*. The ledger
+sorts quantities -- exact, needs a metric, does not exist, true by argument.
+This sorts confidence in a claim that is already exact:
+
+    exact  <  computed twice by unrelated routes  <  machine-checked
+
+It takes the finite algebra behind the Nariai interference functional --
+which is a statement about sumsets of finite integer spectra, not about
+analysis -- emits it as Mathlib-free Lean 4, and asks the kernel. Every fact
+is paired with the Python computation of the same claim, so the Lean cannot
+drift into proving something about a different object, and the axiom report
+is parsed rather than trusted: a file that compiles while resting on
+`sorryAx` is not a proof, and `check_lean` refuses to call it checked.
+
 The Yukawa side is layered by how much of the class each step needs: `yukawa`
 decides the texture from dimensions, `representatives` labels the Koszul origin
 and rules products out from that label, `cocycles` writes the class down as a
@@ -193,6 +207,7 @@ from .flavorbase import FlavorTheory, NeedsFit
 from . import flavorbase
 from .ninelink import NineLinkTexture
 from . import ninelink
+from . import nariai_lean
 from . import surfaceology
 
 __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
@@ -212,4 +227,4 @@ __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "SoftFactorisation", "softgraph",
            "CutsAndContours", "contours",
            "FlavorTheory", "NeedsFit", "flavorbase",
-           "NineLinkTexture", "ninelink"]
+           "NineLinkTexture", "ninelink", "nariai_lean"]
