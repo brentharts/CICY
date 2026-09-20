@@ -186,6 +186,17 @@ papers: paper strings-paper twistor-paper monotile-paper
 test:
 	$(PYTHON) run_tests.py
 
+# Emit the Nariai finite algebra as Mathlib-free Lean 4 and kernel-check it.
+# Needs a `lean` on PATH, or PYCICY_LEAN pointing at one; without a toolchain
+# the file is still written and the module reports that it was not checked.
+lean:
+	$(PYTHON) -c "from pyCICY.theories import nariai_lean as N; \
+	  open('NariaiFacts.lean','w').write(N.lean_source()); \
+	  r=N.check_lean(path='NariaiFacts.lean'); \
+	  print('toolchain:', r['available'], 'ok:', r['ok']); \
+	  print('unsound:', r.get('unsound')); \
+	  [print(' ', k, v) for k, v in sorted(r['axioms'].items())]"
+
 # Download the published CICY three-fold list. The data is redistributed by
 # its authors, not by pyCICY, so it is fetched rather than vendored.
 data:
@@ -310,5 +321,5 @@ distclean: clean
 	-rmdir $(FIGDIR) 2>/dev/null || true
 
 help:
-	@echo "targets: all paper papers strings-paper strings-facts twistor-paper twistor-facts monotile-paper monotile-facts figures test survey toric-survey knot-chirality chirality hyperbolic aj bundles hofstadter polytope new-figures supplement clean distclean cache-info cache-clear"
+	@echo "targets: all paper papers strings-paper strings-facts twistor-paper twistor-facts monotile-paper monotile-facts figures test survey toric-survey knot-chirality chirality hyperbolic aj bundles hofstadter polytope new-figures supplement clean distclean cache-info cache-clear lean"
 	@echo "vars:    DEPTH=$(DEPTH) MAX_CONFIGS=$(MAX_CONFIGS) CHARGE=$(CHARGE) ORDER=$(ORDER) BUDGET=$(BUDGET) FLUX=$(FLUX) HFLUX=$(HFLUX) PYTHON=$(PYTHON)"

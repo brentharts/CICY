@@ -39,6 +39,7 @@ SUITES = ["tests/test_viz.py", "tests/test_pycicy.py",
           "tests/test_softgraph.py",
           "tests/test_contours.py",
           "tests/test_ninelink.py",
+          "tests/test_nariai_lean.py",
           "tests/test_twistor.py",
           "tests/test_monotile.py"]
 

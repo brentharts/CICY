@@ -721,7 +721,7 @@ Next, in order of what would change what this package can claim:
 ```bash
 git clone https://github.com/brentharts/CICY.git && cd CICY
 pip install -r requirements.txt
-python3 run_tests.py            # 36 suites
+python3 run_tests.py            # 37 suites
 make help                       # every worked example
 ```
 
@@ -2599,6 +2599,61 @@ ellipses, and any claim to have derived a texture rather than assumed one. All
 raise `NeedsFit`, which is not a fifth ledger category but the flavour-side
 `NeedsMetric` — a fit is numerical, and a scan reports the minima it found in
 the box it searched, never "the solutions".
+
+
+## Machine-checked: the Nariai finite algebra in Lean
+
+The package's weakest Nariai claim used to be its most quotable one. The
+interference functional was verified numerically — build a boost-positive
+packet, integrate, read `|I2|/I1 = 1e-15` — which is a float near zero in a
+package whose whole discipline is that one number computed once is not a test.
+
+The vanishing is not really analysis. `I2` is the zero-frequency component of
+`(∂_u χ)²`, whose spectrum is the **sumset** of the packet's own. So `I2 = 0`
+exactly when no two frequencies sum to zero: never for a finite set of
+positive integers, always for a symmetric one. That is a statement about
+finite sets of integers, and a finite statement about integers can be *proved*.
+
+`theories.nariai_lean` does both halves. It computes the sumset layer exactly
+— integers throughout, no floating point in any statement — and it emits the
+same facts as Mathlib-free Lean 4 and asks the kernel to check them. Sixteen
+facts: the exponent balance that makes the modular weight cancel (and the
+negative half, that it fails by exactly −2 without the derivative factors),
+the sumset mechanism in general and for the packet actually built, the
+detector bound and its saturation, and the ring identities behind the one-mode
+sum rule. All sixteen compile with **no `sorryAx` and no `Classical.choice`**;
+four need no axioms at all.
+
+That adds a grade this package has not had:
+
+> exact < computed twice by unrelated routes < **machine-checked**
+
+Not a fifth ledger entry — the ledger sorts *kinds of quantity*, and these are
+exact quantities that have gained confidence. `status()` reports it separately
+for that reason.
+
+Three design points are load-bearing. Every fact is a pair: a Lean theorem and
+a Python callable computing the same claim, so the proof cannot drift into
+being about a different object than the one the package uses. The axiom report
+is *parsed*, not trusted — a file that compiles while resting on `sorryAx` is
+not a proof, and `check_lean` refuses to call such a file checked. And the
+absence of a toolchain is reported rather than papered over: `lean_source()`
+always works, `check_lean()` returns `ok: None` with `available: False`, and
+nothing ever claims a check that did not run.
+
+The integers also describe the object actually built. On a periodic grid a
+packet on bins `[jmin, jmax]` has a strictly positive spectrum as a property of
+integers, with no tail; the occupied DFT bins of `(∂_u χ)²`, *measured from
+the signal*, equal the sumset *computed from the indices*; and `|I2|/I1` stays
+at roundoff for `jmin = 1` as much as for `jmin = 60`, because nothing is being
+truncated.
+
+```bash
+make lean        # emit NariaiFacts.lean and kernel-check it
+```
+
+The analysis stays where it belongs. A theorem about improper integrals of
+distributions is not going to be settled by `decide`, and the module says so.
 
 ## The aperiodic monotile, exactly
 
