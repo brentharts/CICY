@@ -56,6 +56,13 @@ Currently implemented:
                                    exact; the finiteness of the subtracted
                                    remainder is a theorem and the soft
                                    anomalous dimension a resummed series
+    cuts-and-contours              unitarity cuts of a one-loop surface
+                                   integral: the residues at any mass level
+                                   and the piece count of the Pochhammer
+                                   contour exact, including the level at
+                                   which a candidate stringy integral stops
+                                   being unitary; convergence of the contour
+                                   is a theorem and is declined
 
 Not every construction here is a compactification any more, and one of them is
 not even shaped like `Theory`. `surface` adds a sibling base class,
@@ -73,7 +80,11 @@ graphs rather than surfaces, with U and F built from the Laplacian and checked
 against spanning trees and spanning 2-forests. The two amplitude modules also
 check each other in the small way that matters, by declining each other's
 verbs: a leading singularity is a covering problem and a soft limit is a
-tropical one, and neither pretends to the other.
+tropical one, and neither pretends to the other. `contours` is the third, and
+the only construction in this package whose headline result is a failure: a
+candidate stringy completion that satisfies unitarity at six mass levels and
+cannot satisfy it at the seventh. Reproducing a contradiction is a stronger
+test of an implementation than reproducing a value.
 
 The Yukawa side is layered by how much of the class each step needs: `yukawa`
 decides the texture from dimensions, `representatives` labels the Koszul origin
@@ -157,6 +168,8 @@ from .gluons import GluonLeadingSingularity
 from . import gluons
 from .softgraph import SoftFactorisation
 from . import softgraph
+from .contours import CutsAndContours
+from . import contours
 from . import surfaceology
 
 __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
@@ -173,4 +186,5 @@ __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "moduli", "running", "couplings", "etg_foreground",
            "SurfaceTheory", "NotAnalytic", "NeedsIntegration", "surface",
            "GluonLeadingSingularity", "gluons", "surfaceology",
-           "SoftFactorisation", "softgraph"]
+           "SoftFactorisation", "softgraph",
+           "CutsAndContours", "contours"]
