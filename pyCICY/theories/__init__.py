@@ -41,6 +41,26 @@ Currently implemented:
                                    log-periodic band-power search a stated
                                    modeling step, the chirality of the tensor
                                    sector not yet observable at all
+    gluon-leading-singularity      maximal residues of pure-gluon amplitudes
+                                   as a covering problem on a fatgraph: the
+                                   three-point vertex, the extension balance,
+                                   the closed-curve exponent and the n-gon
+                                   coefficients exact; cuts need a phase-space
+                                   integration and fermion loops have no
+                                   settled sign rule
+
+Not every construction here is a compactification any more, and one of them is
+not even shaped like `Theory`. `surface` adds a sibling base class,
+:class:`~pyCICY.theories.surface.SurfaceTheory`, for amplitudes: same
+registry, same exception hierarchy, different verbs
+(`leading_singularity`, `cuts`, `soft_limit`), because `gauge_group` and
+`spectrum` mean nothing for a maximal residue. It also adds the ledger's
+fourth entry, :exc:`~pyCICY.theories.surface.NotAnalytic`, for a statement
+that is true by argument rather than by arithmetic -- the convergence of a
+contour, say -- which is neither exact, nor waiting on a metric, nor
+non-existent. `surfaceology` is the machinery underneath: curves on a disk,
+u-variables from F-polynomials, and the u-equations as the independent check
+that the parametrisation is the right one.
 
 The Yukawa side is layered by how much of the class each step needs: `yukawa`
 decides the texture from dimensions, `representatives` labels the Koszul origin
@@ -118,6 +138,11 @@ from . import moduli
 from . import running
 from . import couplings
 from . import etg_foreground
+from .surface import SurfaceTheory, NotAnalytic, NeedsIntegration
+from . import surface
+from .gluons import GluonLeadingSingularity
+from . import gluons
+from . import surfaceology
 
 __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "StandardEmbedding", "LineBundleModel", "yukawa",
@@ -130,4 +155,6 @@ __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "NariaiEntropic", "TypeIIIFactor", "nariai",
            "SpectreSubstrate", "spectre",
            "CrossoverParityProbe", "parity",
-           "moduli", "running", "couplings", "etg_foreground"]
+           "moduli", "running", "couplings", "etg_foreground",
+           "SurfaceTheory", "NotAnalytic", "NeedsIntegration", "surface",
+           "GluonLeadingSingularity", "gluons", "surfaceology"]
