@@ -74,7 +74,7 @@ forms, the split web over the published list of 7890 threefolds.
 
 **String constructions (`theories/`)**
 A subpackage where different constructions live, sharing the exact machinery
-underneath and each declaring what it can compute. Eleven are registered:
+underneath and each declaring what it can compute. Twelve are registered:
 `StandardEmbedding` (V = TX, E₆), `LineBundleModel` (SU(5) and the Standard
 Model), `FTheory6D` (elliptic threefold over a surface, six-dimensional
 N=(1,0), spectrum exact from anomaly cancellation), `FTheory4D` (elliptic
@@ -86,14 +86,16 @@ theorem), `NariaiEntropic` (entropic gravity on the Nariai horizon, where the
 von Neumann entropy does not exist), and the pair `SpectreSubstrate` and
 `CrossoverParityProbe`, which check each other: the first computes a
 log-period with no free parameter in it, the second searches real CMB band
-powers at exactly that frequency. Type IIA orientifolds would go here; they
+powers at exactly that frequency. Newest is `GluonLeadingSingularity`, the
+first entry that is not a compactification at all: a maximal residue computed
+by counting coverings of a fatgraph. Type IIA orientifolds would go here; they
 are not implemented.
 
 The interface is a contract about epistemic status rather than about geometry,
 which is why `X = None` is allowed and why the subpackage has outgrown
-compactification. The next thing to go in is not a compactification at all:
-see **Amplitudes on surfaces**, below, for the `SurfaceTheory` base and the
-three papers it is being built from.
+compactification. It has now outgrown `Theory` as well: amplitudes get a
+sibling base, `SurfaceTheory`, sharing the registry and the exceptions but
+with its own verbs. See **Amplitudes on surfaces**, below.
 
 **The metric bridge (`export`)**
 Hands verified models to the numerical-metric packages. Generates a defining
@@ -688,7 +690,9 @@ Next, in order of what would change what this package can claim:
    additionally need the metric, and masses additionally need moduli
    stabilisation. That chain is the remaining distance between this toolkit
    and a prediction.
-4. **Amplitudes on surfaces.** *Next.* A `SurfaceTheory` base alongside
+4. **Amplitudes on surfaces.** *Started.* The `SurfaceTheory` base and the
+   gluon leading-singularity module are in and tested; the other two are
+   next. A `SurfaceTheory` base alongside
    `Theory`, sharing the registry and the exception hierarchy but with its own
    verbs, and three modules under it: gluon leading singularities as a
    covering problem, soft factorisation from graph Laplacians, and cuts and
@@ -706,7 +710,7 @@ Next, in order of what would change what this package can claim:
 ```bash
 git clone https://github.com/brentharts/CICY.git && cd CICY
 pip install -r requirements.txt
-python3 run_tests.py            # 32 suites
+python3 run_tests.py            # 33 suites
 make help                       # every worked example
 ```
 
@@ -2191,8 +2195,8 @@ make twistor-paper      # the write-up, with every number recomputed
 
 ## Amplitudes on surfaces
 
-*Design, not code. Nothing in this section is implemented yet; it is here so
-that the interface is argued for in public before it is written.*
+*Partly implemented. The base class and the first module are in; the other two
+papers are still design. What is code and what is not is marked below.*
 
 The twistor module above ends by saying that loops are absent: the trees are
 exact and complete, and no loop amplitude is computed. Three recent papers
@@ -2200,6 +2204,55 @@ close most of that gap, and they close it with arithmetic this package is
 already built for — enumerating coverings of a graph, inverting integer
 matrices, and reading residues off a polynomial. No metric, no Monte Carlo,
 no regulator.
+
+### What is in the package now
+
+`theories.surface` is the base — `SurfaceTheory` beside `Theory`, sharing
+`registry`, `NeedsMetric` and `NoSuchTheory`, with verbs `leading_singularity`,
+`cuts` and `soft_limit`. It carries the fourth ledger entry promised above,
+`NotAnalytic`, and `NeedsIntegration`, which is not a fifth category but the
+amplitude-side `NeedsMetric`: an exact integrand in hand and a named missing
+integration.
+
+`theories.surfaceology` is the machinery: chords of the n-gon, crossing
+numbers, F-polynomials, u-variables. Its own construction is a closed form and
+is not self-checking, so the check is the u-equations, which share no code with
+it — one route knows F-polynomials and nothing about which chords interleave,
+the other knows the interleaving and nothing about F-polynomials. Every
+residual vanishes identically as a rational function at n = 4, 5, 6, and the
+resulting exponents reproduce the published five-point integrand factor by
+factor. That check is also what fixes the index conventions, which the
+literature states for a different range than the one used here.
+
+`theories.gluons` is the first amplitude. The three-gluon vertex is derived
+rather than quoted: build the polarisations from pairs of scalar momenta,
+write the standard vertex, rewrite every dot product through the dual
+coordinates. The gauge parameters then cancel on their own, the squares of the
+dual coordinates cancel on their own, and six monomials remain — the published
+ones, up to the power of two the paper says it drops. The `(2−D)` coefficient
+is derived from the alternating binomial sum rather than asserted, so the
+bubble is the n = 2 case of one identity rather than a separate result, and
+the closed-curve exponent is implemented by the left-turning criterion rather
+than by counting punctures, because only the former survives non-planarity.
+
+The Lucas check works. The coefficients come out of a two-term recurrence and
+out of a binomial closed form, independently, and agree to n = 20; against the
+paper's table they agree term by term for n = 4 through 8, with the triangle
+carrying the extra overall factor of two the paper notes. One observation
+worth recording: under this module's normalisation the box agrees in *every*
+coefficient, including the `C₂` the paper's footnote flags as the one
+exception. That is most likely a difference in how the sum is normalised
+rather than a disagreement about a number, but it is the kind of thing worth
+writing down rather than smoothing over.
+
+Declined, with the right exception rather than a plausible number: cuts
+(`NeedsIntegration` — the leading singularity is exact, the phase-space
+integral is not done here), fermion loops (`NotAnalytic` — the sign there
+depends on the whole intersection pattern inside the loop and the paper leaves
+the cancellations open), and cross-sections.
+
+Still design, not code: the soft-factorisation module and the cuts-and-contours
+module described below.
 
 ### Why they need their own base class
 
