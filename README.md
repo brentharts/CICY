@@ -42,6 +42,9 @@ from what does not exist at all.
 - What Curves on Surfaces Determine, and What Only Converges: Exact Methods
   for Gluon Leading Singularities, Soft Factorisation and Unitarity Cuts
   - [FigueiredoSurfaceology.md](FigueiredoSurfaceology.md) (in this repository)
+- What Nine Links Determine, and What Only a Fit Can Say: Exact Methods for
+  Nine-Link Yukawa Textures, the Unitarity Triangle, and the Strong CP Problem
+  - [FigueiredoFlavor.md](FigueiredoFlavor.md) (in this repository)
 - Supplementary material: figures for the pyCICY-X package
   - [https://doi.org/10.5281/zenodo.21798923](https://doi.org/10.5281/zenodo.21843383)
   - https://dx.doi.org/10.2139/ssrn.7250858
@@ -2499,7 +2502,8 @@ computed twice by unrelated routes it is a test.
 ## Nine-link Yukawa textures
 
 *Implemented. The exact layer only; the numerical scan is declined and says
-so.*
+so. The full write-up is
+[FigueiredoFlavor.md](FigueiredoFlavor.md).*
 
 Flavour space is ten-dimensional, and Arkani-Hamed, Figueiredo, Hall and
 Manzari observe that the same ten numbers can be carried by Yukawa matrices
@@ -2561,6 +2565,34 @@ triangle gives `i(1−e^{iπ/4})/(1+e^{iπ/4})`, which the paper identifies with
 `i·tan(π/8)`. In exact arithmetic `(1−e^{iθ})/(1+e^{iθ}) = −i·tan(θ/2)`, so
 the expression is `tan(π/8)` — real, hence a degenerate triangle rather than a
 right one. A single factor of i. Reported as computed.
+
+### The monotile question, settled
+
+The Spectre substitution in `theories.spectre` acts on nine species; a texture
+has nine links. The temptation to read something into that is why the module
+answers it. The nines are unrelated — nine links is ten observables minus one
+phase, nine species is how many metatiles the substitution needs — and the
+objects are not alike, since the substitution matrix has 56 non-zero entries
+and row sums up to 16.
+
+The arithmetic is the real question and it is exact. The special angles need
+√2, since `tan(π/8) = √2 − 1`. The inflation factor is `λ = (√6+√10)/2` with
+`λ² = 4+√15`, so its field is `Q(√6,√10)`, whose quadratic subfields are given
+by the square classes `{1, 6, 10, 15}` — `Q(√6)`, `Q(√10)`, `Q(√15)`. **√2 is
+not among them**, and neither is √3.
+
+One corner survives. `Q(ζ₈) ∩ Q(ζ₁₂) = Q(i)`, so a twelve-fold vacuum — which
+is what the monotile's geometry is — and an eight-fold texture share exactly
+the multiples of π/2. That is α, and only α: the peak with nine equivalence
+classes, the right-triangle case, the strong-CP-friendly one. A
+monotile-flavoured spontaneous CP violation could deliver α = π/2 and could not
+deliver β = π/8 or γ = 3π/8. And `lcm(8,12) = 24` says what would be needed
+instead. Not an identification — a constraint, with the subgroup named.
+
+Also exact, and more general than nine links: the number of irremovable CP
+phases in *any* texture is `E − V + C`, the cycle rank of its link diagram.
+Nine links on nine nodes is exactly the case where connectivity forces that to
+one.
 
 Declined: the phase histogram and every count derived from it, the predicted
 ellipses, and any claim to have derived a texture rather than assumed one. All
