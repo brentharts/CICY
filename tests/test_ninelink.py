@@ -34,7 +34,13 @@ disagree the test records the disagreement instead of the claim.
   [6] triangle      exact surds for the (pi/2, pi/8, 3pi/8) triangle, the
                     factor of i in the Z8 sketch, and the pi/4 coincidence
                     evaluated against Table S2
-  [7] ledger        NeedsFit for anything that needs the scan, registration
+  [7] phases        the number of irremovable CP phases is E - V + C, a
+                    graph invariant, so "nine links" is exactly the case
+                    where it equals one. Then the question of whether the
+                    Spectre monotile's arithmetic can supply the flavour
+                    phases, settled in square classes and cyclotomic fields
+                    rather than by counting nines
+  [8] ledger        NeedsFit for anything that needs the scan, registration
                     beside the other constructions, describe()
 
 Run with:  python3 tests/test_ninelink.py
@@ -286,11 +292,68 @@ def test_triangle():
 
 
 # ---------------------------------------------------------------------------
-# [7] the ledger
+# [7] phases as a graph invariant, and the monotile question
+# ---------------------------------------------------------------------------
+
+def test_phases_and_monotile():
+    print("\n[7] the phase count is a graph invariant; and the monotile")
+
+    ts = N.enumerate_textures()
+    check("cycle ranks over the whole enumeration",
+          sorted({N.cycle_rank(t) for t in ts}), [1])
+    check_true("so every nine-link texture has exactly one physical phase",
+               all(N.independent_phases(t) == 1 for t in ts[:200]))
+
+    # the count is E - V + C, so it is not special to nine links: add a link
+    # and a loop appears
+    t = ts[0]
+    extra = None
+    for k in range(9):
+        if not (t.u >> k & 1):
+            extra = N.Texture(t.u | 1 << k, t.d)
+            break
+    check("adding one link adds one independent phase",
+          N.cycle_rank(extra), 2)
+
+    # the arithmetic question, settled rather than waved at
+    m = N.monotile_compatibility()
+    check("quadratic subfields of the inflation field",
+          m["inflation_square_classes"], [1, 6, 10, 15])
+    check_true("sqrt15 is in it, as the fundamental unit requires",
+               m["sqrt15_in_inflation_field"])
+    check_true("but sqrt2 is not, and tan(pi/8) needs it",
+               not m["sqrt2_in_inflation_field"])
+    check_true("and neither is sqrt3, the placement field",
+               not m["sqrt3_in_inflation_field"])
+    check_true("tan(pi/8) really is sqrt2 - 1",
+               sp.simplify(sp.tan(sp.pi / 8) - (sp.sqrt(2) - 1)) == 0)
+
+    check("eight-fold meets twelve-fold in four-fold",
+          m["eightfold_meets_twelvefold"]["intersection_order"], 4)
+    check("so the shared phases are multiples of pi/2",
+          m["angles_a_twelvefold_vacuum_can_fix"], ["alpha = pi/2"])
+    check("and twenty-four-fold is the smallest that contains both",
+          m["smallest_vacuum_containing_both"], 24)
+    check("eight-fold sits inside twenty-four-fold",
+          m["eightfold_meets_twentyfourfold"]["intersection_order"], 8)
+
+    # the two nines are not the same nine: the substitution matrix is nothing
+    # like a link diagram
+    from pyCICY.theories import spectre as S
+    M = S.substitution_matrix()
+    check("substitution species", len(M), 9)
+    check_true("but its matrix has far more than nine non-zero entries",
+               sum(1 for row in M for x in row if x) > 9)
+    check_true("and rows with weight above one, which no link diagram has",
+               max(sum(row) for row in M) > 9)
+
+
+# ---------------------------------------------------------------------------
+# [8] the ledger
 # ---------------------------------------------------------------------------
 
 def test_ledger():
-    print("\n[7] registration, and refusals of the right kind")
+    print("\n[8] registration, and refusals of the right kind")
 
     check_true("registered", "nine-link-texture" in T.registry)
     cls = T.get("nine-link-texture")
@@ -345,6 +408,7 @@ def main():
     test_angles()
     test_example_two()
     test_triangle()
+    test_phases_and_monotile()
     test_ledger()
 
     print("\n" + "=" * 72)
