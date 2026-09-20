@@ -21,6 +21,17 @@ is checkable and surprising: the planar and non-planar two-loop ladders are
 different graphs with different Laplacians, and after the soft expansion, in
 worldline variables, they agree identically.
 
+Past the ladders there are diagrams whose soft webs contain an unscaled
+connected subgraph -- a *blob* -- and there the expansion does something
+different again. The blob is pinched: at leading order it enters only through
+which photons attach to it, so contracting it to a point changes nothing.
+:func:`pinch` performs that contraction as a graph operation and
+:meth:`SoftFactorisation.pinching` compares the two, which separates a claim
+that is usually stated as one. ``U`` is not blob-independent -- a blob with a
+loop of its own contributes its own factor, exactly as the factorisation into
+connected webs says it should. The worldline action is. U remembers the blob;
+the action forgets it.
+
 Three routes to U, two to F
 ---------------------------
 :meth:`Graph.U` is the determinant of the reduced Laplacian.
@@ -66,7 +77,8 @@ import sympy as sp
 from .surface import SurfaceTheory, NeedsIntegration, NotAnalytic, register
 
 __all__ = ["Graph", "SoftFactorisation", "one_loop_vertex", "planar_ladder",
-           "nonplanar_ladder", "one_loop_F", "soft_integrand", "jet_block",
+           "nonplanar_ladder", "blob_web", "pinch", "soft_action",
+           "one_loop_F", "soft_integrand", "jet_block",
            "worldline_inverse", "scale_by_ray", "leading_in",
            "tropical_function", "ray_divergence", "search_soft_rays"]
 
@@ -356,6 +368,92 @@ def nonplanar_ladder(m=None, s=None):
     return g
 
 
+def pinch(graph, vertices, name=None):
+    """Contract a set of vertices to a single point, dropping edges inside it.
+
+    The operation the soft expansion performs on a blob. It is a graph
+    operation here, with no physics in it: identify the vertices, delete the
+    edges that had both ends among them, keep everything else.
+
+    The point of having it as an operation rather than a second hand-written
+    graph is that the comparison then has content. If
+    :func:`soft_action` agrees between a graph and its pinch, that is a
+    statement about the expansion, not about two graphs someone drew to agree.
+    """
+    keep = set(vertices)
+    target = sorted(keep)[0]
+    edges = []
+    for lab, u, v, m in graph.edges:
+        if u in keep and v in keep:
+            continue
+        edges.append((lab, target if u in keep else u,
+                      target if v in keep else v, m))
+    momenta = {(target if v in keep else v): p
+               for v, p in graph.momenta.items()}
+    return Graph(edges, momenta=momenta, dots=graph.dots,
+                 reduce_at=(target if graph.reduce_at in keep
+                            else graph.reduce_at),
+                 name=name or (graph.name + ", pinched"))
+
+
+def soft_action(graph, ray, worldline=False):
+    """The leading worldline action ``F / U`` along a ray.
+
+    The object the pinching argument is about. ``U`` and ``F`` separately can
+    both depend on a blob's internal parameters; their ratio at leading order
+    does not.
+    """
+    Ul, _ = leading_in(*scale_by_ray(graph.U(), ray, graph.alpha))
+    Fl, _ = leading_in(*scale_by_ray(graph.F(), ray, graph.alpha))
+    V = sp.cancel(sp.together(Fl / Ul))
+    if worldline and getattr(graph, "worldline", None):
+        sub = {graph.alpha[k]: v for k, v in graph.worldline.items()}
+        V = sp.cancel(V.subs(sub, simultaneous=True))
+    return V
+
+
+def blob_web(blob_edges=1, m=None, s=None):
+    """Two jets, one photon between them, and a second web ending on a blob.
+
+    The simplest diagram that is not a ladder. Two massive lines carry two
+    photons each: the inner photon runs directly between the jets, and the
+    outer two both end on an unscaled subgraph -- a *blob* -- which is what
+    the ladders never have.
+
+    ``blob_edges`` is 1 for a blob that is a single edge, hence a tree, and 3
+    for a triangle, hence a blob with a loop of its own. The distinction
+    matters and is the point of the parameter: see
+    :meth:`SoftFactorisation.pinching`.
+    """
+    m = sp.Symbol("m", positive=True) if m is None else m
+    s = sp.Symbol("s") if s is None else s
+    edges = [("a11", "h0", "v11", m), ("a12", "v11", "v12", m),
+             ("a21", "h0", "v21", m), ("a22", "v21", "v22", m),
+             ("g1", "v11", "v21", 0),
+             ("g2", "v12", "b1", 0), ("g3", "v22", "b2", 0)]
+    if blob_edges == 1:
+        edges += [("ab1", "b1", "b2", 0)]
+        blob = ["b1", "b2"]
+    elif blob_edges == 3:
+        edges += [("ab1", "b1", "b2", 0), ("ab2", "b2", "b3", 0),
+                  ("ab3", "b3", "b1", 0)]
+        blob = ["b1", "b2", "b3"]
+    else:
+        raise ValueError("blob_edges must be 1 (a tree) or 3 (a loop)")
+    g = Graph(edges, momenta={"v12": "p1", "v22": "p2"},
+              dots=_kinematics(m, s), reduce_at="h0",
+              name="web with a %s blob" % ("tree" if blob_edges == 1
+                                           else "loop"))
+    g.blob = blob
+    b11, b12, b21, b22 = _beta()
+    g.worldline = {"a11": b11, "a12": b12 - b11,
+                   "a21": b21, "a22": b22 - b21}
+    #: jets scale as lambda^-1, photons as lambda^-2, the blob not at all
+    g.soft_ray = {"a11": 1, "a12": 1, "a21": 1, "a22": 1,
+                  "g1": 2, "g2": 2, "g3": 2}
+    for lab in g.alpha:
+        g.soft_ray.setdefault(lab, 0)
+    return g
 def one_loop_F(x, y, m=None, s=None):
     """The one-loop F in worldline variables: ``s x y - m^2 (x + y)^2``."""
     m = sp.Symbol("m", positive=True) if m is None else m
@@ -591,6 +689,43 @@ class SoftFactorisation(SurfaceTheory):
                      "divergences that cancel against the infrared ones",
                      "resummation of the resulting series"])
 
+    def pinching(self, graph=None, ray=None):
+        """Compare a diagram containing a blob with the same diagram pinched.
+
+        Past the ladders, a soft web can contain an unscaled connected
+        subgraph -- a blob -- and the expansion treats it in a way that is
+        easy to state and worth checking: at leading order the blob enters
+        only through which photons attach to it, so contracting it to a point
+        changes nothing.
+
+        The result separates two things that are usually said together. ``U``
+        is *not* blob-independent: a blob with a loop of its own contributes
+        its own factor, exactly as the factorisation into connected webs
+        predicts. The worldline action *is* blob-independent, for either kind
+        of blob. So the honest statement is that U remembers the blob and the
+        action forgets it, and the test distinguishes the two cases rather
+        than asserting the stronger claim for both.
+        """
+        g = graph or blob_web(1)
+        r = ray or getattr(g, "soft_ray", None)
+        if r is None:
+            raise ValueError("give a ray, or a graph carrying soft_ray")
+        if not getattr(g, "blob", None):
+            raise ValueError("this graph has no blob to pinch")
+        p = pinch(g, g.blob)
+        rp = {k: v for k, v in r.items() if k in p.alpha}
+        U_b, _ = leading_in(*scale_by_ray(g.U(), r, g.alpha))
+        U_p, _ = leading_in(*scale_by_ray(p.U(), rp, p.alpha))
+        V_b, V_p = soft_action(g, r), soft_action(p, rp)
+        inside = [g.alpha[lab] for lab, u, v, _ in g.edges
+                  if u in g.blob and v in g.blob]
+        return {"U": U_b, "U_pinched": U_p,
+                "action": V_b, "action_pinched": V_p,
+                "blob_parameters": inside,
+                "blob_in_U": any(U_b.has(x) for x in inside),
+                "blob_in_action": any(V_b.has(x) for x in inside),
+                "action_agrees": sp.simplify(V_b - V_p) == 0}
+
     def exact_content(self):
         return [
             "the Symanzik polynomials from the graph Laplacian, and "
@@ -601,6 +736,9 @@ class SoftFactorisation(SurfaceTheory):
             "classification of that ray as logarithmic, power or finite",
             "that the planar and non-planar ladders have the same soft "
             "integrand in worldline variables, and differ only in domain",
+            "that a blob inside a soft web is pinched to a point: the "
+            "worldline action is independent of its internal parameters, and "
+            "equals the action of the contracted graph",
         ]
 
     def declined(self):
