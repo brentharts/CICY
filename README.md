@@ -74,7 +74,7 @@ forms, the split web over the published list of 7890 threefolds.
 
 **String constructions (`theories/`)**
 A subpackage where different constructions live, sharing the exact machinery
-underneath and each declaring what it can compute. Twelve are registered:
+underneath and each declaring what it can compute. Thirteen are registered:
 `StandardEmbedding` (V = TX, E₆), `LineBundleModel` (SU(5) and the Standard
 Model), `FTheory6D` (elliptic threefold over a surface, six-dimensional
 N=(1,0), spectrum exact from anomaly cancellation), `FTheory4D` (elliptic
@@ -86,9 +86,11 @@ theorem), `NariaiEntropic` (entropic gravity on the Nariai horizon, where the
 von Neumann entropy does not exist), and the pair `SpectreSubstrate` and
 `CrossoverParityProbe`, which check each other: the first computes a
 log-period with no free parameter in it, the second searches real CMB band
-powers at exactly that frequency. Newest is `GluonLeadingSingularity`, the
-first entry that is not a compactification at all: a maximal residue computed
-by counting coverings of a fatgraph. Type IIA orientifolds would go here; they
+powers at exactly that frequency. Newest are the two amplitude
+modules, the first entries that are not compactifications at all:
+`GluonLeadingSingularity`, a maximal residue computed by counting coverings of
+a fatgraph, and `SoftFactorisation`, the infrared structure of a Feynman
+integrand read off a graph Laplacian. Type IIA orientifolds would go here; they
 are not implemented.
 
 The interface is a contract about epistemic status rather than about geometry,
@@ -690,9 +692,9 @@ Next, in order of what would change what this package can claim:
    additionally need the metric, and masses additionally need moduli
    stabilisation. That chain is the remaining distance between this toolkit
    and a prediction.
-4. **Amplitudes on surfaces.** *Started.* The `SurfaceTheory` base and the
-   gluon leading-singularity module are in and tested; the other two are
-   next. A `SurfaceTheory` base alongside
+4. **Amplitudes on surfaces.** *Two of three in.* The `SurfaceTheory` base,
+   the gluon leading-singularity module and the soft-factorisation module are
+   in and tested; cuts and contours is next. A `SurfaceTheory` base alongside
    `Theory`, sharing the registry and the exception hierarchy but with its own
    verbs, and three modules under it: gluon leading singularities as a
    covering problem, soft factorisation from graph Laplacians, and cuts and
@@ -710,7 +712,7 @@ Next, in order of what would change what this package can claim:
 ```bash
 git clone https://github.com/brentharts/CICY.git && cd CICY
 pip install -r requirements.txt
-python3 run_tests.py            # 33 suites
+python3 run_tests.py            # 34 suites
 make help                       # every worked example
 ```
 
@@ -2195,8 +2197,9 @@ make twistor-paper      # the write-up, with every number recomputed
 
 ## Amplitudes on surfaces
 
-*Partly implemented. The base class and the first module are in; the other two
-papers are still design. What is code and what is not is marked below.*
+*Partly implemented. The base class and two of the three modules are in; the
+cuts-and-contours half is still design. What is code and what is not is marked
+below.*
 
 The twistor module above ends by saying that loops are absent: the trees are
 exact and complete, and no loop amplitude is computed. Three recent papers
@@ -2251,8 +2254,34 @@ integral is not done here), fermion loops (`NotAnalytic` — the sign there
 depends on the whole intersection pattern inside the loop and the paper leaves
 the cancellations open), and cross-sections.
 
-Still design, not code: the soft-factorisation module and the cuts-and-contours
-module described below.
+`theories.softgraph` is the second amplitude, and the one where this package's
+usual discipline applies most directly, because every polynomial involved can
+be built two ways. U comes from the determinant of the reduced Laplacian and,
+independently, from a sum over spanning trees; F from the adjugate and,
+independently, from a sum over spanning 2-forests. The sign convention in F is
+not asserted — the literature differs on it — it is the one under which the
+one-loop vertex reproduces the published closed form, and the test says so.
+
+Three things in it are worth naming. The divergent rays are *found* rather than
+quoted: a search over integer vectors in a stated box returns exactly one ray
+for the one-loop vertex and exactly two for the planar ladder, matching the
+published table, and correctly reports that the non-planar ladder does not have
+the planar's partial scaling at all — which is why it contributes one pole
+rather than two. The worldline variables arrive as a matrix identity, checked
+for jets of length one through five: inverting a jet block gives
+`beta_min(v,w)` without being asked. And the headline result reproduces — the
+planar and non-planar ladders are different graphs with different Symanzik
+polynomials, and in worldline variables their soft integrands are *identical*,
+with the entire difference having moved into the ordering of the domain. That
+is the statement the `1/2` and hence the `1/ell!` comes from.
+
+Declined there, with the right exception: that the subtracted remainder is
+infrared finite (`NotAnalytic` — a theorem about the whole integration region,
+and this module can exhibit the subtraction and check examples but an example
+is not the statement), and the soft anomalous dimension (`NeedsIntegration` —
+a resummed series).
+
+Still design, not code: the cuts-and-contours module described below.
 
 ### Why they need their own base class
 
