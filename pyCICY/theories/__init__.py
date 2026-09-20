@@ -48,6 +48,14 @@ Currently implemented:
                                    coefficients exact; cuts need a phase-space
                                    integration and fermion loops have no
                                    settled sign rule
+    soft-factorisation             the infrared structure of a Feynman
+                                   integrand in Schwinger space: the Symanzik
+                                   polynomials from the graph Laplacian,
+                                   the divergent rays, the worldline
+                                   variables and the hard-soft factorisation
+                                   exact; the finiteness of the subtracted
+                                   remainder is a theorem and the soft
+                                   anomalous dimension a resummed series
 
 Not every construction here is a compactification any more, and one of them is
 not even shaped like `Theory`. `surface` adds a sibling base class,
@@ -60,7 +68,12 @@ that is true by argument rather than by arithmetic -- the convergence of a
 contour, say -- which is neither exact, nor waiting on a metric, nor
 non-existent. `surfaceology` is the machinery underneath: curves on a disk,
 u-variables from F-polynomials, and the u-equations as the independent check
-that the parametrisation is the right one.
+that the parametrisation is the right one. `softgraph` is the other half:
+graphs rather than surfaces, with U and F built from the Laplacian and checked
+against spanning trees and spanning 2-forests. The two amplitude modules also
+check each other in the small way that matters, by declining each other's
+verbs: a leading singularity is a covering problem and a soft limit is a
+tropical one, and neither pretends to the other.
 
 The Yukawa side is layered by how much of the class each step needs: `yukawa`
 decides the texture from dimensions, `representatives` labels the Koszul origin
@@ -142,6 +155,8 @@ from .surface import SurfaceTheory, NotAnalytic, NeedsIntegration
 from . import surface
 from .gluons import GluonLeadingSingularity
 from . import gluons
+from .softgraph import SoftFactorisation
+from . import softgraph
 from . import surfaceology
 
 __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
@@ -157,4 +172,5 @@ __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "CrossoverParityProbe", "parity",
            "moduli", "running", "couplings", "etg_foreground",
            "SurfaceTheory", "NotAnalytic", "NeedsIntegration", "surface",
-           "GluonLeadingSingularity", "gluons", "surfaceology"]
+           "GluonLeadingSingularity", "gluons", "surfaceology",
+           "SoftFactorisation", "softgraph"]

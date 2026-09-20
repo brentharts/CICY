@@ -393,11 +393,13 @@ class GluonLeadingSingularity(SurfaceTheory):
                      "four dimensions for massless cuts"])
 
     def soft_limit(self, **kw):
-        """Not here: see :mod:`pyCICY.theories.softgraph` when it exists."""
+        """Not here: see :class:`~pyCICY.theories.softgraph.SoftFactorisation`."""
         raise NotImplementedError(
             "the soft expansion of an integrand is a different construction, "
             "built from graph Laplacians and tropical rays rather than from "
-            "coverings of a fatgraph. It is not implemented.")
+            "coverings of a fatgraph. It is "
+            "pyCICY.theories.softgraph.SoftFactorisation, registered as "
+            "'soft-factorisation'.")
 
     def fermion_loop(self, **kw):
         """Always raises: the sign rule for fermion loops is not settled.
