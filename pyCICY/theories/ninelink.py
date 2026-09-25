@@ -645,6 +645,13 @@ def independent_phases(texture):
 # ---------------------------------------------------------------------------
 
 def _squarefree(n):
+    """The squarefree part of n, keeping its sign: -12 -> -3, 12 -> 3.
+
+    The sign matters for imaginary fields: Q(sqrt -3, i) has the four
+    classes {1, -1, -3, 3}, and dropping signs would report {1, 3} -- the
+    same as the real field Q(sqrt 3).
+    """
+    sign = -1 if int(n) < 0 else 1
     n = abs(int(n))
     out, d = 1, 2
     while d * d <= n:
@@ -655,7 +662,7 @@ def _squarefree(n):
         if e % 2:
             out *= d
         d += 1
-    return out * n if n > 1 else out
+    return sign * (out * n if n > 1 else out)
 
 
 def square_classes(generators):
