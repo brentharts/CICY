@@ -728,7 +728,7 @@ Next, in order of what would change what this package can claim:
 ```bash
 git clone https://github.com/brentharts/CICY.git && cd CICY
 pip install -r requirements.txt
-python3 run_tests.py            # 38 suites
+python3 run_tests.py            # 39 suites
 make help                       # every worked example
 ```
 
@@ -2915,7 +2915,7 @@ python3 examples/hyperbolic_bloch.py --genus 3 --plot /tmp
 
 ## A complex structure on S⁶: the exact layers of the construction
 
-*Implemented, in six parts. The integer layer, the period laws, the toric
+*Implemented, in seven parts. The integer layer, the period laws, the toric
 filling at the cusp, the topology and invariants ledger, and a
 machine-checked finite layer; the theorem itself is not checked here, and
 says so. The full write-up — every number, every route, and the ledger filled
@@ -3145,8 +3145,9 @@ theorem paired with the Python callable that computes the same claim, and
 every matrix in the Lean file is *generated* from the object `sixsphere`
 computes with, so the proof cannot drift onto a different matrix.
 
-Thirty facts, Mathlib-free, proved by `decide`, `omega` and `grind`, and
-kernel-checked in about three seconds. Most are concrete — the orders of
+Thirty-four facts, Mathlib-free, proved by `decide`, `omega` and `grind`,
+and kernel-checked (four of them added with the lattice-data search below).
+Most are concrete — the orders of
 `T₁, T₂`, the unipotent cusp, `A₁A₂M₀ = I`, the fixed vectors, `Q₀` and `η`,
 `b = diag(6,−1)`, `B₀`, the twists and `|p|`, the Kodaira subquotient, the
 hexagon, the `C*` weights, the Picard coordinates, and the freeness of each
@@ -3171,7 +3172,7 @@ formalised over Mathlib in
 **The axiom policy is an allow-list.** A fact counts as machine-checked only
 if every axiom in its parsed `#print axioms` report is one of Lean's three
 standard axioms — `propext`, `Quot.sound`, `Classical.choice`, the set the
-HopfProblem Comparator permits. 25 of the 30 are also choice-free; the five
+HopfProblem Comparator permits. 29 of the 34 are also choice-free; the five
 that are not are the quantified `omega`/`grind` proofs, and they are listed.
 The policy is an allow-list because a deny-list failed a control. Lean 4.33
 compiles `native_decide` not to `Lean.ofReduceBool` but to a fresh auxiliary
@@ -3186,6 +3187,54 @@ is claimed as checked.
 ```bash
 make sixsphere-lean     # emit SixSphereFacts.lean; kernel-check it if lean is found
 ```
+
+### Which lattice data can build it, and what it touches
+
+`pyCICY.sixsphere_search` asks whether the construction could run on other
+data. It searches the *flag class* — pairs `(T₁, T₂)` of the block shape the
+paper's matrices have, with the Kodaira monodromy in the middle.
+
+**Only (3, 4, ∞).** Finite orders in `SL₂(Z)` are 1, 2, 3, 4, 6; the only
+involution is `−I`, which is central, so no `(2, m)` has a unipotent cusp;
+`(3,3)` and `(6,6)` have parabolic products only as `−(unipotent)`, I₂\*
+cusps, and `(4,4)` none; and the general presentation gives
+`p = m₁m₂ℓ₀ − m₂ℓ₁ − m₁ℓ₂ ≡ 0 mod gcd(m₁, m₂)`, which rules out `(3,6)` and
+`(4,6)` (best `|p|` = 3 and 2). The paper's triangle group is forced.
+
+**Within it, the paper's data.** Block-unipotent conjugation acts by
+`r ↦ r + x(M − I)`, `c ↦ c + (I − M)y`, derived symbolically; `T₂`'s data
+reduces to 2 × 2 residue classes and `T₁`'s is free, so the extensions come
+in infinite families. A staged funnel — orders, unipotent cusp, coinvariants
+`Z`, invariant closure, `|det B₀| = 1` — reports its box and a count at every
+stage: 87 846 → 49 446 → 272 → 84 → 84 → 32 at box ±5. The 32 fall into four
+`GL(4, Z)` classes, proved distinct by an invariant (the reachable `|p|` mod
+12); exactly one reaches `|p| = 1`, and an explicit `P` of determinant −1
+carries the paper's matrices onto it — machine-checked in Lean. The other
+three bottom out at `|p|` = 3, 2 and 6. The final count is 32 at every box
+from ±3 to ±11 while earlier stages keep growing; that completeness is
+observed, not proved, and everything analytic about the near misses is
+declined.
+
+**Connections.** The monotile's [3.4.6.4] Laves kite lattice — the substrate
+of every Tile(a, b), the Hat and the Spectre included — is exactly the Hasse
+diagram of the cusp fan, checked in `Q(√3)` against `monotile.laves_patch`
+(102 incidences, 102 bonds). So `W` *is* that lattice rolled up on a torus:
+hexagon centres are the `dP6` components, edge midpoints the double curves,
+hexagon vertices the triple points, and `e(W) = 2` counts hexagon vertices per
+fundamental domain. The substrate descends; no Hat tiling can, being
+invariant under no lattice. Also exact: the lattice data is achiral —
+`(T₁, T₂)` and `(T₁⁻¹, T₂⁻¹)` are conjugate by an explicit `P` of determinant 1,
+recorded in the `chirality` format; `V` is not self-dual over `Z` (every
+integral intertwiner has determinant `36s⁴`); the period field `Q(ζ₁₂)`
+shares `Q(√3)` with the monotiles' geometry and nothing with the Hat's or
+Spectre's inflation fields; and the cusp component is `toric`'s B3, whose
+mirror curve is the triangular-lattice Hofstadter model. Two resemblances are
+settled as coincidences: the `√6` shared by `b` and the Spectre's inflation,
+and valence 4 in the Laves lattice against the order-4 point.
+
+`ninelink._squarefree` now keeps signs: it had been dropping them, harmless
+for the real fields it was used on, but wrong for `Q(√−3, i)`, whose classes
+it would have reported as those of `Q(√3)`.
 
 ## The design rule
 
