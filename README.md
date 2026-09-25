@@ -45,6 +45,9 @@ from what does not exist at all.
 - What Nine Links Determine, and What Only a Fit Can Say: Exact Methods for
   Nine-Link Yukawa Textures, the Unitarity Triangle, and the Strong CP Problem
   - [FigueiredoFlavor.md](FigueiredoFlavor.md) (in this repository)
+- What Two Integer Matrices Determine, and What Only a Proof Can Say: Exact
+  Methods for Alpöge's Complex Structure on the Six-Sphere
+  - [AlpogeSixSphere.md](AlpogeSixSphere.md) (in this repository)
 - Supplementary material: figures for the pyCICY-X package
   - [https://doi.org/10.5281/zenodo.21798923](https://doi.org/10.5281/zenodo.21843383)
   - https://dx.doi.org/10.2139/ssrn.7250858
@@ -80,7 +83,7 @@ forms, the split web over the published list of 7890 threefolds.
 
 **String constructions (`theories/`)**
 A subpackage where different constructions live, sharing the exact machinery
-underneath and each declaring what it can compute. Fifteen are registered:
+underneath and each declaring what it can compute. Sixteen are registered:
 `StandardEmbedding` (V = TX, E₆), `LineBundleModel` (SU(5) and the Standard
 Model), `FTheory6D` (elliptic threefold over a surface, six-dimensional
 N=(1,0), spectrum exact from anomaly cancellation), `FTheory4D` (elliptic
@@ -100,7 +103,11 @@ read off a graph Laplacian, and `CutsAndContours`, unitarity cuts of a surface
 integral taken as residues. Newest of all is `NineLinkTexture`, under a third
 base class again: the sparsest Yukawa matrices that can carry the ten flavour
 parameters, where the whole structure is a link diagram and the physics is
-graph theory. Type IIA orientifolds would go here; they
+graph theory. And `ComplexSixSphere`, the one entry whose physics verbs are
+all absences: Alpoge's complex structure on S⁶ has a non-torsion canonical
+bundle, hence no holomorphic volume form and no vacuum, and it is registered
+so that "can you compactify on it?" is answered where every other such
+question is. Type IIA orientifolds would go here; they
 are not implemented.
 
 The interface is a contract about epistemic status rather than about geometry,
@@ -721,7 +728,7 @@ Next, in order of what would change what this package can claim:
 ```bash
 git clone https://github.com/brentharts/CICY.git && cd CICY
 pip install -r requirements.txt
-python3 run_tests.py            # 37 suites
+python3 run_tests.py            # 38 suites
 make help                       # every worked example
 ```
 
@@ -2652,6 +2659,12 @@ truncated.
 make lean        # emit NariaiFacts.lean and kernel-check it
 ```
 
+The kernel-checking core is now shared with `sixsphere_lean`
+(`nariai_lean.check_source`), and its axiom policy is an allow-list —
+`propext` and `Quot.sound` only, preserving the no-`Classical.choice` claim.
+The earlier deny-list would have accepted a `native_decide` proof under Lean
+4.33, which names a fresh axiom per use; the allow-list does not.
+
 The analysis stays where it belongs. A theorem about improper integrals of
 distributions is not going to be settled by `decide`, and the module says so.
 
@@ -2900,6 +2913,280 @@ python3 examples/hyperbolic_bloch.py
 python3 examples/hyperbolic_bloch.py --genus 3 --plot /tmp
 ```
 
+## A complex structure on S⁶: the exact layers of the construction
+
+*Implemented, in six parts. The integer layer, the period laws, the toric
+filling at the cusp, the topology and invariants ledger, and a
+machine-checked finite layer; the theorem itself is not checked here, and
+says so. The full write-up — every number, every route, and the ledger filled
+in — is [AlpogeSixSphere.md](AlpogeSixSphere.md).*
+
+In August 2026 Levent Alpöge constructed a compact complex threefold `X`,
+fibred over `P¹` by complex 2-tori with singular fibres over three points, and
+proved it diffeomorphic to `S⁶` — answering Hopf's 1947 question and
+contradicting a published corollary of Campana, Demailly and Peternell. Philip
+Engel wrote a pedagogical account; Boris Alexeev formalised the headline in
+Lean 4 over Mathlib.
+
+Nearly everything in that proof is analysis and topology, which this package
+does not do. But the construction stands on two 4×4 integer matrices, `T₁` of
+order 3 and `T₂` of order 4, whose product is unipotent — a representation of
+the (3,4,∞) triangle group — and a surprising amount is decided by linear
+algebra over `Z` alone. `pyCICY.sixsphere` computes that layer, with a second
+route wherever one exists:
+
+- **Orders, fixed lattices, coinvariants.** The fixed sublattices come out as
+  saturated integer kernels and match the paper's `⟨ε, δ̂⟩` and `⟨ε′, δ̂⟩`; the
+  coinvariants have Smith form `diag(1,1,1,0)`, so `V_G = Λ_G = Z`.
+- **No polarisation, twice.** The invariant alternating forms are *solved
+  for*: there is exactly one, `Q₀`, with `Q₀(u,w) = 6`. The invariant
+  bivectors are solved for separately: exactly one, `η = u∧w + 6γ∧δ`, with
+  `η² = 12·vol`. The two solves share no code and agree, `η = ⋆Q₀`. Then
+  `b(x,y) = Q₀(x, Ny)` is `diag(6, −1)` — indefinite, which is exactly why the
+  family carries no polarisation and why the very general fibre is not
+  algebraic.
+- **One del Pezzo.** `Λ_tor = ker(M₀ − I) = im(M₀ − I)` and `|det B₀| = 1`,
+  the unimodularity that makes the cusp fibre a single `dP6`.
+- **Freeness, derived.** The paper states that the logarithmic transforms are
+  free because `3 ∤ ℓ₁` and `ℓ₂` is odd. Here that rule is not quoted but
+  *derived*, from a fixed-point computation on the real torus, and checked on
+  52 twist vectors at each point. An even `ℓ₂` is caught at the square of the
+  generator and nowhere else.
+- **The fundamental group's order, and what it is not.** `|p| =
+  |12ℓ₀ − 4ℓ₁ − 3ℓ₂|` is the output of the paper's van Kampen computation and
+  is *quoted*. Against it, the order of `H₁` of the Seifert fibred space over
+  `S²(3,4)`, computed from its presentation by Smith form: all 729 twist
+  triples in a box agree, and `(0,1,−1)` gives the three-sphere. That confirms
+  the paper's footnote — the formula is Orlik's in disguise — and nothing
+  more. Part IV adds a third route, from the paper's own presentation of
+  `π₁(X)`.
+
+`theories.ComplexSixSphere` registers the construction with `X = None`. Every
+physics verb raises `NoSuchTheory`, including `physical_yukawa`, whose base
+class would otherwise blame the metric: `K_X` is not torsion, so there is no
+holomorphic volume form and no Calabi–Yau or Strominger-system vacuum to have
+a spectrum. The nearly-Kähler `S⁶ = G₂/SU(3)` that string theory already uses
+carries the octonionic almost complex structure, which is not integrable;
+nothing transfers.
+
+### The period laws, three ways
+
+The family of 2-tori is written down through three holomorphic functions
+`τ, μ, β` on the upper half plane. Their *existence* is a lifting argument and
+two torsor problems on `P¹`, and is declined here (`NotAnalytic`). But every
+law they must obey is a rational identity in three symbols, and those carry the
+whole consistency of the construction:
+
+- **Closure.** `g₁³` and `g₂⁴` act trivially on `(τ, μ, β)`, and `g₁g₂` acts
+  by `(τ+1, μ, β−1)`, so the cusp law `(τ−1, μ, β+1)` follows. Closure of the
+  `β`-law *is* the vanishing of the paper's cocycle sums; both are computed.
+- **Forced by the integers.** `Π(gz) = R_g Π(z) M_g` with `M_g = Tᵗ` and
+  `Π = [Z | I]` determines the law of each generator from its 4×4 matrix
+  alone. It reproduces the printed laws and the printed `R_g`, and it passes a
+  consistency test the matrices did not have to pass: the new `Z` again has
+  the shape `[[6μ′, τ′], [β′, μ′]]`. That test is not a formality — it fails
+  for 47 of 53 single-entry perturbations of `T₁` and `T₂`, including the
+  change of the `−6` in `T₁` to `−5`.
+- **The real layer.** In real symbols, `det_ℝ Π = Im τ · D` and `D` is
+  invariant under both generators, as identities. The Hodge form on `F¹`
+  comes out as `−[[12 Im τ, 12 Im μ], [12 Im μ, 2 Im β]]` with determinant
+  `24 Im τ · D`; since `D < 0` is imposed, the signature is `(1,1)` for every
+  choice of the free constant — the analytic face of Part I's `b = diag(6,−1)`.
+
+Also exact: the automorphy factor and its closure, `det R_g = 1/j̃(g)`, the
+values `τ(z₁) = ρ`, `τ(z₂) = i`, `μ(z₁) = (2−ρ)/3`, `μ(z₂) = (1−i)/2`, the
+vanishing of the `β`-inhomogeneity at both, and the local sections.
+
+### The elliptic surface behind τ, by two routes
+
+`τ` is the period map of the rational elliptic surface
+`y² = 4x³ − 3t³(t−1)x − t⁴(t−1)²` with `j = 1728t`, which the paper says has
+fibres IV\*, III, I₁. But `j` fixes a surface only up to quadratic twist, and a
+twist changes fibre types — twisting by `(t−1)` keeps `j = 1728t` and turns
+the III into III\*. So the types need a real argument, and there are two that
+share nothing:
+
+- **Weierstrass.** The vanishing orders of `f`, `g`, `Δ` at `0, 1, ∞` go
+  through `theories.ftheory.kodaira_type` — code written for F-theory with no
+  knowledge of this construction — and come back IV\*, III, I₁, Euler sum 12.
+- **Lattice.** Modulo `γ`, `σ₁ = τu + w`, so the subquotient `⟨u, w⟩` of `V`
+  carries the elliptic curve's `H₁` with its honest `SL₂(Z)` sign. Its three
+  matrices reproduce the `τ`-laws (a third route to them) and have classes
+  order 3 / trace −1, order 4 / trace 0, and unipotent with `n = 1`: that
+  narrows the fibres to {IV, IV\*}, {III, III\*} and I₁, a star ambiguity
+  that no convention on orientations can resolve. Noether's formula resolves
+  it: Euler numbers of an elliptic surface sum to `12χ(O)`, and of the four
+  combinations — 8, 12, 14, 18 — exactly one is a multiple of 12.
+
+The lattice route never sees the Weierstrass model and the Weierstrass route
+never sees `T₁, T₂`; they agree.
+
+*Credit where due:* the paper runs a version of the lattice argument itself,
+in Proposition 9.11, which this implementation had not yet read when Part II
+was written. The two differ usefully. The paper allows I₁ or I₁\* at the cusp
+— `j` has a simple pole either way — and selects with `e(Y) = 12·deg K = 12`
+exactly, using its computation `deg K = 1`; that exactness is needed, since
+7 + 8 + 9 = 24 is also a multiple of 12. The subquotient here carries the
+honest `SL₂(Z)` sign at the cusp (trace +2 rules out I₁\*), so it needs only
+`12 | e`, and does not use `deg K`. Part IV then recovers `deg K = 1` from the
+fibre types. The Kodaira monodromy table the lattice
+route needs is quoted, and is itself checked against `ftheory`: every entry's
+Euler number equals the `ord Δ` that `kodaira_type` classifies as that type.
+
+### The cusp fibre: one del Pezzo, glued to itself
+
+At the cusp the family is filled in, after Mumford, by a quotient of an
+infinite smooth toric threefold whose fan is the cone over the A₂
+triangulation of the plane. Proving that the quotient is a manifold proper
+over the disc is an estimate, and is declined; everything else is lattice
+combinatorics:
+
+- **The fan.** Every cone is unimodular (determinant +1 on lower triangles,
+  −1 on upper), every ray sits at height 1 so `t` vanishes to order one on
+  each divisor and `W` is reduced, the dual basis of every cone sums to
+  `(0,0,1)` so `t = z₀z₁z₂` in every chart, and the volume form
+  `dx₁dx₂dt/(x₁x₂)` becomes `±dz₀dz₁dz₂` — `K` of the filling is trivial.
+- **The component is dP6, twice over.** The star of a vertex gives six rays,
+  in the same cyclic order as the paper and as `hexagonRay` in the Lean
+  formalisation. `pyCICY.toric` classifies their polygon as smooth, reflexive
+  and of degree 6 — it calls the surface `B3`, counting blown-up points where
+  the paper counts degree. Independently, from the fan: consecutive
+  determinants +1, six (−1)-curves, `e = 6`, and Noether's `K² + e = 12`.
+- **The gluing, derived.** Taking vertex, edge and triangle orbits of the
+  triangulation under `B₀Z²` gives the components, double curves and triple
+  points of `W`: one, three and two. Opposite sides of the hexagon are glued
+  and nothing else; the six corners alternate between the two triple points;
+  each double curve passes through both.
+- **`e(W) = 2`, two ways.** From the torus-orbit stratification, where only
+  the two triangle orbits contribute; and from the normalisation,
+  `e(dP6) − e(hexagon) + e(D) = 6 − 6 + 2`, with the double locus's Euler
+  number read off the incidence data rather than assumed. Every other fibre is
+  a torus or a free quotient of one, so this is all of `e(X) = 2 = e(S⁶)`.
+- **A test the paper does not run.** `W` is a reduced normal-crossings fibre
+  in a smooth total space, so Friedman's triple-point formula
+  `(C|_V)² + (C|_V′)² + T_C = 0` must hold on every double curve. It does:
+  each curve is a (−1)-side on both branches and carries two triple points.
+  On the P² fan, whose boundary curves are +1, the same sum is 4 — the check
+  can fail.
+- **Remark 4.9, computed.** With `B₀` a parameter, `|det B₀| = d` gives `d`
+  components, `3d` double curves, `2d` triple points and `e(W) = 2d` by both
+  routes, for `d = 1…5`; the dual complex is a triangulated torus in every
+  case, and the triple-point formula holds throughout. Unimodularity is what
+  makes the cusp contribute exactly the 2 that `S⁶` needs. `W` depends only
+  on the lattice `B₀Z²`: any unimodular `B₀` gives the same fibre.
+
+### Topology and invariants: what §7 and §9 reduce to
+
+Sections 7 and 9 of the paper are van Kampen, Mayer–Vietoris and Leray over
+torus bundles, and analysis on the fibres. A surprising share reduces to
+arithmetic:
+
+- **`|p|` a third way.** Theorem 7.17 gives `π₁(X)` by generators and
+  relations before simplifying: the fibre `Λ`, the two meridian lifts, the
+  monodromy conjugations, `Λ_tor = 1`, `x³ = t_{v₁}`, `y⁴ = t_{v₂}`,
+  `xy = t_μ`. Abelianised on all six generators and Smith-reduced — without
+  the paper's reduction step — it gives `Z/|p|`, agreeing with the closed form
+  and the Seifert `H₁` over 160 admissible twists, with `gcd(p, 12) = 1`
+  throughout. Flipping one sign of the paper's sign lemma turns `1` into `7`,
+  which is why that lemma is there. That the group is abelian at all is the
+  paper's argument and stays quoted.
+- **The cusp from the monodromy.** The Betti numbers of `W` are the ranks of
+  the `T₀`-invariants of `∧^q V`: `(1, 2, 4, 2, 1)`, the invariant lattices
+  exactly as printed in Proposition 7.12, the kernels of specialisation
+  saturated of the complementary rank, and `e(W) = 2` a third time. The
+  boundary of the cusp neighbourhood is a torus bundle over a circle; the Wang
+  sequence gives its ranks `(1, 3, 6, 6, 3, 1)` from the same invariants.
+- **The multiple fibres.** At each `p_j` the coinvariants are `Z²`, `H₁(S_j)`
+  is torsion-free exactly for admissible twists (an even `ℓ₂` puts torsion in
+  it), and the indices of Proposition 7.14 come out of Gram determinants:
+  `(3, 1, 1)` at `p₁`, `(4, 2, 2)` at `p₂`, from `det = −9, −4` in degree 2
+  and `3, 2` in the degree-1/degree-3 pairing.
+- **Riemann–Roch from scratch.** Hirzebruch–Riemann–Roch in dimension three,
+  computed from Chern roots — the general output reproduces the textbook
+  `χ(T) = c₁³/2 − 19c₁c₂/24 + c₃/2` and gives 15 on `P³`. On `X`, with
+  `c₁ = c₂ = 0` and `c₃ = 2`: `χ(O, Ω¹, Ω², Ω³, T) = (0, −1, 1, 0, 1)`.
+  `χ(O) = 0` also comes out of the Leray sequence of the paper's direct
+  images, a second route.
+- **The Hodge numbers, solved for.** Serre duality, `h^{p,0}`, the Leray
+  `h^{0,q}` and the Riemann–Roch values leave exactly one free integer:
+  `h¹¹ = h²² = h¹² + 1`, with `h¹²` open, as in the paper (Remark 9.21). No
+  Hodge symmetry is assumed — `h¹⁰ = 0` while `h⁰¹ = 1` — and the Frölicher
+  spectral sequence cannot degenerate, whatever `h¹²` is.
+- **Why the classical formula fails.** The subgroup of `Pic(X)` generated by
+  `H = f*O(1)` and the two multiple-fibre reductions, with `3S₁ = 4S₂ = H`, is
+  infinite cyclic: `S₁ = 4u`, `S₂ = 3u`, `H = 12u`. There `K_X = −6u`, so it is
+  not torsion, and its only normal form is `f*O(−1) + 2S₂`. The classical
+  multiple-fibre formula would give `5u`; the difference `2S₁ + S₂ = 11u` is
+  not a multiple of `12u`, so is not a pull-back — the paper's footnote to
+  §10, as arithmetic. Coprimality of 3 and 4 is what keeps the group
+  torsion-free.
+- **The Hodge bundle, twice.** `deg f_*ω = 1` from the Kodaira Euler numbers
+  of Part II, `(8 + 3 + 1)/12`, and from the local exponents
+  `2/3 + 1/4 + 1/12`, where the numerators come from the vanishing orders of
+  `E₄` and `E₆` and the ramification of `τ`. Twelve times the exponents are
+  the fibre Euler numbers `8, 3, 1`.
+- **The C\* action.** The vertical field is the cocharacter `δ̂ ↔ e₂` of the
+  toric model. It fixes no vertex stratum, one edge stratum — the double curve
+  of direction `e₂`, through both triple points — and acts on the chart
+  coordinates at a triple point with weights `(−1, 0, +1)`: tangent weight 0,
+  normal weights `(+1, −1)`, and `e(fixed locus) = e(P¹) = 2 = e(X)`. The
+  cocharacter `e₁` fixes a different curve, so the check sees which field it
+  is given. That nothing outside the cusp is fixed is quoted.
+
+Quoted rather than computed, and marked as such: the direct images of `O_X`,
+`h^{p,0} = 0`, `c₃ = e(X)`, the algebraic dimension, and the topology of
+bielliptic surfaces.
+
+### The finite layer, machine-checked
+
+`pyCICY.sixsphere_lean` lifts the finite part of all this one rung, to
+*machine-checked*, in the pattern of `nariai_lean`: every fact is a Lean 4
+theorem paired with the Python callable that computes the same claim, and
+every matrix in the Lean file is *generated* from the object `sixsphere`
+computes with, so the proof cannot drift onto a different matrix.
+
+Thirty facts, Mathlib-free, proved by `decide`, `omega` and `grind`, and
+kernel-checked in about three seconds. Most are concrete — the orders of
+`T₁, T₂`, the unipotent cusp, `A₁A₂M₀ = I`, the fixed vectors, `Q₀` and `η`,
+`b = diag(6,−1)`, `B₀`, the twists and `|p|`, the Kodaira subquotient, the
+hexagon, the `C*` weights, the Picard coordinates, and the freeness of each
+power of each logarithmic transform. Several are universally quantified,
+which is where Lean adds most:
+
+- the invariant alternating form and the invariant bivector are *unique* —
+  the linear systems are generated from the matrices by sympy, and the
+  Python half checks they are exactly the entries of `TᵗQT − Q`;
+- `gcd(p, 12) = 1` for *every* admissible twist and every `ℓ₀`;
+- the Seifert and `π₁` relation determinants, as identities in `ℓ₀, ℓ₁, ℓ₂`;
+- *every* cone of the infinite A₂ fan is unimodular — a theorem about all
+  `(x, y)`, where Part III could only check a patch;
+- `K_X`'s normal form in `Pic` is unique.
+
+What Lean does not see is stated per fact: Smith normal forms (the step
+from a determinant to a group order), saturation, the symbolic period laws,
+Riemann–Roch, and all the analysis. The headline theorem is not here; it is
+formalised over Mathlib in
+[plby/HopfProblem](https://github.com/plby/HopfProblem).
+
+**The axiom policy is an allow-list.** A fact counts as machine-checked only
+if every axiom in its parsed `#print axioms` report is one of Lean's three
+standard axioms — `propext`, `Quot.sound`, `Classical.choice`, the set the
+HopfProblem Comparator permits. 25 of the 30 are also choice-free; the five
+that are not are the quantified `omega`/`grind` proofs, and they are listed.
+The policy is an allow-list because a deny-list failed a control. Lean 4.33
+compiles `native_decide` not to `Lean.ofReduceBool` but to a fresh auxiliary
+axiom per proof, `<thm>._native.native_decide.ax_N`, which a list of
+forbidden names cannot anticipate — nor can it anticipate a plain
+user-declared `axiom`. Five controls run against the kernel on every test
+run with a toolchain: a false fact, a `sorry`, a `native_decide`, a declared
+axiom, and `T₁` with `−5` in place of `−6`. All five are refused. Without a
+toolchain the file is still emitted, the Python half still runs, and nothing
+is claimed as checked.
+
+```bash
+make sixsphere-lean     # emit SixSphereFacts.lean; kernel-check it if lean is found
+```
+
 ## The design rule
 
 One principle runs through the whole package and is the reason to trust it:
@@ -2944,6 +3231,16 @@ The module has been developed in the context of the following papers:
   - https://doi.org/10.1007/JHEP05(2026)040 ; arXiv:2506.15603 ; J. High Energ. Phys. 2026, 40
 - Carolina Figueiredo, Marcos Skowronek (2025) Cuts and contours
   - https://doi.org/10.1007/JHEP12(2025)024 ; arXiv:2506.05456 ; J. High Energ. Phys. 2025, 24
+
+- Levent Alpöge (2026) A compact complex threefold fibred by tori over the projective line, and the six-sphere
+  - https://alpo.ge/s6.pdf
+- Philip Engel (2026) pedagogical account of the construction
+  - https://philip-engel.github.io/S6.pdf
+- Boris Alexeev (2026) Lean formalisation of the solution to the Hopf problem
+  - https://github.com/plby/HopfProblem
+- Peter Orlik (1972) Seifert Manifolds, Lecture Notes in Mathematics 291
+- Robert Friedman (1983) Global smoothings of varieties with normal crossings
+  - Ann. of Math. 118, 75–114
 
 - Pasquale Marra, Valerio Proietti, Xiaobing Sheng (2024) Hofstadter-Toda spectral duality and quantum groups
   - https://arxiv.org/abs/2312.14242 ; J. Math. Phys. 65, 072102

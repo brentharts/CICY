@@ -56,7 +56,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper papers strings-paper strings-facts twistor-paper twistor-facts monotile-paper monotile-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor monotile knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help
+.PHONY: all paper papers strings-paper strings-facts twistor-paper twistor-facts monotile-paper monotile-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor monotile knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help sixsphere-lean
 
 all: paper
 
@@ -199,6 +199,16 @@ lean:
 
 # Download the published CICY three-fold list. The data is redistributed by
 # its authors, not by pyCICY, so it is fetched rather than vendored.
+# The six-sphere finite layer (pyCICY.sixsphere_lean), same toolchain rules as
+# `make lean`: without a kernel the file is written and nothing is claimed.
+sixsphere-lean:
+	$(PYTHON) -c "from pyCICY import sixsphere_lean as L; \
+	  open('SixSphereFacts.lean','w').write(L.lean_source()); \
+	  st=L.status(lean_path='SixSphereFacts.lean'); \
+	  print('facts', st['n_facts'], 'computed', st['all_computed'], \
+	        'toolchain', st['toolchain'], 'machine-checked', \
+	        st['all_machine_checked'], 'choice-free', st['n_choice_free'])"
+
 data:
 	$(PYTHON) scripts/fetch_cicy_list.py --outdir data
 
