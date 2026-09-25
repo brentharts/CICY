@@ -546,7 +546,7 @@ def test_lean_python():
     print("\n[19] Lean facts: the Python half")
     from pyCICY import sixsphere_lean as L
     py = L.check_python()
-    check("number of facts", len(py), 30)
+    check("number of facts", len(py), 34)
     check_true("every fact computed True", all(v is True for v in py.values()))
     src = L.lean_source()
     check_true("every fact is in the emitted source",
@@ -580,7 +580,7 @@ def test_lean_kernel():
     check_true("every fact machine-checked", st["all_machine_checked"])
     check_true("standard axioms only (propext, Quot.sound, Classical.choice)",
                all(v["standard_axioms_only"] for v in st["facts"].values()))
-    check("choice-free facts", st["n_choice_free"], 25)
+    check("choice-free facts", st["n_choice_free"], 29)
     uses_choice = sorted(k for k, v in st["facts"].items()
                          if not v["choice_free"])
     check("facts using Classical.choice (omega/grind, quantified)",
