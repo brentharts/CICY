@@ -598,9 +598,14 @@ def ledger():
          "exact, toric; no fixed points elsewhere quoted"),
         ("direct images R^q f_* O, h^{p,0} = 0, a(X) = 1",
          "quoted (Theorem 9.1): analysis on the fibres"),
-        ("30 facts of the finite layer",
+        ("34 facts of the finite layer",
          "machine-checked: Lean 4 kernel, Mathlib-free, standard axioms "
-         "only, 25 choice-free (pyCICY.sixsphere_lean; Part V)"),
+         "only, 29 choice-free (pyCICY.sixsphere_lean; Parts V, VII)"),
+        ("(3,4,inf) the only triangle group in the flag class",
+         "proved (orders, -I, gcd) and observed (sign), sixsphere_search"),
+        ("the paper's data the only class reaching |p| = 1",
+         "four classes, distinct by invariant; completeness observed in "
+         "boxes up to 11; conjugator machine-checked"),
         ("X diffeomorphic to S^6",
          "declined: analysis and topology. Machine-checked externally in "
          "github.com/plby/HopfProblem, not re-run here"),

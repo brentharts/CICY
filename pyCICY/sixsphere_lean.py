@@ -464,7 +464,54 @@ def _facts():
     ]
     for (j, k) in sorted(_ANN):
         F.append(_ann_fact(j, k))
+    F += _search_facts()
     return F
+
+
+def _search_facts():
+    """Part VII: the gcd obstruction, the paper conjugator, the mirror."""
+    from . import sixsphere_search as X
+    rep1, rep2 = X.CLASS_REP
+    P, Pm = X.PAPER_CONJUGATOR, X.MIRROR_CONJUGATOR
+    return [
+        Fact("gcd_obstruction_3_6",
+             "/-- For (3,6,inf), p = 18 l0 - 6 l1 - 3 l2 is divisible by 3 for\n"
+             "every twist: |p| = 1 is impossible. -/\n"
+             "theorem gcd_obstruction_3_6 (l0 l1 l2 : Int) :\n"
+             "    (18*l0 - 6*l1 - 3*l2) % 3 = 0 := by omega",
+             lambda: X.gcd_obstruction(3, 6)["min_positive_|p|"] == 3,
+             "Part VII, the triangle-group survey"),
+        Fact("gcd_obstruction_4_6",
+             "/-- For (4,6,inf), p = 24 l0 - 6 l1 - 4 l2 is even for every twist. -/\n"
+             "theorem gcd_obstruction_4_6 (l0 l1 l2 : Int) :\n"
+             "    (24*l0 - 6*l1 - 4*l2) % 2 = 0 := by omega",
+             lambda: X.gcd_obstruction(4, 6)["min_positive_|p|"] == 2,
+             "Part VII, the triangle-group survey"),
+        Fact("paper_conjugator",
+             "/-- The explicit P (det -1) carrying the paper's (T1, T2) onto the\n"
+             "representative of the only class reaching |p| = 1. -/\n"
+             "theorem paper_conjugator :\n"
+             "    mul %s T1 = mul %s %s ∧\n"
+             "    mul %s T2 = mul %s %s ∧ det4 %s = -1 := by decide"
+             % (lean_mat(P), lean_mat(rep1), lean_mat(P),
+                lean_mat(P), lean_mat(rep2), lean_mat(P), lean_mat(P)),
+             lambda: all(X.stored_constants_agree().values()),
+             "Part VII; the search itself is Python-only"),
+        Fact("lattice_achiral",
+             "/-- Reversing the base orientation gives (T1^-1, T2^-1); an explicit\n"
+             "P of determinant 1 conjugates (T1, T2) to it: the lattice data is\n"
+             "achiral. -/\n"
+             "theorem lattice_achiral :\n"
+             "    mul T1 %s = I4 ∧ mul T2 %s = I4 ∧\n"
+             "    mul %s T1 = mul %s %s ∧ mul %s T2 = mul %s %s ∧\n"
+             "    det4 %s = 1 := by decide"
+             % (lean_mat(S.T1.inv()), lean_mat(S.T2.inv()),
+                lean_mat(Pm), lean_mat(S.T1.inv()), lean_mat(Pm),
+                lean_mat(Pm), lean_mat(S.T2.inv()), lean_mat(Pm),
+                lean_mat(Pm)),
+             lambda: X.lattice_mirror()["verified"],
+             "Part VII, connections"),
+    ]
 
 
 def _equations_match(eqs_pair, transform):
