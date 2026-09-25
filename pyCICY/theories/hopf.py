@@ -145,6 +145,10 @@ class ComplexSixSphere(Theory):
             "curve and its weights (+1, -1)",
             "30 facts of the finite layer machine-checked by the Lean 4 "
             "kernel, Mathlib-free, on Lean's standard axioms (see lean())",
+            "which lattice data can build it (pyCICY.sixsphere_search): only "
+            "(3,4,inf) in the flag class, and within it only the paper's "
+            "class reaches |p| = 1; connections to the monotile substrate, "
+            "chirality and duality",
         ]
 
     def declined(self):
