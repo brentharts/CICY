@@ -71,6 +71,13 @@ Currently implemented:
                                    by exact diagonalisation; the phase
                                    histogram is the output of a fit and is
                                    declined
+    complex-six-sphere             Alpoge's torus-fibred threefold
+                                   diffeomorphic to S^6: the monodromy
+                                   lattice, its invariant forms, the absence
+                                   of a polarisation and the freeness of the
+                                   twists exact (in pyCICY.sixsphere); no
+                                   holomorphic volume form, so every physics
+                                   verb raises NoSuchTheory
 
 Not every construction here is a compactification any more, and one of them is
 not even shaped like `Theory`. `surface` adds a sibling base class,
@@ -168,6 +175,13 @@ to unification and what can honestly be said about 137, `moduli` to the
 racetrack dilaton, and `etg_foreground` to the foreground that would sit
 underneath the parity verdicts if it were real.
 
+`hopf` is the second registry entry, after `nariai`, that is not a
+compactification, and the first whose physics verbs are *all* absences. The
+complex structure on S^6 has a non-torsion canonical bundle, so it carries no
+holomorphic volume form and supports no N = 1 vacuum; `NoSuchTheory` is the
+entry, not `NeedsMetric`. The module is registered so that the question
+"can you compactify on it?" has an answer in the same place as every other.
+
 Type IIA orientifolds would go here too. They are not implemented.
 """
 
@@ -209,6 +223,8 @@ from .ninelink import NineLinkTexture
 from . import ninelink
 from . import nariai_lean
 from . import surfaceology
+from .hopf import ComplexSixSphere
+from . import hopf
 
 __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "StandardEmbedding", "LineBundleModel", "yukawa",
@@ -227,4 +243,5 @@ __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "SoftFactorisation", "softgraph",
            "CutsAndContours", "contours",
            "FlavorTheory", "NeedsFit", "flavorbase",
-           "NineLinkTexture", "ninelink", "nariai_lean"]
+           "NineLinkTexture", "ninelink", "nariai_lean",
+           "ComplexSixSphere", "hopf"]

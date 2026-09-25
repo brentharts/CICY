@@ -65,6 +65,7 @@ import tempfile
 import numpy as np
 
 __all__ = ["Fact", "FACTS", "lean_source", "check_python", "check_lean",
+           "check_source", "parse_axioms",
            "status", "sumset", "sumset_has_zero", "sumset_range",
            "spectrum_indices", "exact_packet", "functionals", "occupied_bins",
            "detector_ratio", "energy_gap", "NoToolchain"]
@@ -451,56 +452,68 @@ def lean_executable():
             or shutil.which("lean"))
 
 
-def check_lean(path=None, timeout=600, require=False):
-    """Write the Lean file and ask the kernel to check it.
+def parse_axioms(output, namespace):
+    """Read ``#print axioms`` lines for theorems in ``namespace``.
 
-    Returns a record with ``available`` (was there a toolchain), ``ok`` (did
-    it compile), ``axioms`` (what each theorem depends on), and the raw
-    output. With ``require=True`` the absence of a toolchain raises instead
-    of being reported, for callers that want the check or nothing.
+    Lean prints one report per theorem, ``'Ns.name' depends on axioms: [a, b]``
+    or ``'Ns.name' does not depend on any axioms``; a long list can wrap onto
+    following lines, so a report is read until its closing bracket.
+    """
+    axioms = {}
+    lines = output.splitlines()
+    prefix = "'%s." % namespace
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        i += 1
+        if not line.startswith(prefix):
+            continue
+        name = line.split("'")[1].split(".", 1)[1]
+        if "does not depend on any axioms" in line:
+            axioms[name] = []
+            continue
+        text = line.split("axioms:", 1)[-1]
+        while "]" not in text and i < len(lines):
+            text += " " + lines[i].strip()
+            i += 1
+        deps = text.strip().strip("[]")
+        axioms[name] = [d.strip() for d in deps.split(",") if d.strip()]
+    return axioms
 
-    The axiom report is the part that matters. A Lean file that compiles may
-    still be resting on ``sorryAx``, and a proof resting on ``sorryAx`` is not
-    a proof. This function reads the ``#print axioms`` lines and refuses to
-    call anything machine-checked that mentions it.
+
+def check_source(src, namespace, filename, path=None, timeout=600,
+                 require=False, allowed=("propext", "Quot.sound")):
+    """Write a Lean file and ask the kernel to check it; the generic core.
+
+    ``allowed`` is an allow-list: a theorem counts as machine-checked only if
+    every axiom in its report is on it. It is an allow-list and not a
+    deny-list on purpose. A deny-list of ``sorryAx`` and
+    ``Lean.ofReduceBool`` misses what Lean 4.33 actually emits for
+    ``native_decide`` -- a fresh auxiliary axiom per proof, named
+    ``<thm>._native.native_decide.ax_N`` -- and misses a plain user-declared
+    ``axiom``. The report is parsed, never assumed.
     """
     exe = lean_executable()
     if exe is None:
         if require:
             raise NoToolchain(
                 "no lean executable found. Set PYCICY_LEAN or put lean on "
-                "PATH. The file can still be emitted with lean_source(); "
-                "what cannot be done without a kernel is claiming it checks.")
+                "PATH. The file can still be emitted; what cannot be done "
+                "without a kernel is claiming it checks.")
         return {"available": False, "ok": None, "axioms": {},
-                "output": "", "source": lean_source()}
-
-    src = lean_source()
-    target = path
-    tmp = None
+                "output": "", "source": src}
+    target, tmp = path, None
     if target is None:
         tmp = tempfile.mkdtemp(prefix="pycicy-lean-")
-        target = os.path.join(tmp, "NariaiFacts.lean")
+        target = os.path.join(tmp, filename)
     with open(target, "w") as fh:
         fh.write(src)
-
     proc = subprocess.run([exe, target], capture_output=True, text=True,
                           timeout=timeout)
     out = (proc.stdout or "") + (proc.stderr or "")
-
-    axioms, bad = {}, []
-    for line in out.splitlines():
-        line = line.strip()
-        if not line.startswith("'Nariai."):
-            continue
-        name = line.split("'")[1].split(".", 1)[1]
-        if "does not depend on any axioms" in line:
-            axioms[name] = []
-        else:
-            deps = line.split("axioms:", 1)[-1].strip().strip("[]")
-            axioms[name] = [d.strip() for d in deps.split(",") if d.strip()]
-        if any(d in ("sorryAx", "Classical.choice") for d in axioms[name]):
-            bad.append(name)
-
+    axioms = parse_axioms(out, namespace)
+    bad = sorted(n for n, deps in axioms.items()
+                 if any(d not in allowed for d in deps))
     errors = [l for l in out.splitlines() if ": error:" in l]
     return {"available": True,
             "ok": proc.returncode == 0 and not errors and not bad,
@@ -512,6 +525,27 @@ def check_lean(path=None, timeout=600, require=False):
             "path": target,
             "output": out,
             "source": src}
+
+
+def check_lean(path=None, timeout=600, require=False):
+    """Write the Lean file and ask the kernel to check it.
+
+    Returns a record with ``available`` (was there a toolchain), ``ok`` (did
+    it compile), ``axioms`` (what each theorem depends on), and the raw
+    output. With ``require=True`` the absence of a toolchain raises instead
+    of being reported, for callers that want the check or nothing.
+
+    The axiom report is the part that matters. A Lean file that compiles may
+    still be resting on ``sorryAx``, and a proof resting on ``sorryAx`` is not
+    a proof. This function reads the ``#print axioms`` lines and refuses to
+    call anything machine-checked that mentions it -- or, for this module,
+    ``Classical.choice``, since these facts claim to be constructive. The
+    policy is an allow-list (``propext``, ``Quot.sound``), so an axiom this
+    function has never heard of disqualifies too.
+    """
+    return check_source(lean_source(), "Nariai", "NariaiFacts.lean",
+                        path=path, timeout=timeout, require=require,
+                        allowed=("propext", "Quot.sound"))
 
 
 def status(lean_path=None):
