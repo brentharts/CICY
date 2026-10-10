@@ -1,8 +1,6 @@
-# pyEXACT
-
-## exact methods in string theory and quantum field theory, from a configuration matrix to a curve on a surface
-
-### Calabi–Yau topology, heterotic model building, F-theory, orientifolds, M-theory, entropic gravity, aperiodic order — and now scattering amplitudes — each with a sharp account of where exactness ends
+# Exact Methods in String Theory and QFT: from a configuration matrix to a curve on a surface
+## Calabi–Yau topology, heterotic model building, F-theory, orientifolds, M-theory, entropic gravity, aperiodic order, scattering amplitudes
+### each with a sharp account of where exactness ends
 
 *Formerly pyCICY-X. The repository is still `CICY` and the import is still
 `pyCICY`; only the name of the project has changed, because the old one
