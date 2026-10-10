@@ -80,7 +80,7 @@ import numpy as np
 from .base import Theory, register
 from .ftheory import NoSuchTheory
 
-__all__ = ["TypeIIIFactor", "NariaiEntropic", "nariai_data", "sds_horizons",
+__all__ = ["first_law_bookkeeping", "TypeIIIFactor", "NariaiEntropic", "nariai_data", "sds_horizons",
            "degenerate_family", "kk_tower", "coherent_entropy",
            "coherent_entropy_quadrature", "coherent_entropy_araki",
            "jt_area_response", "ContourPacket", "squeezed_flux_budget",
@@ -1067,3 +1067,70 @@ def two_point_phase_ratio(r, w):
     if pos <= 0.0:
         return float("inf")
     return w * (1.0 - t) / pos
+
+
+# ---------------------------------------------------------------------------
+# exact bookkeeping: S = A/4 and alpha = 8 pi are one identity, the first law
+# ---------------------------------------------------------------------------
+
+def first_law_bookkeeping(r, lam):
+    r"""Exact check that S = A/4 and alpha = 8 pi are the SdS first law.
+
+    ``r`` and ``lam`` are rationals (ints, Fractions or strings); ``r`` is a
+    horizon radius of Schwarzschild-de Sitter, which fixes the mass
+    ``M(r) = r (1 - Lambda r^2/3) / 2`` by ``f(r) = 0``.
+
+    Two derivatives that are *different objects* are compared:
+
+    * ``dM/dr`` along the one-parameter family of horizons (total derivative
+      of ``M(r)``);
+    * ``kappa = f'(r)/2`` at fixed M (partial derivative of
+      ``f = 1 - 2M/r - Lambda r^2/3``), the signed surface gravity -- negative
+      on the cosmological horizon.
+
+    A flux dE of Killing energy through the horizon has relative entropy
+    ``S_rel = 2 pi dE / kappa`` (modular Hamiltonian ``K = 2 pi E / kappa``).
+    Requiring ``dA = (alpha / 2 pi) S_rel`` gives ``alpha = kappa dA / dE``,
+    and the first law ``dE = kappa dA / 8 pi`` makes that exactly ``8 pi``;
+    equivalently ``dS_rel / dA = 1/4``. Both are returned in units of pi, as
+    Fractions, so that no float and no pi enters.
+
+    At the Nariai radius ``Lambda r^2 = 1`` both kappa and dM/dr vanish and
+    the ratio is 0/0 (the Bousso-Hawking rescaling is what removes it), so
+    that point raises ``ValueError`` rather than returning a guess.
+
+    The identity is algebraic and holds for any r > 0; the point is a
+    physical two-horizon SdS solution only if ``0 < Lambda r^2 < 3`` (M > 0)
+    and ``9 Lambda M^2 < 1``. ``mass`` is returned so a caller can check.
+    """
+    import sympy as sp
+    r = Fraction(r)
+    lam = Fraction(lam)
+    if r <= 0 or lam <= 0:
+        raise ValueError("r and Lambda must be positive")
+    if lam * r * r == 1:
+        raise ValueError("Nariai radius: kappa and dM/dr both vanish (0/0); "
+                         "use the Bousso-Hawking normalisation instead")
+    R, Ms = sp.symbols("R M")
+    L = sp.Rational(lam.numerator, lam.denominator)
+    r0 = sp.Rational(r.numerator, r.denominator)
+    f = 1 - 2 * Ms / R - L * R ** 2 / 3
+    mass_of_r = R * (1 - L * R ** 2 / 3) / 2
+    m0 = mass_of_r.subs(R, r0)
+    horizon_residual = f.subs({Ms: m0, R: r0})
+    kappa = (sp.diff(f, R) / 2).subs({Ms: m0, R: r0})        # M held fixed
+    dM = sp.diff(mass_of_r, R).subs(R, r0)                   # M moves with r
+    dA_over_pi = sp.diff(4 * R ** 2, R).subs(R, r0)           # A = 4 pi R^2
+    alpha_over_pi = sp.nsimplify(kappa * dA_over_pi / dM)
+    # S_rel = 2 pi dM / kappa ; dS_rel/dA = (2 dM/kappa) / (dA/pi)
+    s_per_a = sp.nsimplify(2 * dM / kappa / dA_over_pi)
+
+    def fr(x):
+        x = sp.Rational(x)
+        return Fraction(int(x.p), int(x.q))
+
+    return {"r": r, "lam": lam, "mass": fr(m0),
+            "horizon_residual": fr(horizon_residual),
+            "kappa": fr(kappa), "dM_dr": fr(dM),
+            "alpha_over_pi": fr(alpha_over_pi),
+            "S_rel_per_area": fr(s_per_a)}
