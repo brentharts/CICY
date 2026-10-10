@@ -101,6 +101,34 @@ K3 hypersurface". A reflexive *three*-polytope gives a K3; a reflexive
 four-polytope such as the 24-cell gives a threefold, which is what Braun's
 title says and what :func:`batyrev_hodge` returns.
 
+The Mahler volume product
+-------------------------
+For a convex body K with the origin in its interior, the Mahler conjectures
+bound |K| |K*| from below: by (n+1)^(n+1) / (n!)^2 in general (equality for
+simplices, with the origin at the Santalo point) and by 4^n / n! when K is
+centrally symmetric (equality for Hanner polytopes). For a reflexive polytope P
+the normalised volume V(P) = n! vol(P) is an integer, and
+V(P) V(P*) = (n!)^2 |P| |P*| does not depend on the lattice, so the bounds
+read, exactly,
+
+    V(P) V(P*) >= (n+1)^(n+1)     and, if P = -P,     V(P) V(P*) >= 4^n n!.
+
+(The origin is an interior point, and the Santalo point minimises the product
+over interior points, so the general bound applies to the origin-centred pair.)
+In toric language V(P) is the anticanonical degree (-K)^n of the Gorenstein
+Fano variety whose polytope of anticanonical sections is P, so V(P) V(P*) is
+the product of the anticanonical degrees of a mirror pair. For the quintic's
+pair it is 625 * 5 = 5^5: P^4 and its mirror quotient sit exactly on the bound.
+
+:func:`volume_product` computes that product and compares it with the bounds.
+This is a *check* of a theorem, never a proof of one: finitely many polytopes
+cannot establish an inequality for all of them. The plane case is classical
+(Mahler, 1939). The conjectures in every dimension, with the equality cases,
+are claimed in two OpenAI preprints of 22 September 2026 (family 087 of
+github.com/openai/math), whose repository states that a Lean 4 formalisation
+covers both inequalities; neither the preprints nor the formalisation has been
+refereed here, and this module re-derives nothing from them.
+
 Scope
 -----
 * No normal form and no GL(n,Z) classification. :func:`toric.normal_form`
@@ -125,6 +153,8 @@ __all__ = [
     "in_generated_lattice", "face_lattice", "f_vector", "dual_face",
     "batyrev_hodge", "twenty_four_cell", "d4_roots", "f4_roots",
     "equilateral_subsets", "cross_polytope", "simplex",
+    "normalized_volume", "ehrhart_normalized_volume", "is_centrally_symmetric",
+    "mahler_bound", "volume_product",
 ]
 
 _TOL = 1e-7
@@ -602,3 +632,124 @@ def equilateral_subsets(V, k=4, edge_sq=None):
             continue
         out.append(c)
     return out
+
+
+# ---------------------------------------------------------------------------
+# volumes and the Mahler volume product
+# ---------------------------------------------------------------------------
+
+def _integer_vertices(V):
+    A = np.asarray(V)
+    if A.dtype.kind not in "iu":
+        R = np.round(A.astype(float))
+        if not np.allclose(A.astype(float), R, atol=1e-9):
+            raise ValueError("integer vertices required: exact volumes are "
+                             "not defined for a non-integral input")
+        A = R
+    return A.astype(np.int64)
+
+
+def _integer_det(rows):
+    """Determinant of an integer matrix, exactly (rational elimination)."""
+    from fractions import Fraction
+    M = [[Fraction(int(x)) for x in r] for r in rows]
+    n, det = len(M), Fraction(1)
+    for c in range(n):
+        p = next((r for r in range(c, n) if M[r][c] != 0), None)
+        if p is None:
+            return 0
+        if p != c:
+            M[c], M[p] = M[p], M[c]
+            det = -det
+        det *= M[c][c]
+        for r in range(c + 1, n):
+            f = M[r][c] / M[c][c]
+            if f:
+                M[r] = [a - f * b for a, b in zip(M[r], M[c])]
+    return int(det)
+
+
+def normalized_volume(V):
+    """The normalised volume n! vol(P) of an integer polytope with the origin
+    in its interior, as an exact integer.
+
+    It is the sum, over the simplices of a triangulation of the boundary, of
+    |det| of the simplex's vertices: the cones from the origin tile P. Qhull
+    supplies which vertices form each simplex; the determinants are exact.
+    """
+    W = _integer_vertices(V)
+    h = _hull(W)
+    if np.any(h.equations[:, -1] > -_TOL):
+        raise ValueError("the origin is not in the interior")
+    return sum(abs(_integer_det(W[s])) for s in h.simplices)
+
+
+def ehrhart_normalized_volume(V, max_box=2000000):
+    """The normalised volume again, by a route that uses no determinant:
+    count the lattice points of tP for t = 1..n, form the h*-vector from the
+    Ehrhart series  sum_t L(t) z^t = h*(z) / (1 - z)^(n+1),  and sum it
+    (h*(1) = n! vol(P)).
+
+    Returns ``(volume, hstar)``. For a reflexive polytope h* is palindromic,
+    h*_k = h*_(n-k), which is a further check on the input.
+    """
+    W = _integer_vertices(V)
+    n = W.shape[1]
+    L = [1] + [len(lattice_points(t * W, max_box=max_box))
+               for t in range(1, n + 1)]
+    hstar = [sum((-1) ** (k - j) * math.comb(n + 1, k - j) * L[j]
+                 for j in range(k + 1)) for k in range(n + 1)]
+    return sum(hstar), hstar
+
+
+def is_centrally_symmetric(V):
+    """Whether P = -P, decided on the vertices of the hull."""
+    W = _integer_vertices(V)
+    verts = {tuple(W[i]) for i in _hull(W).vertices}
+    return all(tuple(-x for x in v) in verts for v in verts)
+
+
+def mahler_bound(n, symmetric=False):
+    """The Mahler lower bound for V(P) V(P*): (n+1)^(n+1), or 4^n n! for a
+    centrally symmetric polytope."""
+    return 4 ** n * math.factorial(n) if symmetric else (n + 1) ** (n + 1)
+
+
+def volume_product(V, cross_check=False):
+    """V(P) V(P*) for a reflexive polytope, against the Mahler bounds.
+
+    ``V`` is a vertex array. If P is not reflexive in Z^n it is rewritten in
+    the lattice its vertices generate (see :func:`is_reflexive`); the product
+    does not depend on that choice. Raises ``ValueError`` if P is not reflexive
+    in either lattice. Dimension n >= 2 only (``is_reflexive`` does not
+    handle segments).
+
+    With ``cross_check`` both normalised volumes are also computed from
+    Ehrhart counts (:func:`ehrhart_normalized_volume`) and an
+    ``ArithmeticError`` is raised if the two routes disagree.
+
+    Returns a dict: ``n``, ``V`` and ``V_dual``, their ``product``,
+    ``symmetric``, the applicable ``bound`` and the general ``bound_general``,
+    ``holds`` (product >= bound), ``equality`` (product == bound), ``lattice``.
+    A False ``holds`` would mean an arithmetic error here or a counterexample
+    to the inequality; the function reports it and does not raise.
+    """
+    info = is_reflexive(V)
+    if not info["reflexive"]:
+        raise ValueError("not reflexive in Z^n or in the lattice it generates")
+    W, D = info["vertices"], info["dual"]
+    n = W.shape[1]
+    a, b = normalized_volume(W), normalized_volume(D)
+    if cross_check:
+        a2, _ = ehrhart_normalized_volume(W)
+        b2, _ = ehrhart_normalized_volume(D)
+        if (a, b) != (a2, b2):
+            raise ArithmeticError(
+                "the determinant and Ehrhart routes disagree: (%d, %d) vs "
+                "(%d, %d)" % (a, b, a2, b2))
+    sym = is_centrally_symmetric(W)
+    bound = mahler_bound(n, symmetric=sym)
+    return {"n": n, "V": a, "V_dual": b, "product": a * b, "symmetric": sym,
+            "bound": bound, "bound_general": mahler_bound(n),
+            "holds": a * b >= bound, "equality": a * b == bound,
+            "lattice": info["lattice"]}
