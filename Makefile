@@ -56,7 +56,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper papers strings-paper strings-facts twistor-paper twistor-facts monotile-paper monotile-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor monotile knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help sixsphere-lean
+.PHONY: all paper papers strings-paper strings-facts twistor-paper twistor-facts monotile-paper monotile-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor monotile knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help sixsphere-lean sixsphere-paper sixsphere-facts
 
 all: paper
 
@@ -180,8 +180,38 @@ $(MONOTILEPDF): $(PAPERDIR)/$(MONOTILETEX) $(MONOTILEFACTS)
 	    grep 'Reference.*undefined' $(PAPERDIR)/supplementary_material_monotile.log | sort -u; \
 	fi
 
-# All four papers.
-papers: paper strings-paper twistor-paper monotile-paper
+# The six-sphere connections paper. Every number recomputed from
+# pyCICY.sixsphere_search (~2 min, most of it the stability boxes); the
+# generator refuses to write if a check fails, and records whether the Lean
+# kernel ran, so the paper's machine-checked claims follow the build.
+
+SIXSPHERETEX   := supplementary_material_sixsphere.tex
+SIXSPHEREPDF   := $(PAPERDIR)/supplementary_material_sixsphere.pdf
+SIXSPHEREFACTS := $(FIGDIR)/sixsphere_facts.tex
+
+sixsphere-paper: $(SIXSPHEREPDF)
+
+sixsphere-facts: $(SIXSPHEREFACTS)
+
+$(SIXSPHEREFACTS): pyCICY/sixsphere_search.py pyCICY/sixsphere.py \
+		pyCICY/sixsphere_lean.py $(PAPERDIR)/make_sixsphere_facts.py
+	@echo "==> recomputing the numbers quoted in the six-sphere paper"
+	@mkdir -p $(FIGDIR)
+	$(PYTHON) $(PAPERDIR)/make_sixsphere_facts.py
+
+$(SIXSPHEREPDF): $(PAPERDIR)/$(SIXSPHERETEX) $(SIXSPHEREFACTS)
+	@echo "==> pdflatex pass 1/2 (six-sphere)"
+	cd $(PAPERDIR) && $(PDFLATEX) -interaction=nonstopmode -halt-on-error $(SIXSPHERETEX) >/dev/null
+	@echo "==> pdflatex pass 2/2 (six-sphere)"
+	cd $(PAPERDIR) && $(PDFLATEX) -interaction=nonstopmode -halt-on-error $(SIXSPHERETEX) >/dev/null
+	@echo "==> wrote $(SIXSPHEREPDF)"
+	@if grep -q 'Reference.*undefined' $(PAPERDIR)/supplementary_material_sixsphere.log; then \
+	    echo "WARNING: undefined references remain:"; \
+	    grep 'Reference.*undefined' $(PAPERDIR)/supplementary_material_sixsphere.log | sort -u; \
+	fi
+
+# All the papers.
+papers: paper strings-paper twistor-paper monotile-paper sixsphere-paper
 
 test:
 	$(PYTHON) run_tests.py
