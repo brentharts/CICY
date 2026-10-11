@@ -41,6 +41,13 @@
 \newcommand{\NFRatioHalf}{?}\newcommand{\NFRatioOne}{?}
 \newcommand{\NFRouteMaxArakiDev}{?}\newcommand{\NFRouteMaxJTDev}{?}
 \newcommand{\NFRouteMaxQuadDev}{?}\newcommand{\NFThetaN}{?}
+\newcommand{\NFFRAlphaEinstein}{?}\newcommand{\NFFRSrelEinstein}{?}
+\newcommand{\NFFRKappaBH}{?}\newcommand{\NFFRKappaCosmo}{?}
+\newcommand{\NFFRQuadF}{?}\newcommand{\NFFRQuadC}{?}
+\newcommand{\NFFRQuadAlpha}{?}\newcommand{\NFFRQuadSrel}{?}
+\newcommand{\NFFRQuadResidual}{?}\newcommand{\NFFRCubicF}{?}
+\newcommand{\NFFRCubicAlpha}{?}\newcommand{\NFFRCubicSrel}{?}
+\IfFileExists{figures/nariai_fr_facts.tex}{\input{figures/nariai_fr_facts.tex}}{}
 \IfFileExists{figures/nariai_facts.tex}{\input{figures/nariai_facts.tex}}{}
 
 \newcommand{\Srel}{S^{\mathrm{rel}}}
@@ -270,6 +277,68 @@ require the exception hierarchy to encode this, exactly as the tests
 of~\cite{SuppStrings} require the six-dimensional Yukawa refusal to not be
 the metric refusal.
 \end{remark}
+
+\subsection{What the $8\pi$ depends on: the first law and $f(R)$ gravity}
+\label{sec:frlaw}
+
+Route~4 takes $\delta A = 4G\,\Srel$ as the output of the dilaton equation.
+On the Schwarzschild--de Sitter side the same coupling is an exact rational
+identity, and it can be asked what it depends on. Two derivatives that are
+different objects are compared: $\mathrm{d}M/\mathrm{d}r$ along the
+one-parameter family of horizon radii, with $M(r) = \tfrac12 r
+(1 - \Lambda r^2/3)$ fixed by $f(r) = 0$, and the surface gravity
+$\kappa = \tfrac12 f'(r)$ at fixed $M$. A flux $\dd E$ of Killing energy has
+$\Srel = 2\pi\,\dd E/\kappa$, and requiring $\dd A = (\alpha/2\pi)\,\Srel$
+gives $\alpha = \kappa\,\dd A/\dd E$. The first law $\dd E = \kappa\,\dd A/8\pi$
+makes this exactly $8\pi$, equivalently $\dd\Srel/\dd A = \tfrac14$: the
+normalisation $S = A/4$ and the coupling $\alpha = 8\pi$ are one statement.
+The suite checks $\alpha/\pi = \NFFRAlphaEinstein$ and $\dd\Srel/\dd A =
+\NFFRSrelEinstein$ in \texttt{fractions.Fraction} at sixty rational points on
+both horizons (the black-hole horizon, $\kappa > 0$, e.g.\ $\kappa =
+\NFFRKappaBH$ at $r = \tfrac12$, $\Lambda = 1$; and the cosmological horizon,
+$\kappa < 0$, e.g.\ $\kappa = \NFFRKappaCosmo$ at $r = \tfrac32$), and ties the
+exact $r$ and $|\kappa|$ to the roots of the cubic used above. At the Nariai
+radius $\Lambda r^2 = 1$ both $\kappa$ and $\dd M/\dd r$ vanish and the ratio
+is $0/0$; the function refuses rather than guess, which is the
+Bousso--Hawking rescaling~\cite{BoussoHawking} again.
+
+The coupling is not a constant of nature in a modified theory. Take
+$f(R) = R + aR^2 + bR^3 + c$ and look for constant-curvature solutions
+$R = R_0$~\cite{SotiriouFaraoni}. The trace equation $f'(R)R - 2f(R) = 0$ fixes
+$c = (bR_0^3 - R_0)/2$ (the $R^2$ coefficient drops out in four dimensions)
+and $\Lambda = R_0/4$. The Schwarzschild--de Sitter metric solves the field
+equations: its Ricci tensor, computed symbolically from the metric, is
+$R_{\mu\nu} = \Lambda g_{\mu\nu}$, so the equation reduces to $F\Lambda =
+f(R_0)/2$, whose residual the suite requires to be exactly $\NFFRQuadResidual$.
+With $F = f'(R_0) > 0$ the effective Newton constant is $G_{\mathrm{eff}} =
+G/F$, the Wald entropy~\cite{Wald1993,IyerWald1994} is $S = F A/4$ and the
+physical mass is $F M$. Then
+%
+\begin{equation}
+\frac{\alpha}{\pi} \;=\; \frac{8}{F}\,, \qquad
+\frac{\dd \Srel}{\dd A} \;=\; \frac{F}{4} \;=\; \frac{\dd S_{\mathrm{Wald}}}{\dd A}\,,
+\label{eq:frlaw}
+\end{equation}
+%
+so the exact statement is $\delta S_{\mathrm{Wald}} = \Srel$, and $\delta A = 4G\,\Srel$
+survives only for $F = 1$. For $f = R + R^2/16 + c$ at $R_0 = 4$
+($\Lambda = 1$) the suite finds $F = \NFFRQuadF$, $c = \NFFRQuadC$,
+$\alpha/\pi = \NFFRQuadAlpha$ and $\dd\Srel/\dd A = \NFFRQuadSrel$; for the cubic
+$f = R + R^2/5 + R^3/50 + c$ at $R_0 = 4/3$, $F = \NFFRCubicF$, $\alpha/\pi =
+\NFFRCubicAlpha$, $\dd\Srel/\dd A = \NFFRCubicSrel$. The Nariai entropy
+becomes $F\pi/\Lambda$. Mutating the mass (dropping the factor $F$), the Wald
+entropy, or $\Lambda = R_0/4$ makes the suite fail.
+
+This is a statement about the response coefficient, and its scope is narrow.
+The physical mass $F M$ and the Wald entropy $FA/4$ are inputs, not derived
+here; only constant-curvature solutions are covered, not hairy ones; and
+nothing is claimed about the quantum side --- whether the Dorau--Much
+derivation goes through for $f(R)$, with its extra scalar degree of freedom,
+is not addressed. The content is conditional: \emph{if} $\Srel$ is the
+Killing-energy flux through the horizon, \emph{then} the geometric response
+is $8\pi G_{\mathrm{eff}}$, and the invariant form of $\delta A = 4G\,\Srel$ is
+$\delta S_{\mathrm{Wald}} = \Srel$. The $8\pi$ of Route~4 is therefore
+Einstein's, not universal.
 
 % =====================================================================
 
@@ -611,7 +680,9 @@ categories unchanged.
 of the vanishing theorem, holding for every wedge-local single-mode squeeze
 with no premise about the packet. Also everything in \cref{sec:routes}: the
 rational identity \cref{eq:gammaid}, the Clausius relation, the JT response,
-the one-mode sum rule at general angle.
+the one-mode sum rule at general angle; and the rational first-law
+identity behind $S = A/4$ and $\alpha = 8\pi$, with its $f(R)$ form
+\cref{eq:frlaw} (\cref{sec:frlaw}), conditional on the stated inputs.
 
 \item \emph{Exact at a distinguished point of a class.} The ratio law
 \cref{eq:ratiolaw}: exact on the contour family by \cref{lem:uniform}, and
@@ -634,7 +705,8 @@ the type III domain lift of its mode-resolved sum rule (its Eq.~(67), a
 conjecture pending natural-cone convergence, in the technology of
 \cite{Longo2019,CLR2020,Shale1962}); the dynamics of the teleological
 horizon under sign-indefinite flux; species additivity of the derived
-$8\pi$. To these this paper adds one of its own: the multimode extension of
+$8\pi$, and, beyond \cref{sec:frlaw}, non-constant curvature and the quantum
+derivation for $f(R)$. To these this paper adds one of its own: the multimode extension of
 \cref{thm:bound}. The factorization \cref{eq:factor} is a single-mode
 statement --- a multimode Gaussian flux is a sum of such terms with
 correlated phases --- and whether the exponential bound survives with
@@ -679,7 +751,9 @@ waiting to be extracted.
 The implementation is \texttt{pyCICY.theories.nariai} in the repository at
 \url{https://github.com/brentharts/CICY}, with the verification suite
 \texttt{tests/test\_nariai.py} (ten sections, every check listed in
-\cref{sec:routes,sec:contour,sec:ratio,sec:bound} among them) and the survey
+\cref{sec:routes,sec:contour,sec:ratio,sec:bound} among them) the first-law and
+$f(R)$ checks of \cref{sec:frlaw} in \texttt{tests/test\_firstlaw.py}
+(\texttt{first\_law\_bookkeeping}, \texttt{fr\_bookkeeping}), and the survey
 driver \texttt{paper/make\_nariai\_facts.py}, which regenerates every number
 and the figure in this document. The companion repository of the source
 paper \cite{NariaiI} is \url{https://github.com/brentharts/NariaiRelativeEntropy}; 
@@ -690,7 +764,8 @@ numbers are reproduced by construction before the grid is extended.
 Limitations. The bound \cref{thm:bound} is single-mode; the ratio law
 \cref{eq:ratiolaw} additionally assumes phase equidistribution, exact only
 on families with the harmonic-cancellation property of \cref{lem:uniform}.
-Nothing here touches the genuinely dynamical questions of the source paper
+\Cref{sec:frlaw} is constant-curvature and takes the physical mass and the
+Wald entropy as inputs. Nothing here touches the genuinely dynamical questions of the source paper
 --- the teleological response to sign-indefinite flux and the type III lift
 --- and nothing here supplies microstates: the capacity $\pi/\Lambda$
 remains, a ledger of distinctions rather than an inventory.
@@ -783,6 +858,22 @@ Lett.\ Math.\ Phys.\ \textbf{109}, 2587 (2019). \url{https://arxiv.org/abs/1901.
 F.~Ciolli, R.~Longo, and G.~Ruzzi,
 \emph{The information in a wave},
 Commun.\ Math.\ Phys.\ \textbf{379}, 979 (2020). \url{https://arxiv.org/abs/1906.01707}
+
+\bibitem{Wald1993}
+R.~M.~Wald,
+\emph{Black hole entropy is the Noether charge},
+Phys.\ Rev.\ D \textbf{48} (1993), R3427.
+
+\bibitem{IyerWald1994}
+V.~Iyer and R.~M.~Wald,
+\emph{Some properties of the Noether charge and a proposal for dynamical
+black hole entropy},
+Phys.\ Rev.\ D \textbf{50} (1994), 846.
+
+\bibitem{SotiriouFaraoni}
+T.~P.~Sotiriou and V.~Faraoni,
+\emph{$f(R)$ theories of gravity},
+Rev.\ Mod.\ Phys.\ \textbf{82} (2010), 451.
 
 \bibitem{Shale1962}
 D.~Shale,
