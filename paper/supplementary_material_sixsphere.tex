@@ -57,6 +57,16 @@
 \newcommand{\SSLeanFacts}{?}\newcommand{\SSLeanChoiceFree}{?}
 \newcommand{\SSLeanNew}{?}\newcommand{\SSLeanStatus}{?}
 \newcommand{\SSLeanChecked}{?}
+\newcommand{\SSDPVolume}{?}\newcommand{\SSDPBoundary}{?}
+\newcommand{\SSDPDual}{?}\newcommand{\SSDPProduct}{?}
+\newcommand{\SSDPBoundSym}{?}\newcommand{\SSDPKTwo}{?}
+\newcommand{\SSDPRays}{?}
+\newcommand{\SSKodairaCandidates}{?}\newcommand{\SSKodairaTotals}{?}
+\newcommand{\SSKodairaTriple}{?}
+\newcommand{\SSERootsEight}{?}\newcommand{\SSERootsSeven}{?}
+\newcommand{\SSERootsSix}{?}\newcommand{\SSEDiscSeven}{?}
+\newcommand{\SSEDiscSix}{?}\newcommand{\SSEDiscSixA}{?}
+\newcommand{\SSMWRank}{?}\newcommand{\SSGuardRefused}{?}
 \IfFileExists{figures/sixsphere_facts.tex}{\input{figures/sixsphere_facts.tex}}{}
 
 \newcommand{\ZZ}{\mathbb{Z}}
@@ -112,6 +122,13 @@ points, and $e(W) = \SSEW$ counts hexagon vertices in a fundamental domain.
 The substrate descends to the torus; no monotile tiling can. We also show the
 monodromy is achiral, that its lattice is not self-dual over $\ZZ$, and we
 settle two tempting coincidences with the Spectre as unrelated.
+
+Three exact contacts with the rest of the package follow. The cusp
+component's single number $K^2 = \SSDPKTwo$ is the normalised volume of the
+hexagon polygon; the local monodromy orders $(3,4)$ with an $\mathrm{I}_1$
+cusp force one Kodaira configuration, whose root lattice embeds in $E_8$; and
+the central-charge module correctly refuses the six-sphere, which has no
+class $\omega$ with $\omega^3 > 0$.
 \end{abstract}
 
 \tableofcontents
@@ -159,6 +176,14 @@ monotile paper~\cite{SuppMonotile} characterised its subject by what has
 \emph{no} momentum space; the cusp fibre is the same substrate \emph{with}
 one.
 
+\paragraph{Three contacts, one refusal.} \Cref{sec:links} asks what the
+same finite layer shares with the polytope, K3-lattice and central-charge
+modules written for the CICY side of the package. It finds that the cusp
+component's invariant $6$ is a normalised volume, that the monodromy orders
+force a Kodaira configuration whose root lattice sits inside $E_8$, and that
+the central-charge module cannot be applied --- a refusal we count as a
+result.
+
 \Cref{sec:mirror} adds two exact statements about the lattice itself ---
 it is achiral, and not self-dual over $\ZZ$ --- and \cref{sec:arith}
 compares its arithmetic with the Hat's and the Spectre's, settling two
@@ -178,8 +203,8 @@ quoted below are \SSLeanStatus{}.
 \section{The Flag Class: Block Structure of the Monodromy Matrices}
 \label{sec:flag}
 
-Write $V = \ZZ^4$ with basis $(\gamma, u, w, \delta)$. The construction's
- Alpöge's matrices fix $\gamma$, preserve $\langle \gamma, u, w\rangle$, and act
+Write $V = \ZZ^4$ with basis $(\gamma, u, w, \delta)$. Alpöge's
+matrices fix $\gamma$, preserve $\langle \gamma, u, w\rangle$, and act
 trivially on the top quotient (\cite[Lemma~2.7]{Alpoge}); so each has the
 block form
 \begin{equation}
@@ -210,7 +235,7 @@ from a fixed-point computation rather than quoting it.
 
 % =====================================================================
 
-\section{Uniqueness of (3, 4, \texorpdfstring{$\infty$}{infinity}) the Only Allowed Triangle Groups}
+\section{Why (3, 4, \texorpdfstring{$\infty$}{infinity}) Is the Only Allowed Triangle Group}
 \label{sec:triangle}
 
 \begin{proposition}
@@ -553,7 +578,7 @@ integral statement: there is not even a non-positive \emph{principal} one.
 
 % =====================================================================
 
-\section{Arithmetic Invariants and the Spectre Monotile Resemblances}
+\section{Arithmetic Invariants and Resemblances to the Spectre}
 \label{sec:arith}
 
 The special values of the construction's period functions lie at the
@@ -604,6 +629,120 @@ four, whose fibre is a multiple fibre with no double curves at all.
 
 % =====================================================================
 
+\section{Connections to the Rest of the Package}
+\label{sec:links}
+
+The package this paper belongs to also computes, exactly, with polytopes,
+with the lattice $H^2(K3,\ZZ)$ and with Bridgeland central charges on
+Calabi--Yau threefolds. This section asks what the six-sphere's finite layer
+shares with each. The computations are in \texttt{pyCICY.sixsphere\_links}
+and are tested in \texttt{tests/test\_sixsphere\_links.py}; each number is
+reached by at least two routes, and the constants are written by
+\texttt{paper/make\_sixsphere\_facts.py}.
+
+\subsection{The cusp component and the volume product}
+\label{sec:links-mahler}
+
+The component of the cusp fibre is the degree-six del Pezzo surface $dP_6$,
+the toric surface whose polygon is $B_3$, the hexagon with \SSDPBoundary{}
+boundary points. Its anticanonical degree $K^2$ is the normalised volume
+$V(B_3) = 2\,\mathrm{Area}(B_3)$ (the identity $V(P) = (-K)^n$ for the
+Gorenstein toric Fano variety whose anticanonical polytope is the reflexive
+polytope $P$; $B_3$ is self-dual, so there is no ambiguity about which of the
+pair is meant).
+
+\begin{proposition}
+\label{prop:dp6}
+$K^2_{dP_6} = \SSDPKTwo$. This is computed four ways, with no shared code:
+by triangulating the hexagon ($V(B_3) = \SSDPVolume$); by Ehrhart counts of
+the same polygon; by Noether's formula $K^2 = 12 - n = 12 - \SSDPRays$ for a
+smooth complete toric surface with $n$ rays~\cite{Fulton}; and as $9 - 3$ for
+$\mathbb{P}^2$ blown up at three points. The toric divisors have
+self-intersections $(-1)^{\times 6}$, summing to $12 - 3n = -6$ as they
+must.
+\end{proposition}
+
+The hexagon is self-dual: $V(B_3^*) = \SSDPDual$, so the volume product is
+$V(B_3)V(B_3^*) = \SSDPProduct$. It is centrally symmetric, and the Mahler
+bound for symmetric bodies is $4^2\cdot 2! = \SSDPBoundSym$, so $B_3$ lies
+strictly above it (only two reflexive polygons attain it). The number that
+the dictionary of \cref{sec:laves} reads off as six kites per domain, six
+$(-1)$-curves of the hexagon, six corners, is therefore also the volume of
+the polytope; the agreement is the toric fact that a smooth toric surface has
+as many torus-fixed points as rays, together with $K^2 = 12 - n$, and it is
+specific to $n = 6$. We claim nothing beyond that.
+
+\subsection{The elliptic fibration and the lattice module}
+\label{sec:links-lattice}
+
+The middle block of the monodromy is that of an elliptic family over
+$\mathbb{P}^1$ with singular fibres over the three points of the orbifold,
+so each local monodromy fixes a Kodaira type up to the usual inversion: order
+$3$ means $\mathrm{IV}$ or $\mathrm{IV}^*$, order $4$ means $\mathrm{III}$ or
+$\mathrm{III}^*$, and the cusp, being unipotent, is of type
+$\mathrm{I}_n$ ($n = 1$ here). The Euler numbers of the singular fibres of an elliptic
+surface over $\mathbb{P}^1$ sum to $12\,\chi(\mathcal{O})$.
+
+\begin{proposition}
+\label{prop:kodaira}
+For orders $(3,4)$ and an $\mathrm{I}_1$ cusp there are \SSKodairaCandidates{}
+candidate triples, with Euler totals $\SSKodairaTotals$. Exactly one is a
+multiple of $12$:
+\[
+  \SSKodairaTriple, \qquad 8 + 3 + 1 = 12 .
+\]
+Its Jacobian is a rational elliptic surface; a K3 (total $24$) is impossible.
+\end{proposition}
+
+The same enumeration reproduces the two examples of \cref{sec:triangle},
+$\mathrm{IV}^*+\mathrm{II}+\mathrm{I}_2$ for $(3,6)$ and
+$\mathrm{III}^*+\mathrm{II}+\mathrm{I}_1$ for $(4,6)$, and so is checked
+against the paper's own Euler arithmetic before being used for $(3,4)$. The
+trivial lattice of such a surface is $U \oplus R$ with $R$ the root lattice
+of the reducible fibres, and the Mordell--Weil rank is
+$10 - 2 - \operatorname{rk}R$.
+
+\begin{proposition}
+\label{prop:roots}
+The root lattices $E_6 \oplus A_1$ and $E_7$ embed in $E_8$ both integrally
+and over $\QQ$. Integrally: the $\SSERootsEight$ roots of $E_8$ are generated
+from its Cartan matrix; the roots orthogonal to one root $\alpha$ form $E_7$
+($\SSERootsSeven$ roots, rank $7$, discriminant \SSEDiscSeven{}); those
+orthogonal to an $A_2 \ni \alpha$ form $E_6$ ($\SSERootsSix$ roots, rank
+$6$, discriminant \SSEDiscSix{}), and $A_1 = \langle \alpha \rangle \subset
+A_2$ is orthogonal to it, giving $E_6 \oplus A_1$ of discriminant
+\SSEDiscSixA{}. Over $\QQ$ the Hasse--Minkowski test of
+\texttt{pyCICY.k3lattice} accepts both. A control fails as it should:
+$E_7 \oplus \langle 3 \rangle$ has the right rank but the wrong
+discriminant and does not embed. In all three configurations ($\mathrm{IV}^*
++ \mathrm{III} + \mathrm{I}_1$, $\mathrm{IV}^* + \mathrm{II} + \mathrm{I}_2$,
+$\mathrm{III}^* + \mathrm{II} + \mathrm{I}_1$) the Mordell--Weil rank is
+$\SSMWRank$.
+\end{proposition}
+
+So the paper's $(3,4,\infty)$ data and its $(3,6,\infty)$ example have the
+same root part, $E_6 \oplus A_1$, although the fibres differ. The scope is
+narrow. Euler counting shows that the local data is consistent with a
+rational elliptic surface of that configuration; it does not show that the
+six-sphere's family \emph{is} such a surface, and whether the configuration
+exists is a question about the Miranda--Persson classification~\cite{MP86}
+that we do not decide. The $\QQ$-embedding is a necessary condition only;
+the integral statement is the explicit construction inside $E_8$.
+
+\subsection{Where the central-charge module stops}
+\label{sec:links-cc}
+
+The central-charge module computes the charges $Z(E) = -\int e^{-B-i\omega}
+\mathrm{ch}(E)$ (ordinary and square-root-Todd) of the large-volume
+stability conditions announced for smooth projective threefolds with trivial
+canonical bundle. They need a real class $\omega$ with $\omega^3 > 0$. The
+six-sphere has $H^2(X,\mathbb{R}) = 0$, so it carries no such class: it is
+not K\"ahler, and the module's own guard \SSGuardRefused{} the empty class. We record this as a result rather than a gap. The
+finite layer behind the six-sphere is rigid, but the charges that give the
+CICY side its stability-theoretic content have no counterpart here.
+
+% =====================================================================
+
 \section{Conclusion}
 \label{sec:conclusion}
 
@@ -623,7 +762,11 @@ analysis and topology and on the external formalization~\cite{Alexeev}.
 What it shows is that the finite layer the construction stands on is rigid,
 and that its rigid core is a familiar object.
 
-Ultimately, the intersection of these two structures highlights a profound physical dichotomy. The cusp fibre provides the exact algebraic scaffolding—a definitive momentum space—that the aperiodic Hat tiling fundamentally lacks. That Alpöge’s complex structure necessarily forces this specific, rigid lattice suggests that the boundary between periodic compactifications and aperiodic substrates is not just a geometric curiosity, but a tightly constrained topological threshold. The six-sphere knows nothing of monotiles, yet its structural rigidity naturally isolates the exact point where aperiodicity breaks down.
+The cusp fibre provides the exact algebraic scaffolding --- a periodic
+substrate with a momentum space --- that the aperiodic Hat tiling lacks. The
+six-sphere knows nothing of monotiles, and we draw no physical conclusion
+from the contact: it is an identity of substrates, together with the
+connections of \cref{sec:links}, which are identities of integers.
 
 % =====================================================================
 
@@ -645,14 +788,21 @@ The author declares no competing interests.
 The implementation is \texttt{pyCICY.sixsphere\_search.py} in the repository
 at \url{https://github.com/brentharts/CICY}, with the verification suite
 \texttt{tests/test\_sixsphere\_search.py}, the Lean facts in
-\texttt{pyCICY.sixsphere\_lean.py}.
+\texttt{pyCICY.sixsphere\_lean.py}, and the connections of
+\cref{sec:links} in \texttt{pyCICY.sixsphere\_links.py}
+(\texttt{tests/test\_sixsphere\_links.py}), which use the polytope,
+K3-lattice and central-charge modules.
 
 \subsection*{Limitations} 
 Everything in \cref{sec:triangle,sec:forced} is
 restricted to the flag class; lattice data outside it is not searched.
 \Cref{obs:sign,obs:stable} are finite searches. \Cref{thm:laves} is a
 statement about substrates; it says nothing about monotile tilings beyond
-the fact that they cannot descend. Every analytic question --- whether the
+the fact that they cannot descend. \Cref{sec:links}: the Kodaira
+configuration and the lattice embeddings are consistency statements for the
+local monodromy, not statements that the six-sphere's fibration is that
+elliptic surface, and the rational embedding is a necessary condition only.
+Every analytic question --- whether the
 near-miss classes support a complex structure, whether $X$ is biholomorphic
 to its conjugate --- is declined, as is the diffeomorphism $X \cong S^6$
 itself.
@@ -740,6 +890,16 @@ B.S.~Hartshorn,
 \emph{Supplementary material: figures for the pyCICY-X package},
 companion document (Pre-print 2026),
 \url{https://doi.org/10.5281/zenodo.21843383}.
+
+\bibitem{Fulton}
+W.~Fulton,
+\emph{Introduction to Toric Varieties},
+Annals of Mathematics Studies \textbf{131}, Princeton University Press (1993).
+
+\bibitem{MP86}
+R.~Miranda and U.~Persson,
+\emph{On extremal rational elliptic surfaces},
+Math.\ Z.\ \textbf{193} (1986), 537--558.
 
 \bibitem{graf2020}
 P.~Graf and M.~Schwald (2020). 
