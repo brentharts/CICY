@@ -28,6 +28,7 @@ import os
 import random
 import sys
 from fractions import Fraction
+Fr = Fraction
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -214,9 +215,56 @@ def test_fr_controls():
                d["S_rel_per_area"] != Fr(1, 4))
 
 
+def test_derived_inputs():
+    print("\n[8] F M and S_Wald derived (Einstein frame); F_eff from the Wald tensor")
+    d = N.fr_einstein_frame(Fr(1, 2), 4, Fr(5, 32))
+    b = N.fr_bookkeeping(Fr(1, 2), 4, Fr(5, 32))
+    check("F = 9/4", d["F"], Fr(9, 4))
+    check_true("metric identity g~ = F g holds symbolically", d["metric_identity"])
+    check("Lambda~ = V = Lambda/F", (d["Lambda_tilde"], d["potential_V"]),
+          (Fr(4, 9), Fr(4, 9)))
+    check("E from Einstein frame == F M (two routes)",
+          d["E_from_einstein_frame"], d["F_times_M"])
+    check("kappa Einstein frame == Jordan", d["kappa_from_einstein_frame"],
+          d["kappa_jordan"])
+    check("alpha/pi: Einstein frame == Jordan bookkeeping",
+          d["alpha_over_pi_einstein_frame"] * 1, Fr(8))
+    check("alpha/pi = 8/F agrees with fr_bookkeeping", d["alpha_over_pi"],
+          b["alpha_over_pi"])
+    check("S_rel/A = F/4", d["S_rel_per_area"], Fr(9, 16))
+    check("F_eff from Wald tensor = f(R) F (beta only)",
+          N.wald_factor(1, 0, Fr(1, 8)), 1 + 8 * Fr(1, 8))
+    check("F_eff = 1 + 2 Lambda (alpha + 4 beta)",
+          N.wald_factor(Fr(3, 2), Fr(1, 3), Fr(1, 5)),
+          1 + 3 * (Fr(1, 3) + Fr(4, 5)))
+    check("R^2 term equals f(R) with a = beta, R0 = 4 Lambda",
+          N.wald_factor(1, 0, Fr(5, 32) * 1), 1 + 8 * Fr(5, 32))
+    q = N.quadratic_gravity_bookkeeping(Fr(1, 2), 1, Fr(1, 4), 0)
+    check("quadratic gravity: F = 3/2, alpha/pi = 16/3",
+          (q["F"], q["alpha_over_pi"]), (Fr(3, 2), Fr(16, 3)))
+
+
+def test_derived_controls():
+    print("\n[9] controls for the derived inputs")
+    check_true("critical point alpha = -1/(2 Lambda) refused",
+               _raises(ValueError, N.wald_factor, 1, Fr(-1, 2), 0))
+    check_true("ghost side (F<0) refused",
+               _raises(ValueError, N.wald_factor, 1, -1, 0))
+    check_true("non-square F refused by the Einstein-frame map",
+               _raises(ValueError, N.fr_einstein_frame, Fr(1, 2), 4, Fr(1, 16)))
+    d = N.fr_einstein_frame(Fr(1, 2), 4, Fr(5, 32))
+    check_true("mass without F would not match the Einstein-frame energy",
+               d["E_from_einstein_frame"] != d["F_times_M"] / d["F"])
+    check_true("area without F (S=A/4) differs from Wald entropy",
+               d["F_times_area_over_pi"] != d["area_tilde_over_pi"] / d["F"])
+    check_true("wrong binormal normalisation would break F=1 at alpha=beta=0",
+               N.wald_factor(1, 0, 0) == 1)
+
+
 def main():
     for section in (test_identity, test_float_routes, test_nariai, test_jt,
-                    test_controls, test_fr, test_fr_controls):
+                    test_controls, test_fr, test_fr_controls,
+                    test_derived_inputs, test_derived_controls):
         try:
             section()
         except Exception as exc:
