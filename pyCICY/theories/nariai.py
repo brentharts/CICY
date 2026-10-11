@@ -80,7 +80,7 @@ import numpy as np
 from .base import Theory, register
 from .ftheory import NoSuchTheory
 
-__all__ = ["first_law_bookkeeping", "TypeIIIFactor", "NariaiEntropic", "nariai_data", "sds_horizons",
+__all__ = ["first_law_bookkeeping", "fr_bookkeeping", "TypeIIIFactor", "NariaiEntropic", "nariai_data", "sds_horizons",
            "degenerate_family", "kk_tower", "coherent_entropy",
            "coherent_entropy_quadrature", "coherent_entropy_araki",
            "jt_area_response", "ContourPacket", "squeezed_flux_budget",
@@ -1134,3 +1134,120 @@ def first_law_bookkeeping(r, lam):
             "kappa": fr(kappa), "dM_dr": fr(dM),
             "alpha_over_pi": fr(alpha_over_pi),
             "S_rel_per_area": fr(s_per_a)}
+
+
+# ---------------------------------------------------------------------------
+# f(R) gravity: alpha = 8 pi G_eff, and delta S_Wald = S_rel
+# ---------------------------------------------------------------------------
+
+_SDS_RICCI_CACHE = {}
+
+
+def _sds_is_einstein_space():
+    """Symbolically: the Schwarzschild-de Sitter metric has R_mn = Lambda g_mn
+    (so R = 4 Lambda is constant). Computed from the metric, not assumed."""
+    if "ok" in _SDS_RICCI_CACHE:
+        return _SDS_RICCI_CACHE["ok"]
+    import sympy as sp
+    t, r, th, ph, M, L = sp.symbols("t r theta phi M Lambda", positive=True)
+    x = [t, r, th, ph]
+    f = 1 - 2 * M / r - L * r ** 2 / 3
+    g = sp.diag(-f, 1 / f, r ** 2, r ** 2 * sp.sin(th) ** 2)
+    ginv = g.inv()
+    n = 4
+    Gam = [[[sum(ginv[a, d] * (sp.diff(g[d, b], x[c]) + sp.diff(g[d, c], x[b])
+                               - sp.diff(g[b, c], x[d])) for d in range(n)) / 2
+             for c in range(n)] for b in range(n)] for a in range(n)]
+
+    def ricci(b, c):
+        s = 0
+        for a in range(n):
+            s += sp.diff(Gam[a][b][c], x[a]) - sp.diff(Gam[a][b][a], x[c])
+            for d in range(n):
+                s += Gam[a][a][d] * Gam[d][b][c] - Gam[a][c][d] * Gam[d][b][a]
+        return s
+
+    ok = all(sp.simplify(ricci(b, c) - L * g[b, c]) == 0
+             for b in range(n) for c in range(n))
+    _SDS_RICCI_CACHE["ok"] = bool(ok)
+    return bool(ok)
+
+
+def fr_bookkeeping(r, R0, a=0, b=0, c=None):
+    r"""f(R) = R + a R^2 + b R^3 + c: the first-law bookkeeping on a
+    constant-curvature (Schwarzschild-de Sitter) horizon, exactly.
+
+    A constant-curvature vacuum R = R0 must satisfy the trace equation
+    ``f'(R) R - 2 f(R) = 0``, which fixes ``c`` (a given ``c`` that violates
+    it is refused). Then Lambda = R0/4, the SdS metric solves the field
+    equations (checked symbolically from its Ricci tensor, and with the
+    residual ``F Lambda - f(R0)/2`` required to vanish), and with
+    ``F = f'(R0) > 0``:
+
+    * the Wald entropy is ``S = F A / 4`` and the physical mass is ``F M``
+      (Newton's constant is ``G_eff = 1/F``);
+    * the relative entropy of a flux dE is ``S_rel = 2 pi dE / kappa``, and
+      requiring ``dA = (alpha / 2 pi) S_rel`` gives ``alpha / pi = 8 / F``;
+    * equivalently ``dS_rel / dA = F / 4``, which *is* dS_Wald/dA: the exact
+      statement is ``delta S_Wald = S_rel``, and ``delta A = 4 S_rel`` holds
+      only for F = 1.
+
+    Everything is a Fraction (pi factored out). The identification of the
+    physical mass with ``F M`` is the standard G_eff scaling and is an input,
+    not derived here; the Wald entropy formula likewise. Solutions with
+    non-constant curvature are not covered.
+    """
+    import sympy as sp
+    r, R0, a, b = Fraction(r), Fraction(R0), Fraction(a), Fraction(b)
+    if r <= 0 or R0 <= 0:
+        raise ValueError("r and R0 must be positive (de Sitter branch)")
+    S = sp.Rational
+    X, Rs = sp.symbols("X R")
+    A_, B_, R0_ = S(a.numerator, a.denominator), S(b.numerator, b.denominator), \
+        S(R0.numerator, R0.denominator)
+    cs = sp.Symbol("c")
+    fexpr = Rs + A_ * Rs ** 2 + B_ * Rs ** 3 + cs
+    trace = sp.diff(fexpr, Rs) * Rs - 2 * fexpr
+    c_trace = sp.solve(trace.subs(Rs, R0_), cs)[0]
+    if c is None:
+        c_val = c_trace
+    else:
+        c = Fraction(c)
+        c_val = S(c.numerator, c.denominator)
+        if sp.simplify(c_val - c_trace) != 0:
+            raise ValueError("c violates the trace equation: R = R0 is not "
+                             "a constant-curvature solution of this f(R)")
+    f_ = fexpr.subs(cs, c_val)
+    F = sp.diff(f_, Rs).subs(Rs, R0_)
+    f0 = f_.subs(Rs, R0_)
+    if F <= 0:
+        raise ValueError("F = f'(R0) <= 0: negative G_eff, no sensible "
+                         "relative entropy")
+    lam = R0_ / 4
+    residual = sp.simplify(F * lam - f0 / 2)            # field equation
+    einstein_space = _sds_is_einstein_space()
+    # thermodynamics on the horizon at radius r (Lambda = R0/4)
+    L = lam
+    R_ = sp.Symbol("rr")
+    mass_geom = R_ * (1 - L * R_ ** 2 / 3) / 2
+    metric_f = 1 - 2 * sp.Symbol("M") / R_ - L * R_ ** 2 / 3
+    r0 = S(r.numerator, r.denominator)
+    m0 = mass_geom.subs(R_, r0)
+    kappa = (sp.diff(metric_f, R_) / 2).subs({sp.Symbol("M"): m0, R_: r0})
+    dE = F * sp.diff(mass_geom, R_).subs(R_, r0)         # physical mass F M
+    dA_over_pi = sp.diff(4 * R_ ** 2, R_).subs(R_, r0)
+    alpha_over_pi = sp.nsimplify(kappa * dA_over_pi / dE)
+    s_rel_per_area = sp.nsimplify(2 * dE / kappa / dA_over_pi)
+    s_wald_per_area = F / 4
+
+    def fr(x):
+        x = sp.Rational(x)
+        return Fraction(int(x.p), int(x.q))
+
+    return {"F": fr(F), "c": fr(c_val), "Lambda": fr(lam),
+            "field_equation_residual": fr(residual),
+            "sds_is_einstein_space": einstein_space,
+            "kappa": fr(kappa), "alpha_over_pi": fr(alpha_over_pi),
+            "S_rel_per_area": fr(s_rel_per_area),
+            "S_wald_per_area": fr(s_wald_per_area),
+            "nariai_S_times_Lambda_over_pi": fr(F)}
