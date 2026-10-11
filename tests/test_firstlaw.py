@@ -14,6 +14,11 @@ identity, the Schwarzschild-de Sitter first law.
                        its derived coupling equal the exact 8 pi
   [5] controls         wrong normalisations (S = A/2, alpha = 4 pi) and a
                        wrong surface gravity break the identity
+  [6] f(R) gravity     constant-curvature horizons of f(R) = R + aR^2 + bR^3
+                       + c: alpha/pi = 8/F with F = f'(R0), and
+                       dS_rel = dS_Wald exactly; the field equation checked
+                       from the Ricci tensor of the SdS metric
+  [7] f(R) controls    non-solutions, F <= 0, and wrong normalisations fail
 
 Run with:  python3 tests/test_firstlaw.py   or   python3 run_tests.py
 """
@@ -151,9 +156,67 @@ def test_controls():
                _raises(ValueError, N.first_law_bookkeeping, 1, 0))
 
 
+def test_fr():
+    print("\n[6] f(R) gravity: alpha = 8 pi G_eff, dS_rel = dS_Wald")
+    Fr = Fraction
+    cases = [(Fr(1, 2), Fr(4), Fr(1, 16), Fr(0)),
+             (Fr(3, 2), Fr(4, 3), Fr(1, 5), Fr(1, 50)),
+             (Fr(1, 3), Fr(12), Fr(-1, 100), Fr(1, 400)),
+             (Fr(2), Fr(1, 2), Fr(0), Fr(1, 9))]
+    bad, einstein_checked = [], False
+    for r, R0, a, b in cases:
+        d = N.fr_bookkeeping(r, R0, a, b)
+        F = 1 + 2 * a * R0 + 3 * b * R0 ** 2          # by hand
+        c = (b * R0 ** 3 - R0) / 2                      # trace equation, by hand
+        if (d["F"] != F or d["c"] != c or d["alpha_over_pi"] != 8 / F
+                or d["S_rel_per_area"] != F / 4
+                or d["S_rel_per_area"] != d["S_wald_per_area"]
+                or d["field_equation_residual"] != 0
+                or not d["sds_is_einstein_space"]
+                or d["Lambda"] != R0 / 4):
+            bad.append((r, R0, a, b, d))
+    check("F, c, alpha/pi = 8/F, dS_rel = dS_Wald (4 f(R)s): bad", len(bad), 0)
+    d0 = N.fr_bookkeeping(Fr(1, 2), 4)
+    e = N.first_law_bookkeeping(Fr(1, 2), 1)          # Lambda = R0/4 = 1
+    check("a = b = 0 reproduces the Einstein bookkeeping",
+          (d0["F"], d0["alpha_over_pi"], d0["S_rel_per_area"], d0["kappa"]),
+          (1, e["alpha_over_pi"], e["S_rel_per_area"], e["kappa"]))
+    check("the R^2 coefficient drops out of c (4D constant curvature)",
+          (N.fr_bookkeeping(Fr(1, 2), 4, Fr(1, 16))["c"],
+           N.fr_bookkeeping(Fr(1, 2), 4, Fr(3, 7))["c"]),
+          (Fr(-2), Fr(-2)))
+    d1 = N.fr_bookkeeping(Fr(1, 2), 4, Fr(1, 16))
+    check_true("delta A = 4 S_rel fails once F != 1 (S_rel/A = 3/8, not 1/4)",
+               d1["S_rel_per_area"] == Fr(3, 8) != Fr(1, 4))
+    check("Nariai entropy S_N = F pi / Lambda: S_N Lambda / pi = F",
+          d1["nariai_S_times_Lambda_over_pi"], Fr(3, 2))
+    check_true("SdS has R_mn = Lambda g_mn symbolically (R = 4 Lambda)",
+               N._sds_is_einstein_space())
+
+
+def test_fr_controls():
+    print("\n[7] f(R) controls: each check made to fail on purpose")
+    Fr = Fraction
+    check_true("a c that violates the trace equation is refused",
+               _raises(ValueError, N.fr_bookkeeping, Fr(1, 2), 4,
+                       Fr(1, 16), 0, 7))
+    check_true("the correct c = -R0/2 = -2 is accepted",
+               N.fr_bookkeeping(Fr(1, 2), 4, Fr(1, 16), 0, -2)["c"] == -2)
+    check_true("F <= 0 (a = -1/4, R0 = 4: F = -1) is refused",
+               _raises(ValueError, N.fr_bookkeeping, Fr(1, 2), 4, Fr(-1, 4)))
+    check_true("R0 <= 0 is refused (de Sitter branch only)",
+               _raises(ValueError, N.fr_bookkeeping, Fr(1, 2), -1))
+    d = N.fr_bookkeeping(Fr(1, 2), 4, Fr(1, 16))
+    # the mass without the F factor would give alpha/pi = 8, not 8/F
+    check_true("physical mass M instead of F M would give alpha/pi = 8, not 16/3",
+               d["alpha_over_pi"] == Fr(16, 3) != 8)
+    check_true("Einstein S = A/4 does not equal the relative entropy when F != 1",
+               d["S_rel_per_area"] != Fr(1, 4))
+
+
 def main():
     for section in (test_identity, test_float_routes, test_nariai, test_jt,
-                    test_controls):
+                    test_controls, test_fr, test_fr_controls):
         try:
             section()
         except Exception as exc:
