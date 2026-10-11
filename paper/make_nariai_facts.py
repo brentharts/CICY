@@ -260,6 +260,22 @@ def fr_facts():
     f["FRCubicF"] = _tex_frac(c["F"])
     f["FRCubicAlpha"] = _tex_frac(c["alpha_over_pi"])
     f["FRCubicSrel"] = _tex_frac(c["S_rel_per_area"])
+    e = N.fr_einstein_frame(Fr(1, 2), 4, Fr(5, 32))
+    f["FREFF"] = _tex_frac(e["F"])
+    f["FREFLambdaTilde"] = _tex_frac(e["Lambda_tilde"])
+    f["FREFPotential"] = _tex_frac(e["potential_V"])
+    f["FREFEnergy"] = _tex_frac(e["E_from_einstein_frame"])
+    f["FREFFM"] = _tex_frac(e["F_times_M"])
+    f["FREFAlpha"] = _tex_frac(e["alpha_over_pi"])
+    f["FREFAlphaEinstein"] = _tex_frac(e["alpha_over_pi_einstein_frame"])
+    f["FREFKappa"] = _tex_frac(e["kappa_from_einstein_frame"])
+    g = N.quadratic_gravity_bookkeeping(Fr(1, 2), 1, Fr(1, 4), 0)
+    f["FRQGF"] = _tex_frac(g["F"])
+    f["FRQGAlpha"] = _tex_frac(g["alpha_over_pi"])
+    f["FRQGSrel"] = _tex_frac(g["S_rel_per_area"])
+    f["FRQGMixedF"] = _tex_frac(N.wald_factor(Fr(3, 2), Fr(1, 3), Fr(1, 5)))
+    f["FRQGBetaF"] = _tex_frac(N.wald_factor(1, 0, Fr(1, 8)))
+    f["FRQGCritical"] = _tex_frac(Fr(-1, 2))
     return f
 
 
