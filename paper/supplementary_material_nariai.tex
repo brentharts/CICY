@@ -47,6 +47,13 @@
 \newcommand{\NFFRQuadAlpha}{?}\newcommand{\NFFRQuadSrel}{?}
 \newcommand{\NFFRQuadResidual}{?}\newcommand{\NFFRCubicF}{?}
 \newcommand{\NFFRCubicAlpha}{?}\newcommand{\NFFRCubicSrel}{?}
+\newcommand{\NFFREFF}{?}\newcommand{\NFFREFLambdaTilde}{?}
+\newcommand{\NFFREFPotential}{?}\newcommand{\NFFREFEnergy}{?}
+\newcommand{\NFFREFFM}{?}\newcommand{\NFFREFAlpha}{?}
+\newcommand{\NFFREFAlphaEinstein}{?}\newcommand{\NFFREFKappa}{?}
+\newcommand{\NFFRQGF}{?}\newcommand{\NFFRQGAlpha}{?}
+\newcommand{\NFFRQGSrel}{?}\newcommand{\NFFRQGMixedF}{?}
+\newcommand{\NFFRQGBetaF}{?}\newcommand{\NFFRQGCritical}{?}
 \IfFileExists{figures/nariai_fr_facts.tex}{\input{figures/nariai_fr_facts.tex}}{}
 \IfFileExists{figures/nariai_facts.tex}{\input{figures/nariai_facts.tex}}{}
 
@@ -329,9 +336,52 @@ $f = R + R^2/5 + R^3/50 + c$ at $R_0 = 4/3$, $F = \NFFRCubicF$, $\alpha/\pi =
 becomes $F\pi/\Lambda$. Mutating the mass (dropping the factor $F$), the Wald
 entropy, or $\Lambda = R_0/4$ makes the suite fail.
 
+\paragraph{Deriving the mass and the Wald entropy.}
+Two of the inputs above can be computed rather than assumed. A constant
+$F = f'(R_0)$ makes the conformal rescaling $\tilde g = F\,g$ exact: it maps
+the Jordan-frame Schwarzschild--de Sitter metric with $(m,\Lambda)$ to the
+same family with $\tilde m = \sqrt F\,m$, $\tilde\Lambda = \Lambda/F$, in the
+coordinates $(\tilde t,\tilde r) = \sqrt F\,(t,r)$, and the Einstein-frame
+cosmological constant equals the potential $V = (F R_0 - f(R_0))/2F^2$. The
+suite checks the metric identity symbolically and $\tilde\Lambda = V$. In the
+Einstein frame the ordinary first law holds, so $\tilde A = F A$ (hence $S =
+\tilde A/4 = FA/4$) and the Killing energy of $\partial_t = \sqrt F\,
+\partial_{\tilde t}$ is $F M$. For $f = R + \tfrac{5}{32}R^2 + c$ at $R_0 = 4$ the
+suite finds $F = \NFFREFF$, $\tilde\Lambda = V = \NFFREFLambdaTilde$, and the
+energy read off the Einstein frame, $\NFFREFEnergy$, equals the Jordan-frame
+$F M = \NFFREFFM$ by an independent route; the surface gravity agrees
+($\kappa = \NFFREFKappa$), and $\alpha/\pi = \NFFREFAlphaEinstein$ in the Einstein
+frame is $\NFFREFAlpha = 8/F$ in the Jordan frame. The map needs $F$ to be a
+rational square for exact arithmetic and the function refuses otherwise.
+
+The factor $F$ itself is computed from the Wald tensor $E^{abcd} =
+\partial L/\partial R_{abcd}$ contracted with the horizon binormal,
+$S = -2\pi\oint E^{abcd}\epsilon_{ab}\epsilon_{cd}$, on the symbolic
+Ricci tensor of the metric. For $L = (R - 2\Lambda_0 + \alpha R_{ab}R^{ab} +
+\beta R^2)/16\pi$ the three contractions are $-2$, $-4\Lambda$ and $-16\Lambda$,
+so
+\begin{equation}
+F_{\mathrm{eff}} \;=\; 1 + 2\Lambda(\alpha + 4\beta)\,,
+\label{eq:feff}
+\end{equation}
+which agrees with the critical-gravity literature~\cite{LuPope2011}, reduces
+for $\alpha = 0$ to the $f(R)$ value $1 + 8a\Lambda$, and vanishes at
+$\alpha + 4\beta = -1/2\Lambda$ (e.g.\ $\alpha = \NFFRQGCritical$ at $\Lambda =
+1$), where the function refuses. At $\Lambda = 1$, $\alpha = \tfrac14$,
+$\beta = 0$ the suite gives $F_{\mathrm{eff}} = \NFFRQGF$, $\alpha/\pi =
+\NFFRQGAlpha$, $\dd\Srel/\dd A = \NFFRQGSrel$; the mixed case $\Lambda =
+\tfrac32$, $\alpha = \tfrac13$, $\beta = \tfrac15$ gives $\NFFRQGMixedF$, and
+$\beta = \tfrac18$ at $\Lambda = 1$ gives $\NFFRQGBetaF$, as $f(R)$ does. Dropping
+the Ricci$^2$ term, doubling the $R^2$ weight, or dropping $F$ in the mass makes
+the suite fail.
+
 This is a statement about the response coefficient, and its scope is narrow.
-The physical mass $F M$ and the Wald entropy $FA/4$ are inputs, not derived
-here; only constant-curvature solutions are covered, not hairy ones; and
+What is derived: $F M$, $S_{\mathrm{Wald}} = FA/4$ and $F_{\mathrm{eff}}$.
+What remains an input: the Wald-tensor formula, the $f(R)$ to Einstein-frame
+equivalence, that Einstein spaces solve four-dimensional quadratic gravity when
+$\Lambda_0 = \Lambda$, and the identification $\Srel = 2\pi\,\dd E/\kappa$,
+which rests on the Bisognano--Wichmann and Longo results and is not
+rederived. Only constant-curvature solutions are covered, not hairy ones, and
 nothing is claimed about the quantum side --- whether the Dorau--Much
 derivation goes through for $f(R)$, with its extra scalar degree of freedom,
 is not addressed. The content is conditional: \emph{if} $\Srel$ is the
@@ -874,6 +924,11 @@ Phys.\ Rev.\ D \textbf{50} (1994), 846.
 T.~P.~Sotiriou and V.~Faraoni,
 \emph{$f(R)$ theories of gravity},
 Rev.\ Mod.\ Phys.\ \textbf{82} (2010), 451.
+
+\bibitem{LuPope2011}
+H.~L\"u and C.~N.~Pope,
+\emph{Critical gravity in four dimensions},
+Phys.\ Rev.\ Lett.\ \textbf{106} (2011), 181302.
 
 \bibitem{Shale1962}
 D.~Shale,
