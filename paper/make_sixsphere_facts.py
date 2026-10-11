@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pyCICY import sixsphere as S
 from pyCICY import sixsphere_search as X
+from pyCICY import sixsphere_links as LK
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "figures")
 os.makedirs(OUT, exist_ok=True)
@@ -150,7 +151,43 @@ def survey():
         f["LeanStatus"] = ("emitted as Lean~4 but \\emph{not} kernel-checked "
                            "in this build (no toolchain was found)")
         f["LeanChecked"] = "false"
+    f.update(link_facts())
     return f, stab, cls
+
+
+def link_facts():
+    """Numbers for the section on connections to the rest of the package.
+
+    Computed by pyCICY.sixsphere_links, each by two or more routes (see
+    tests/test_sixsphere_links.py)."""
+    f = {}
+    b = LK.b3_facts()
+    f["DPVolume"] = b["volume"]
+    f["DPBoundary"] = b["boundary_points"]
+    f["DPDual"] = b["dual_volume"]
+    f["DPProduct"] = b["product"]
+    f["DPBoundSym"] = b["bound_symmetric"]
+    f["DPKTwo"] = b["K2_noether"]
+    f["DPRays"] = b["rays"]
+    k = LK.kodaira_facts(3, 4, 1)
+    f["KodairaCandidates"] = len(k["all"])
+    f["KodairaTotals"] = ", ".join(str(t) for t in sorted(x[3] for x in k["all"]))
+    (a, bb, c, tot), = k["allowed"]
+    def fmt(t):
+        return "\\mathrm{%s}%s" % (t.rstrip("*"), "^*" if t.endswith("*") else "")
+
+    f["KodairaTriple"] = "%s+%s+\\mathrm{I}_1" % (fmt(a), fmt(bb))
+    r = LK.root_lattice_facts()
+    f["ERootsEight"] = r["n_roots_E8"]
+    f["ERootsSeven"] = r["n_roots_E7"]
+    f["ERootsSix"] = r["n_roots_E6"]
+    f["EDiscSeven"] = r["disc_E7"]
+    f["EDiscSix"] = r["disc_E6"]
+    f["EDiscSixA"] = r["disc_E6_plus_A1"]
+    f["MWRank"] = r["mw_rank_IVstar_III_I1"]
+    g = LK.central_charge_guard()
+    f["GuardRefused"] = "refuses" if g["refused"] else "does \\emph{not} refuse"
+    return f
 
 
 def survey_table(sv):
@@ -267,7 +304,26 @@ def figure_funnel(stab):
     print("wrote", path)
 
 
+def links_only():
+    """Refresh only the connection macros in the existing facts file."""
+    new = link_facts()
+    path = os.path.join(OUT, "sixsphere_facts.tex")
+    keep = []
+    if os.path.exists(path):
+        for line in open(path).read().splitlines():
+            if not any("\\SS%s}" % k in line for k in new):
+                keep.append(line)
+    for k, v in sorted(new.items()):
+        keep.append("\\providecommand{\\SS%s}{}\\renewcommand{\\SS%s}{%s}"
+                    % (k, k, v))
+    with open(path, "w") as fh:
+        fh.write("\n".join(keep) + "\n")
+    print("updated", path, "with", len(new), "macros")
+
+
 def main():
+    if "--links-only" in sys.argv:
+        return links_only()
     facts, stab, _ = survey()
     write_facts(facts)
     for fig in (figure_laves, lambda: figure_funnel(stab)):
