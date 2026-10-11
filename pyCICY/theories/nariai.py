@@ -1569,3 +1569,156 @@ def compactified_bookkeeping(X, t, r, lam, G10=1, alpha=0, beta=0):
             "S_rel_per_area": s_rel_per_area,
             "GN_times_S_rel_per_area": GN * s_rel_per_area,
             "kappa": kappa, "mass": base["mass"]}
+
+
+# ---------------------------------------------------------------------------
+# Riemann^2: Wald entropy by two routes (direct, and via Gauss-Bonnet)
+# ---------------------------------------------------------------------------
+
+def riem2_wald(r, lam):
+    r"""Wald entropy density of L = (R + gamma Riem^2)/16 pi on SdS, per unit
+    horizon area and per unit gamma, by two routes. Returns a dict of exact
+    Fractions (units of pi where stated).
+
+    * ``direct``: the Wald tensor E^{abcd} = 2 gamma R^{abcd}, contracted with
+      the binormal on the Riemann tensor of the SdS metric (computed from its
+      Christoffel symbols). Riemann contains the Weyl part, so this depends
+      on M a priori.
+    * ``via_GB``: Riem^2 = GB + 4 Ric^2 - R^2, so the entropy is the
+      Gauss-Bonnet constant plus 4 x (Ric^2 entropy) - (R^2 entropy), both
+      already computed in :func:`_wald_contractions`. The GB constant is
+      taken as ``4 pi`` per unit gamma (G = 1), i.e. (1/16 pi) 64 pi^2.
+
+    Agreement means: a Riemann^2 term shifts the horizon entropy by a
+    topological constant and does not change the coefficient of A, because
+    alpha_eff + 4 beta_eff = 4 gamma - 4 gamma = 0. The horizon is the one
+    at radius ``r`` of the SdS family with Lambda = ``lam``; ``mass`` is
+    fixed by f(r) = 0.
+    """
+    import itertools
+    import sympy as sp
+    r, lam = Fraction(r), Fraction(lam)
+    if r <= 0 or lam <= 0:
+        raise ValueError("r and Lambda must be positive")
+    x, g, gi, Ric = _sds_geometry()
+    n = 4
+    Gam = [[[sum(gi[a, d] * (sp.diff(g[d, b], x[c]) + sp.diff(g[d, c], x[b])
+                             - sp.diff(g[b, c], x[d])) for d in range(n)) / 2
+             for c in range(n)] for b in range(n)] for a in range(n)]
+
+    def riem(a, b, c, d):          # R^a_{bcd}
+        s_ = sp.diff(Gam[a][b][d], x[c]) - sp.diff(Gam[a][b][c], x[d])
+        for e in range(n):
+            s_ += Gam[a][c][e] * Gam[e][b][d] - Gam[a][d][e] * Gam[e][b][c]
+        return s_
+
+    Rud = {}
+    for a, b, c, d in itertools.product(range(n), repeat=4):
+        Rud[a, b, c, d] = riem(a, b, c, d)
+    # all lower, then all upper; only the (t,r,t,r) block is needed
+    def R_low(a, b, c, d):
+        return sum(g[a, e] * Rud[e, b, c, d] for e in range(n))
+    def R_up(a, b, c, d):
+        tot = 0
+        for e, f_, h, k in itertools.product(range(n), repeat=4):
+            if gi[a, e] != 0 and gi[b, f_] != 0 and gi[c, h] != 0 \
+                    and gi[d, k] != 0:
+                tot += gi[a, e] * gi[b, f_] * gi[c, h] * gi[d, k] \
+                    * R_low(e, f_, h, k)
+        return tot
+    eps = {(0, 1): 1, (1, 0): -1}
+    cont = 0
+    for (a, b), e1 in eps.items():
+        for (c, d), e2 in eps.items():
+            cont += 2 * R_up(a, b, c, d) * e1 * e2
+    cont = sp.simplify(cont)
+    Ms, Ls, rs = sp.symbols("M Lambda r", positive=True)
+    S = sp.Rational
+    m0 = S(r.numerator, r.denominator) * (1 - S(lam.numerator, lam.denominator)
+                                         * S(r.numerator, r.denominator) ** 2 / 3) / 2
+    sub = {Ms: m0, Ls: S(lam.numerator, lam.denominator)}
+    cont_v = sp.nsimplify(cont.subs(sub).subs(rs, S(r.numerator, r.denominator)))
+    # S per unit area per unit gamma = -cont/8 (R: cont=-2 -> 1/4)
+    direct = -cont_v / 8
+    c_R, c_Ric, c_R2 = _wald_contractions()
+    L_ = sp.Symbol("Lambda", positive=True)
+    cr = sp.nsimplify(sp.simplify(c_R.subs(L_, sub[Ls])))
+    cric = sp.nsimplify(sp.simplify(c_Ric.subs(L_, sub[Ls])))
+    cr2 = sp.nsimplify(sp.simplify(c_R2.subs(L_, sub[Ls])))
+    area_over_pi = 4 * S(r.numerator, r.denominator) ** 2
+    gb_per_area = 4 / area_over_pi          # 4 pi / (4 pi r^2) = 1/r^2
+    via = gb_per_area + 4 * (-cric / 8) - (-cr2 / 8)
+    fr = lambda v: Fraction(int(sp.Rational(v).p), int(sp.Rational(v).q))
+    return {"mass": fr(m0), "direct": fr(direct), "via_GB": fr(via),
+            "gb_per_area": fr(gb_per_area)}
+
+
+# ---------------------------------------------------------------------------
+# Riemann^2 on a Ricci-flat Kahler internal space: Q = 32 pi^2 c_2 . J
+# ---------------------------------------------------------------------------
+
+def riem2_integral_over_pi2(X, t=None):
+    r"""``int_X |Rm|^2 dvol / pi^2`` for a Ricci-flat Kahler X, exact.
+
+    ``|Rm|^2 = R_{abcd} R^{abcd}`` (real indices) and ``dvol = J^n / n!``.
+    The relation used is ``int_X |Rm|^2 dvol = 32 pi^2 int_X c_2 ^ J^{n-2}/(n-2)!``.
+    Derivation: Ricci-flatness makes the Levi-Civita curvature of TX a
+    Hermitian-Yang-Mills curvature, so its (1,1) part is primitive, and for a
+    primitive (1,1) form the algebra ``a ^ a ^ J^{n-2}/(n-2)! = -|a|^2 dvol``
+    holds in every dimension n; the constant is therefore fixed in n = 2,
+    where it is Chern-Gauss-Bonnet, ``chi = int|Rm|^2 / 32 pi^2`` for a
+    Ricci-flat 4-manifold. The n-independence is checked in the tests on
+    K3 x T^2, where both sides are known. For n = 2 (K3) the argument is
+    ``chi`` read off the toolkit's Euler characteristic; for n = 3 it is
+    ``c_2 . t`` from :meth:`CICY.second_chern`.
+
+    Assumes Ricci-flatness (not constructed here). Limit: for n = 3 there is
+    no second, independent route on a genuine CY threefold (no explicit
+    metric); the check is the K3 x T^2 product.
+    """
+    from ..pyCICY import CICY
+    XX = X if isinstance(X, CICY) else CICY(np.asarray(X, dtype=int).tolist())
+    if XX.nfold == 2:
+        return 32 * Fraction(int(round(XX.euler_characteristic())))
+    if XX.nfold != 3:
+        raise ValueError("only K3 (n=2) and threefolds (n=3) are supported")
+    if t is None:
+        raise ValueError("a Kahler point t is needed for n = 3")
+    c2 = [Fraction(int(round(v))) for v in XX.second_chern()]
+    t = [Fraction(v) for v in t]
+    if len(c2) != len(t):
+        raise ValueError("need %d Kahler parameters" % len(c2))
+    return 32 * sum(a * b for a, b in zip(c2, t))
+
+
+def compactified_riem2(X, t, gamma, G10=1):
+    r"""Effect of a ``gamma Riem^2`` term in the 10D action
+    (R + gamma Riem^2 - 2 Lambda0)/16 pi G10 on SdS_4 x X, X a CY threefold.
+
+    Returns exact Fractions (the entries ``..._over_pi`` / ``..._over_pi2`` are
+    in those units):
+
+    * ``Q_over_pi2``: ``int_X |Rm|^2 = 32 pi^2 c_2 . J``;
+    * ``dLambda0_over_pi2``: the internal curvature acts as a constant in the
+      4D Lagrangian, ``Lambda0_eff = Lambda0 - gamma Q / (2 V)``; the
+      shift is returned (to be subtracted from Lambda0);
+    * ``alpha``, ``beta``: the 4D Riem^2 part gives ``alpha = 4 gamma``,
+      ``beta = -gamma`` (plus Gauss-Bonnet), so ``F = 1 + 2 Lambda (alpha + 4
+      beta) = 1`` and **G_N = G_4 = G10 / V is unchanged**;
+    * ``S_const_over_pi``: the Gauss-Bonnet horizon entropy ``4 pi gamma V /
+      G10`` (a constant, as in :func:`riem2_wald`), divided by pi.
+
+    Not included, by design: the order-alpha' backreaction of the Riem^2 term
+    on the Ricci-flat metric of X, the 10D tadpole (the heterotic Bianchi
+    identity), and the theory-dependent value of gamma, which is an input.
+    """
+    V = kahler_volume_exact(X, t)
+    if V <= 0:
+        raise ValueError("Kahler point outside the Kahler cone (Vol <= 0)")
+    gamma, G10 = Fraction(gamma), Fraction(G10)
+    Q = riem2_integral_over_pi2(X, t)
+    return {"V": V, "Q_over_pi2": Q,
+            "dLambda0_over_pi2": gamma * Q / (2 * V),
+            "alpha": 4 * gamma, "beta": -gamma,
+            "G_N_unchanged": G10 / V,
+            "S_const_over_pi": 4 * gamma * V / G10}
