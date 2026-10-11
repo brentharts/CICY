@@ -47,7 +47,9 @@ SUITES = ["tests/test_viz.py", "tests/test_pycicy.py",
           "tests/test_k3lattice.py",
           "tests/test_mahler.py",
           "tests/test_centralcharge.py",
-          "tests/test_firstlaw.py"]
+          "tests/test_firstlaw.py",
+          "tests/test_entropy.py",
+          "tests/test_sixsphere_links.py"]
 
 
 def main():
