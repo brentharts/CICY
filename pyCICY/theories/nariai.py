@@ -80,7 +80,8 @@ import numpy as np
 from .base import Theory, register
 from .ftheory import NoSuchTheory
 
-__all__ = ["first_law_bookkeeping", "fr_bookkeeping", "TypeIIIFactor", "NariaiEntropic", "nariai_data", "sds_horizons",
+__all__ = ["first_law_bookkeeping", "fr_bookkeeping", "wald_factor",
+           "fr_einstein_frame", "quadratic_gravity_bookkeeping", "TypeIIIFactor", "NariaiEntropic", "nariai_data", "sds_horizons",
            "degenerate_family", "kk_tower", "coherent_entropy",
            "coherent_entropy_quadrature", "coherent_entropy_araki",
            "jt_area_response", "ContourPacket", "squeezed_flux_budget",
@@ -1143,11 +1144,12 @@ def first_law_bookkeeping(r, lam):
 _SDS_RICCI_CACHE = {}
 
 
-def _sds_is_einstein_space():
-    """Symbolically: the Schwarzschild-de Sitter metric has R_mn = Lambda g_mn
-    (so R = 4 Lambda is constant). Computed from the metric, not assumed."""
-    if "ok" in _SDS_RICCI_CACHE:
-        return _SDS_RICCI_CACHE["ok"]
+def _sds_geometry():
+    """(coords, g, ginv, Ricci) of Schwarzschild-de Sitter, symbolic in
+    (t, r, theta, phi) with parameters M, Lambda; the Ricci tensor is
+    computed from the metric by the Christoffel formulas, not assumed."""
+    if "geom" in _SDS_RICCI_CACHE:
+        return _SDS_RICCI_CACHE["geom"]
     import sympy as sp
     t, r, th, ph, M, L = sp.symbols("t r theta phi M Lambda", positive=True)
     x = [t, r, th, ph]
@@ -1160,15 +1162,28 @@ def _sds_is_einstein_space():
              for c in range(n)] for b in range(n)] for a in range(n)]
 
     def ricci(b, c):
-        s = 0
+        s_ = 0
         for a in range(n):
-            s += sp.diff(Gam[a][b][c], x[a]) - sp.diff(Gam[a][b][a], x[c])
+            s_ += sp.diff(Gam[a][b][c], x[a]) - sp.diff(Gam[a][b][a], x[c])
             for d in range(n):
-                s += Gam[a][a][d] * Gam[d][b][c] - Gam[a][c][d] * Gam[d][b][a]
-        return s
+                s_ += Gam[a][a][d] * Gam[d][b][c] - Gam[a][c][d] * Gam[d][b][a]
+        return sp.simplify(s_)
 
-    ok = all(sp.simplify(ricci(b, c) - L * g[b, c]) == 0
-             for b in range(n) for c in range(n))
+    Ric = sp.Matrix(n, n, lambda b, c: ricci(b, c))
+    _SDS_RICCI_CACHE["geom"] = (x, g, ginv, Ric)
+    return _SDS_RICCI_CACHE["geom"]
+
+
+def _sds_is_einstein_space():
+    """Symbolically: the Schwarzschild-de Sitter metric has R_mn = Lambda g_mn
+    (so R = 4 Lambda is constant). Computed from the metric, not assumed."""
+    if "ok" in _SDS_RICCI_CACHE:
+        return _SDS_RICCI_CACHE["ok"]
+    import sympy as sp
+    x, g, ginv, Ric = _sds_geometry()
+    L = sp.Symbol("Lambda", positive=True)
+    ok = all(sp.simplify(Ric[b, c] - L * g[b, c]) == 0
+             for b in range(4) for c in range(4))
     _SDS_RICCI_CACHE["ok"] = bool(ok)
     return bool(ok)
 
@@ -1251,3 +1266,151 @@ def fr_bookkeeping(r, R0, a=0, b=0, c=None):
             "S_rel_per_area": fr(s_rel_per_area),
             "S_wald_per_area": fr(s_wald_per_area),
             "nariai_S_times_Lambda_over_pi": fr(F)}
+
+
+# ---------------------------------------------------------------------------
+# deriving the f(R) inputs: Einstein frame, and the Wald tensor
+# ---------------------------------------------------------------------------
+
+def _wald_contractions():
+    """E^{abcd} eps_ab eps_cd for the three curvature structures, evaluated
+    on the computed Schwarzschild-de Sitter Ricci tensor, with the binormal
+    eps_tr = 1 (so eps_ab eps^ab = -2). Returns (R, Ric^2, R^2) contractions
+    as sympy expressions in Lambda. E^{abcd} = dL/dR_{abcd} is the standard
+    tensor for each term; the *values* come from the metric."""
+    if "wald" in _SDS_RICCI_CACHE:
+        return _SDS_RICCI_CACHE["wald"]
+    import itertools
+    import sympy as sp
+    x, g, gi, Ric = _sds_geometry()
+    Rup = (gi * Ric * gi).applyfunc(sp.simplify)
+    Rs = sp.simplify((gi * Ric).trace())
+    eps = sp.zeros(4, 4)
+    eps[0, 1], eps[1, 0] = 1, -1
+    idx = [(a, b, c, d) for a, b, c, d in itertools.product(range(4), repeat=4)
+           if eps[a, b] != 0 and eps[c, d] != 0]
+
+    def contr(E):
+        return sp.simplify(sum(E(a, b, c, d) * eps[a, b] * eps[c, d]
+                               for a, b, c, d in idx))
+
+    c_R = contr(lambda a, b, c, d: (gi[a, c] * gi[b, d] - gi[a, d] * gi[b, c]) / 2)
+    c_R2 = contr(lambda a, b, c, d: Rs * (gi[a, c] * gi[b, d] - gi[a, d] * gi[b, c]))
+    c_Ric = contr(lambda a, b, c, d: (gi[a, c] * Rup[b, d] - gi[a, d] * Rup[b, c]
+                                      - gi[b, c] * Rup[a, d]
+                                      + gi[b, d] * Rup[a, c]) / 2)
+    _SDS_RICCI_CACHE["wald"] = (c_R, c_Ric, c_R2)
+    return _SDS_RICCI_CACHE["wald"]
+
+
+def wald_factor(lam, alpha=0, beta=0):
+    r"""The Wald-entropy factor F_eff for L = (R - 2 Lambda0 + alpha Ric^2 +
+    beta R^2)/16 pi on a Schwarzschild-de Sitter horizon: S = F_eff A/4.
+
+    Computed by contracting the Wald tensor E^{abcd} with the binormal on the
+    metric's own Ricci tensor, so F_eff is an output:
+    ``F_eff = 1 + 2 Lambda (alpha + 4 beta)`` (this matches the Schwarzschild-
+    AdS result of Lu and Pope, critical gravity, PRL 106 (2011) 181302). It
+    vanishes at the critical point alpha + 4 beta = -1/(2 Lambda), where
+    G_eff diverges; then a ``ValueError`` is raised. Einstein spaces solve
+    these 4D quadratic theories when Lambda0 = Lambda (literature input; not
+    re-derived here).
+    """
+    import sympy as sp
+    lam, alpha, beta = Fraction(lam), Fraction(alpha), Fraction(beta)
+    L = sp.Symbol("Lambda", positive=True)
+    c_R, c_Ric, c_R2 = _wald_contractions()
+    S = sp.Rational
+    F = sp.simplify((c_R + S(alpha.numerator, alpha.denominator) * c_Ric
+                     + S(beta.numerator, beta.denominator) * c_R2) / c_R)
+    F = sp.nsimplify(F.subs(L, S(lam.numerator, lam.denominator)))
+    F = Fraction(int(F.p), int(F.q))
+    if F <= 0:
+        raise ValueError("F_eff = %s <= 0: critical or ghost-dominated "
+                         "(G_eff diverges or is negative)" % F)
+    return F
+
+
+def fr_einstein_frame(r, R0, a=0, b=0):
+    r"""Derive F M and S = F A / 4 for f(R) from GR in the Einstein frame.
+
+    For constant F = f'(R0) the conformal metric g~ = F g maps the Jordan-
+    frame Schwarzschild-de Sitter solution (m, Lambda = R0/4) *exactly* to
+    Schwarzschild-de Sitter with m~ = sqrt(F) m and Lambda~ = Lambda/F in
+    coordinates (t~, r~) = (sqrt(F) t, sqrt(F) r): the identity is verified
+    symbolically on the metric. The Einstein-frame cosmological constant is
+    also compared with the potential V = (F R0 - f(R0))/(2 F^2). Then the
+    ordinary GR first law (the one verified in
+    :func:`first_law_bookkeeping`) applied to (r~, Lambda~) gives, with
+    E[d_t] = sqrt(F) E[d_t~]:
+
+        area       A~ = F A            (so S = A~/4 = F A/4: the Wald entropy),
+        energy     E  = F M(r)         (the physical mass),
+        coupling   alpha/pi = 8 / F    (alpha = kappa dA / dE in Jordan area).
+
+    F must be a rational square, so that r~ = sqrt(F) r stays rational.
+    Everything returned is an exact Fraction; the agreement of E, S and alpha
+    with :func:`fr_bookkeeping` is what *derives* its two inputs.
+    """
+    import sympy as sp
+    d = fr_bookkeeping(r, R0, a, b)
+    F, lam = d["F"], d["Lambda"]
+    root_num, root_den = math.isqrt(F.numerator), math.isqrt(F.denominator)
+    if root_num ** 2 != F.numerator or root_den ** 2 != F.denominator:
+        raise ValueError("F = %s is not a rational square; pick parameters "
+                         "with F a square so that sqrt(F) r is rational" % F)
+    sqrtF = Fraction(root_num, root_den)
+    # 1. the metric identity, symbolically
+    t, rr, th, ph, m, L, Fs = sp.symbols("t r theta phi m Lambda F",
+                                         positive=True)
+    f = 1 - 2 * m / rr - L * rr ** 2 / 3
+    tt, rt = sp.sqrt(Fs) * t, sp.sqrt(Fs) * rr            # t~, r~
+    ft = 1 - 2 * (sp.sqrt(Fs) * m) / rt - (L / Fs) * rt ** 2 / 3   # f~(r~)
+    # g~ = F g  versus  -f~ dt~^2 + dr~^2/f~ + r~^2 dOmega^2
+    dt_t = sp.sqrt(Fs)                                      # dt~/dt
+    dr_r = sp.sqrt(Fs)                                      # dr~/dr
+    ok = (sp.simplify(Fs * (-f) - (-ft * dt_t ** 2)) == 0
+          and sp.simplify(Fs * (1 / f) - dr_r ** 2 / ft) == 0
+          and sp.simplify(Fs * rr ** 2 - rt ** 2) == 0)
+    # 2. Einstein-frame cosmological constant versus the potential
+    f0 = d["F"] * Fraction(R0) / 2                          # trace equation
+    v_pot = (F * Fraction(R0) - f0) / (2 * F ** 2)
+    lam_t = lam / F
+    # 3. GR first law in the Einstein frame at r~ = sqrt(F) r
+    r_t = sqrtF * Fraction(r)
+    gr = first_law_bookkeeping(r_t, lam_t)
+    # areas / pi, masses, kappa, all relative to d_t
+    area_t = 4 * r_t ** 2                                   # A~/pi
+    area = 4 * Fraction(r) ** 2                             # A/pi
+    mass_geom = Fraction(r) * (1 - lam * Fraction(r) ** 2 / 3) / 2
+    mass_t = r_t * (1 - lam_t * r_t ** 2 / 3) / 2           # = sqrtF M
+    E_from_einstein = sqrtF * mass_t                        # E[d_t] = sqrtF E[d_t~]
+    # kappa w.r.t. d_t is sqrtF times the Einstein-frame value
+    kappa_from_einstein = sqrtF * gr["kappa"]
+    return {"F": F, "metric_identity": bool(ok),
+            "Lambda_tilde": lam_t, "potential_V": v_pot,
+            "area_tilde_over_pi": area_t, "F_times_area_over_pi": F * area,
+            "E_from_einstein_frame": E_from_einstein,
+            "F_times_M": F * mass_geom,
+            "kappa_from_einstein_frame": kappa_from_einstein,
+            "kappa_jordan": d["kappa"],
+            "alpha_over_pi_einstein_frame": gr["alpha_over_pi"],
+            "alpha_over_pi": d["alpha_over_pi"],
+            "S_rel_per_area": d["S_rel_per_area"]}
+
+
+def quadratic_gravity_bookkeeping(r, lam, alpha=0, beta=0):
+    r"""First-law bookkeeping for L = (R - 2 Lambda + alpha Ric^2 +
+    beta R^2)/16 pi on a Schwarzschild-de Sitter horizon, with F_eff from the
+    Wald tensor (:func:`wald_factor`) rather than from f'(R).
+
+    The energy is fixed by the first law dE = (kappa / 2 pi) dS_Wald, i.e.
+    E = F_eff M; this agrees with the Abbott-Deser mass computed by Lu and
+    Pope. Then alpha_coupling / pi = 8 / F_eff and dS_rel / dA = F_eff / 4.
+    """
+    F = wald_factor(lam, alpha, beta)
+    base = first_law_bookkeeping(r, lam)
+    return {"F": F, "kappa": base["kappa"],
+            "alpha_over_pi": base["alpha_over_pi"] / F,
+            "S_rel_per_area": base["S_rel_per_area"] * F,
+            "E_over_M": F}
