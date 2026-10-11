@@ -1414,3 +1414,158 @@ def quadratic_gravity_bookkeeping(r, lam, alpha=0, beta=0):
             "alpha_over_pi": base["alpha_over_pi"] / F,
             "S_rel_per_area": base["S_rel_per_area"] * F,
             "E_over_M": F}
+
+
+# ---------------------------------------------------------------------------
+# Compactification on a CICY: G_N = G_10 / Vol(X)
+# ---------------------------------------------------------------------------
+
+def kahler_volume_exact(X, t):
+    r"""Vol(X) = d_rst t^r t^s t^t / 6 as an exact Fraction (``t`` rational).
+
+    The d_rst are the integer triple intersection numbers of the CICY.
+    :func:`pyCICY.export.kahler_volume` is the float version; the two are
+    compared in the tests.
+    """
+    from ..pyCICY import CICY
+    XX = X if isinstance(X, CICY) else CICY(np.asarray(X, dtype=int).tolist())
+    d = np.asarray(XX.triple_intersection(), dtype=float)
+    t = [Fraction(v) for v in t]
+    n = len(t)
+    if d.shape != (n, n, n):
+        raise ValueError("need %d Kahler parameters, got %d" % (d.shape[0], n))
+    tot = Fraction(0)
+    for i in range(n):
+        for j in range(n):
+            for k in range(n):
+                dd = d[i, j, k]
+                if dd != round(dd):
+                    raise ValueError("non-integer intersection number")
+                tot += int(round(dd)) * t[i] * t[j] * t[k]
+    return tot / 6
+
+
+def _wald_contractions_product(n_extra):
+    r"""The Wald contractions of :func:`_wald_contractions`, redone in
+    ``4 + n_extra`` dimensions on the product metric SdS_4 x (Ricci-flat
+    ``n_extra``-manifold, here locally flat). The Ricci tensor and the metric
+    inverse are those of the full product, computed from its Christoffel
+    symbols; the binormal stays in the (t, r) plane. Returns (R, Ric^2, R^2).
+    Local flatness suffices: these three structures see only the Ricci tensor
+    and the metric (a Riemann^2 term would see more; see the docstring of
+    :func:`compactified_bookkeeping`)."""
+    key = ("wald_prod", n_extra)
+    if key in _SDS_RICCI_CACHE:
+        return _SDS_RICCI_CACHE[key]
+    import itertools
+    import sympy as sp
+    t, r, th, ph, M, L = sp.symbols("t r theta phi M Lambda", positive=True)
+    ys = sp.symbols("y0:%d" % n_extra) if n_extra else ()
+    x = [t, r, th, ph] + list(ys)
+    n = len(x)
+    f = 1 - 2 * M / r - L * r ** 2 / 3
+    g = sp.diag(-f, 1 / f, r ** 2, r ** 2 * sp.sin(th) ** 2, *([1] * n_extra))
+    gi = g.inv()
+    Gam = [[[sum(gi[a, d] * (sp.diff(g[d, b], x[c]) + sp.diff(g[d, c], x[b])
+                             - sp.diff(g[b, c], x[d])) for d in range(n)) / 2
+             for c in range(n)] for b in range(n)] for a in range(n)]
+
+    def ricci(b, c):
+        s_ = 0
+        for a in range(n):
+            s_ += sp.diff(Gam[a][b][c], x[a]) - sp.diff(Gam[a][b][a], x[c])
+            for d in range(n):
+                s_ += Gam[a][a][d] * Gam[d][b][c] - Gam[a][c][d] * Gam[d][b][a]
+        return sp.simplify(s_)
+
+    Ric = sp.Matrix(n, n, lambda b, c: ricci(b, c))
+    Rup = (gi * Ric * gi).applyfunc(sp.simplify)
+    Rs = sp.simplify((gi * Ric).trace())
+    eps = sp.zeros(n, n)
+    eps[0, 1], eps[1, 0] = 1, -1
+    idx = [(0, 1, 0, 1), (0, 1, 1, 0), (1, 0, 0, 1), (1, 0, 1, 0)]
+
+    def contr(E):
+        return sp.simplify(sum(E(a, b, c, d) * eps[a, b] * eps[c, d]
+                               for a, b, c, d in idx))
+
+    c_R = contr(lambda a, b, c, d: (gi[a, c] * gi[b, d] - gi[a, d] * gi[b, c]) / 2)
+    c_R2 = contr(lambda a, b, c, d: Rs * (gi[a, c] * gi[b, d] - gi[a, d] * gi[b, c]))
+    c_Ric = contr(lambda a, b, c, d: (gi[a, c] * Rup[b, d] - gi[a, d] * Rup[b, c]
+                                      - gi[b, c] * Rup[a, d]
+                                      + gi[b, d] * Rup[a, c]) / 2)
+    _SDS_RICCI_CACHE[key] = (c_R, c_Ric, c_R2)
+    return _SDS_RICCI_CACHE[key]
+
+
+def wald_factor_product(lam, alpha=0, beta=0, n_extra=6):
+    r"""F_eff of the horizon entropy computed in ``4 + n_extra`` dimensions on
+    SdS_4 x (Ricci-flat), by the same Wald contraction as :func:`wald_factor`
+    (which does it in 4D). That the two agree is the statement that a Ricci-flat
+    internal space leaves the quadratic-curvature Wald factor unchanged."""
+    import sympy as sp
+    lam, alpha, beta = Fraction(lam), Fraction(alpha), Fraction(beta)
+    L = sp.Symbol("Lambda", positive=True)
+    c_R, c_Ric, c_R2 = _wald_contractions_product(n_extra)
+    S = sp.Rational
+    F = sp.simplify((c_R + S(alpha.numerator, alpha.denominator) * c_Ric
+                     + S(beta.numerator, beta.denominator) * c_R2) / c_R)
+    F = sp.nsimplify(F.subs(L, S(lam.numerator, lam.denominator)))
+    return Fraction(int(F.p), int(F.q))
+
+
+def compactified_bookkeeping(X, t, r, lam, G10=1, alpha=0, beta=0):
+    r"""Two-route G_N test for 10D gravity on SdS_4 x X, X a CICY threefold.
+
+    10D action (R + alpha Ric^2 + beta R^2 - 2 Lambda0)/16 pi G10 on a product
+    with Ricci-flat X of Kahler volume V (taken at the Kahler point ``t``, in
+    10D units). Two routes to the 4D Newton constant, which are different
+    computations:
+
+    * *action / infinity side*: integrating the action over X gives the 4D
+      action with prefactor V/(16 pi G10), i.e. G_4 = G10 / V; the energy at
+      infinity is then E = F M / G_4 (Deser-Tekin, F as in
+      :func:`wald_factor`), M = r (1 - Lambda r^2/3)/2;
+    * *horizon side*: the Wald entropy of the 10D horizon S^2 x X, with the
+      Wald tensor contracted in 10D (:func:`wald_factor_product`) and the
+      horizon volume A V: S = F10 A V / (4 G10).
+
+    The first law dE = (kappa / 2 pi) dS then ties them, and
+    ``G_N = G_4 / F`` (G measured at infinity through E = M / G_N) must give
+    alpha = 8 pi G_N and dS_rel/dA = 1/(4 G_N), with V dropping out of the
+    product G_N * (dS_rel/dA).
+
+    Limits, stated not hidden: X is Ricci-flat by assumption (the Ricci-flat
+    metric is not constructed; only the Kahler volume is exact), so the
+    Riemann^2 term, whose value on X is controlled by c_2 . J, is not
+    included; Lambda0 = Lambda is the 4D Einstein-space condition, taken as
+    input; moduli are frozen at the given Kahler point.
+    """
+    import sympy as sp
+    t = [Fraction(v) for v in t]
+    V = kahler_volume_exact(X, t)
+    if V <= 0:
+        raise ValueError("Kahler point outside the Kahler cone (Vol <= 0)")
+    G10 = Fraction(G10)
+    G4 = G10 / V
+    F4 = wald_factor(lam, alpha, beta)
+    F10 = wald_factor_product(lam, alpha, beta, 6)
+    base = first_law_bookkeeping(r, lam)
+    kappa, dM = base["kappa"], base["dM_dr"]
+    r = Fraction(r)
+    area_over_pi = 4 * r * r
+    dA_over_pi = 8 * r
+    # infinity side: dE/dr = F4 dM/dr / G4 ; horizon side: S = F10 A V/(4 G10)
+    dE = F4 * dM / G4
+    dS_over_pi = F10 * dA_over_pi * V / (4 * G10)          # dS / pi
+    first_law_residual = dE - kappa * dS_over_pi / 2       # dE - (kappa/2pi) dS
+    GN = G4 / F4
+    alpha_over_pi = kappa * dA_over_pi / dE                # alpha = kappa dA/dE
+    s_rel_per_area = 2 * dE / kappa / dA_over_pi           # S_rel = 2 pi dE/kappa
+    return {"V": V, "G4": G4, "F4": F4, "F10": F10, "G_N": GN,
+            "first_law_residual": first_law_residual,
+            "alpha_over_pi": alpha_over_pi,
+            "alpha_over_pi_expected": 8 * GN,
+            "S_rel_per_area": s_rel_per_area,
+            "GN_times_S_rel_per_area": GN * s_rel_per_area,
+            "kappa": kappa, "mass": base["mass"]}
