@@ -335,11 +335,66 @@ def test_compactification_controls():
                   Fr(1, 2), 4), True)
 
 
+def test_riem2():
+    print("\n[12] Riemann^2 Wald entropy: direct vs Gauss-Bonnet decomposition")
+    bad = []
+    for r, lam in [(Fr(1, 3), 4), (Fr(1, 2), 1), (Fr(2, 5), 3), (Fr(1, 4), 2)]:
+        d = N.riem2_wald(r, lam)
+        # S = 4 pi per unit gamma  <=>  1/r^2 per unit area (A = 4 pi r^2)
+        if d["direct"] != d["via_GB"] or d["direct"] != 1 / (r * r):
+            bad.append((r, lam, d))
+    check("direct = via GB = 1/r^2 (S = 4 pi gamma), 4 horizons: bad",
+          len(bad), 0)
+    d1, d2 = N.riem2_wald(Fr(1, 3), 4), N.riem2_wald(Fr(1, 3), 5)
+    check_true("independent of Lambda at fixed r (S constant, not ~ A)",
+               d1["direct"] == d2["direct"])
+    d = N.riem2_wald(Fr(1, 2), 1)
+    check_true("control: a wrong GB constant (8 pi) would not match",
+               d["direct"] != 2 * d["gb_per_area"])
+    check_true("alpha = 4 gamma, beta = -gamma gives F = 1 (cancellation)",
+               N.wald_factor(1, Fr(4), Fr(-1)) == 1)
+
+
+def test_riem2_internal():
+    print("\n[13] Riemann^2 on a Ricci-flat Kahler X: Q = 32 pi^2 c_2 . J")
+    k3, quintic, bicubic = [[3, 4]], [[4, 5]], [[2, 3], [2, 3]]
+    # K3 = quartic in P^3: c(TX) = (1+H)^4/(1+4H) = 1 + 6 H^2, int H^2 = 4
+    check("K3: Q/pi^2 = 32 chi, chi = 6 * 4 = 24 by hand", N.riem2_integral_over_pi2(k3),
+          32 * 24)
+    # K3 x T^2: both sides known. int|Rm|^2 = Area(T^2) * 768 pi^2 (Gauss-
+    # Bonnet on K3, T^2 flat); c_2(K3 x T^2) = c_2(K3), int c_2 ^ J = 24 Area
+    area = Fr(7, 5)
+    check("K3 x T^2: 32 * int c_2.J = Area * 768 (n-independence of the 32)",
+          32 * 24 * area, area * 768)
+    # threefolds: c_2 . J by hand
+    check("quintic: c_2 = 10 H^2, c_2.H = 50 -> Q/pi^2 = 1600 t",
+          N.riem2_integral_over_pi2(quintic, [Fr(3, 2)]), 1600 * Fr(3, 2))
+    check("bicubic: c_2 = 3H1^2 + 9 H1H2 + 3 H2^2, c_2.H_r = 36 each",
+          N.riem2_integral_over_pi2(bicubic, [1, Fr(1, 2)]),
+          32 * 36 * Fr(3, 2))
+    d = N.compactified_riem2(quintic, [2], Fr(1, 10), 3)
+    check("G_N unchanged by Riem^2: still G10/V", d["G_N_unchanged"],
+          Fr(3) / d["V"])
+    check("alpha + 4 beta = 0, so F = 1",
+          N.wald_factor(4, d["alpha"], d["beta"]), 1)
+    check("Lambda0 shift = gamma Q/(2V) = 16 gamma c_2.t / V",
+          d["dLambda0_over_pi2"], Fr(16, 10) * 100 / d["V"])
+    check("entropy constant = 4 gamma V / G10", d["S_const_over_pi"],
+          4 * Fr(1, 10) * d["V"] / 3)
+    check_true("control: a wrong constant (16 pi^2) would not match K3 x T^2",
+               16 * 24 * area != area * 768)
+    check("control: a threefold needs a Kahler point",
+          _raises(ValueError, N.riem2_integral_over_pi2, quintic), True)
+    check("control: outside the Kahler cone is refused",
+          _raises(ValueError, N.compactified_riem2, quintic, [-1], 1), True)
+
+
 def main():
     for section in (test_identity, test_float_routes, test_nariai, test_jt,
                     test_controls, test_fr, test_fr_controls,
                     test_derived_inputs, test_derived_controls,
-                    test_compactification, test_compactification_controls):
+                    test_compactification, test_compactification_controls,
+                    test_riem2, test_riem2_internal):
         try:
             section()
         except Exception as exc:
