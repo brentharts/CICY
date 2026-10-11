@@ -20,6 +20,13 @@ identity, the Schwarzschild-de Sitter first law.
                        from the Ricci tensor of the SdS metric
   [7] f(R) controls    non-solutions, F <= 0, and wrong normalisations fail
 
+  [10] compactification  10D gravity on SdS_4 x CICY: G_4 = G10/Vol from the
+                       action, the Wald entropy contracted in 10D at the
+                       horizon S^2 x X, exact first law; alpha = 8 pi G_N and
+                       G_N dS_rel/dA = 1/4 for any volume, any G10
+  [11] controls          missing volume, missing 1/6, wrong F, a point outside
+                       the Kahler cone
+
 Run with:  python3 tests/test_firstlaw.py   or   python3 run_tests.py
 """
 
@@ -261,10 +268,78 @@ def test_derived_controls():
                N.wald_factor(1, 0, 0) == 1)
 
 
+def test_compactification():
+    print("\n[10] compactification: G_N = G10 / Vol(X), two routes")
+    quintic, bicubic, ex = [[4, 5]], [[2, 3], [2, 3]], [[2, 2, 1], [3, 1, 3]]
+    # volumes by hand: quintic J^3 = 5 -> 5 t^3/6; bicubic d_112 = d_122 = 3
+    # -> (3/2) t1 t2 (t1 + t2)
+    check("quintic Vol = 5 t^3/6 at t=2", N.kahler_volume_exact(quintic, [2]),
+          Fr(20, 3))
+    check("bicubic Vol = 3/2 t1 t2 (t1+t2) at (1, 1/2)",
+          N.kahler_volume_exact(bicubic, [1, Fr(1, 2)]), Fr(9, 8))
+    from pyCICY.export import kahler_volume
+    check_true("exact volume = the float route in pyCICY.export",
+               abs(float(N.kahler_volume_exact(ex, [1, 2]))
+                   - kahler_volume(ex, [1, 2])) < 1e-9)
+    cases = [(quintic, [2], Fr(1, 3), 4, 3, Fr(1, 16), Fr(1, 64)),
+             (bicubic, [1, Fr(1, 2)], Fr(1, 3), 4, Fr(1, 5), Fr(0), Fr(1, 40)),
+             (ex, [1, 2], Fr(2, 5), 3, 1, Fr(-1, 20), Fr(1, 100)),
+             (quintic, [Fr(1, 2)], Fr(1, 3), 4, 7, Fr(0), Fr(0))]
+    bad = []
+    for X, t, r, lam, G10, a, b in cases:
+        d = N.compactified_bookkeeping(X, t, r, lam, G10, a, b)
+        F = 1 + 2 * Fr(lam) * (a + 4 * b)                 # by hand
+        if (d["G4"] != Fr(G10) / d["V"] or d["F4"] != F or d["F10"] != F
+                or d["first_law_residual"] != 0
+                or d["alpha_over_pi"] != 8 * d["G_N"]
+                or d["alpha_over_pi"] != d["alpha_over_pi_expected"]
+                or d["GN_times_S_rel_per_area"] != Fr(1, 4)
+                or d["G_N"] != Fr(G10) / (d["V"] * F)):
+            bad.append((X, t, d))
+    check("alpha=8 pi G_N, G_N dS_rel/dA = 1/4, first law (4 CICY cases): bad",
+          len(bad), 0)
+    a1 = N.compactified_bookkeeping(quintic, [2], Fr(1, 3), 4, 3)
+    a2 = N.compactified_bookkeeping(quintic, [4], Fr(1, 3), 4, 3)
+    check_true("rescaling the Kahler class by 2 changes G_N by exactly 8",
+               a1["G_N"] / a2["G_N"] == 8)
+    check_true("...and leaves G_N * dS_rel/dA = 1/4",
+               a1["GN_times_S_rel_per_area"] == a2["GN_times_S_rel_per_area"]
+               == Fr(1, 4))
+    check("10D Wald factor = 4D Wald factor (F = 5)",
+          N.wald_factor_product(4, Fr(1, 3), Fr(1, 24), 6),
+          N.wald_factor(4, Fr(1, 3), Fr(1, 24)))
+
+
+def test_compactification_controls():
+    print("\n[11] compactification controls: each made to fail on purpose")
+    quintic = [[4, 5]]
+    d = N.compactified_bookkeeping(quintic, [2], Fr(1, 3), 4, 3, Fr(1, 16),
+                                   Fr(1, 64))
+    V, F = d["V"], d["F4"]
+    # horizon entropy without the internal volume: S = F A / 4 G10
+    dS_novol = F * 8 * Fr(1, 3) / (4 * 3)
+    dE = F * N.first_law_bookkeeping(Fr(1, 3), 4)["dM_dr"] / d["G4"]
+    check_true("dropping Vol from the horizon integral breaks the first law",
+               dE - d["kappa"] * dS_novol / 2 != 0)
+    wrong_V = N.kahler_volume_exact(quintic, [2]) * 6
+    check_true("Vol without the 1/6 gives a different G_4", wrong_V != V)
+    check_true("F=1 (ignoring the curvature terms) breaks alpha = 8 pi G_N",
+               8 * (Fr(3) / V) != d["alpha_over_pi"])
+    check_true("using G_4 for G_N ignores F: G_4 != G_N when F != 1",
+               d["G4"] != d["G_N"])
+    check("a point outside the Kahler cone is refused",
+          _raises(ValueError, N.compactified_bookkeeping, quintic, [-1],
+                  Fr(1, 3), 4), True)
+    check("the Nariai radius is still refused",
+          _raises(ValueError, N.compactified_bookkeeping, quintic, [1],
+                  Fr(1, 2), 4), True)
+
+
 def main():
     for section in (test_identity, test_float_routes, test_nariai, test_jt,
                     test_controls, test_fr, test_fr_controls,
-                    test_derived_inputs, test_derived_controls):
+                    test_derived_inputs, test_derived_controls,
+                    test_compactification, test_compactification_controls):
         try:
             section()
         except Exception as exc:
