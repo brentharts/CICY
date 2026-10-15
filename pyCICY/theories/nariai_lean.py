@@ -446,10 +446,32 @@ def check_python(facts=None):
     return out
 
 
+def _elan_candidates():
+    """Where an elan-managed Lean usually lives, most specific first."""
+    homes = [os.environ.get("ELAN_HOME"),
+             os.path.join(os.path.expanduser("~"), ".elan")]
+    names = ["lean.exe", "lean"] if os.name == "nt" else ["lean"]
+    return [os.path.join(h, "bin", n) for h in homes if h for n in names]
+
+
 def lean_executable():
-    """Where the Lean kernel is, or None."""
-    return (os.environ.get("PYCICY_LEAN")
-            or shutil.which("lean"))
+    """Where the Lean kernel is, or None.
+
+    Looked up in this order: ``PYCICY_LEAN``; ``lean`` on ``PATH``; an
+    elan-managed install (``$ELAN_HOME/bin/lean``, else ``~/.elan/bin/lean``),
+    which is where the standard installer puts it and which is often not on
+    the ``PATH`` of a non-interactive shell such as the one ``make`` runs.
+    """
+    env = os.environ.get("PYCICY_LEAN")
+    if env:
+        return env
+    found = shutil.which("lean")
+    if found:
+        return found
+    for cand in _elan_candidates():
+        if os.path.isfile(cand) and os.access(cand, os.X_OK):
+            return cand
+    return None
 
 
 def parse_axioms(output, namespace):
@@ -497,9 +519,10 @@ def check_source(src, namespace, filename, path=None, timeout=600,
     if exe is None:
         if require:
             raise NoToolchain(
-                "no lean executable found. Set PYCICY_LEAN or put lean on "
-                "PATH. The file can still be emitted; what cannot be done "
-                "without a kernel is claiming it checks.")
+                "no lean executable found. Set PYCICY_LEAN, put lean on PATH "
+                "or install it with elan (~/.elan/bin/lean). The file can "
+                "still be emitted; what cannot be done without a kernel is "
+                "claiming it checks.")
         return {"available": False, "ok": None, "axioms": {},
                 "output": "", "source": src}
     target, tmp = path, None
