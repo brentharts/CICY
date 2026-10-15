@@ -440,6 +440,12 @@ and the explicit
 carries the paper's `(T₁, T₂)` onto its representative — a fact the Lean
 kernel checks. The other three bottom out at `|p|` = 3, 2 and 6.
 
+![The funnel at B = 5, from 87,846 candidates to 32, and the four conjugacy classes of 8 by the |p| values they can reach](paper/figures/ss_funnel_classes.png)
+
+*Left: the funnel above, on a log scale. Right: the four classes; their
+reachable `|p|` sets partition {0, …, 6}, and only the class containing
+Alpöge's matrices reaches 1.*
+
 Two observations, reported as such. The final count is 32 at every box from
 ±3 to ±11, while the cusp stage grows 136, 200, 272, 760, 1488: evidence that
 the `|det B₀| = 1` condition cuts the infinite family to a finite set, not a
@@ -449,6 +455,12 @@ three near-miss classes support period functions — and so a complex manifold
 at all — is not a lattice question and is declined.
 
 ### The cusp fibre is the monotile's substrate, rolled up
+
+![The Hat as eight kites of the [3.4.6.4] Laves lattice at a:b = √3:1](paper/figures/ss_hat_kites.png)
+
+*The Hat at `a : b = √3 : 1`: its thirteen-sided outline is exactly eight
+whole kites of the lattice (their areas add to `8√3`; checked in
+`paper/make_sixsphere_figures.py` before the figure is drawn).*
 
 Every Tile(a, b) — the Hat, the Spectre — is a union of kites of the
 [3.4.6.4] Laves lattice, which `pyCICY.monotile` builds exactly in `Q(√3)`.
@@ -466,6 +478,12 @@ diagram of the cusp fan, and `W` is that lattice rolled up on `R²/B₀Z²`:
 | centre–edge bond | a (−1)-curve of the hexagon | 6 |
 | edge–vertex bond | a double curve through a triple point | 6 |
 
+![Left: the cells of the A₂ triangulation. Right: the Laves substrate, whose bonds are the cover relations vertex < edge < triangle](paper/figures/ss_dictionary.png)
+
+*Circles are vertices / hexagon centres, squares are edges / edge midpoints,
+triangles are triangles / hexagon vertices. The figure script asserts that the
+sites and bonds of the two panels agree before drawing.*
+
 So `e(W) = 2` counts the hexagon vertices in a fundamental domain,
 `V − E + F = 6 − 12 + 6 = 0` is the torus, and Friedman's formula reads: each
 edge midpoint touches two hexagon vertices. The relation to the monotile is a
@@ -474,6 +492,20 @@ torus, and no Hat tiling can, because an aperiodic tiling is invariant under
 no lattice. Both inherit the lattice from A₂; the six-sphere knows nothing of
 monotiles. At the Spectre's proportions `a = b` the combinatorics survive but
 the metric match does not, and the test suite checks that too.
+
+![One fundamental domain of B₀Z² and the same sites and bonds rolled up on a torus](paper/figures/ss_torus.png)
+
+*One fundamental domain holds 1 component, 3 double curves and 2 triple
+points, with 6 + 6 bonds; rolled up, `6 − 12 + 6 = 0`. The far side of the
+torus is hidden.*
+
+![The dP6 hexagon of six (−1)-curves with opposite sides glued, and the Hasse diagram of the strata of W](paper/figures/tikz_dp6_hexagon.png)
+
+*The component `dP6` and its incidence structure, drawn from
+`sixsphere.cusp_fibre()`: opposite sides are glued (equal arrow counts) into the
+three double curves, and the six corners fall on two triple points, `P` and `Q`,
+alternating. Every double curve passes through both, which is Friedman's
+`−1 − 1 + 2 = 0`.*
 
 ### Chirality, duality, arithmetic
 
@@ -591,7 +623,13 @@ python3 tests/test_sixsphere.py          # the construction's exact layer
 python3 tests/test_sixsphere_search.py   # Part VII, about 40 s
 make sixsphere-lean                      # emit SixSphereFacts.lean; check it if lean is found
 python3 run_tests.py                     # every suite
+python3 paper/make_sixsphere_figures.py  # the five figures above, PDF and PNG
 ```
+
+The figure script writes to `paper/figures/` and asserts each geometric claim
+before drawing it. The TikZ diagram needs `pdflatex`; the PNGs are tracked so
+that they render here, the PDFs are what `supplementary_material_sixsphere.tex`
+includes.
 
 The Lean check needs a `lean` executable on `PATH`, or `PYCICY_LEAN` pointing
 at one; version 4.33.0 is what was used, the same version HopfProblem pins.
