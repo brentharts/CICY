@@ -613,6 +613,37 @@ def laves_is_cusp_hasse(rings=2):
             "bonds_are_exactly_the_incidences": inc_in_patch == bonds}
 
 
+def hat_point_only(rings=2):
+    r"""The Laves substrate at three proportions: the Hat point, the Spectre's,
+    and one within 2% of the Hat's.
+
+    Only at ``a : b = sqrt3 : 1`` do the outer kite corners merge into the six
+    vertices of the [3.4.6.4] tiling; at ``1 : 1`` and ``17/10 : 1`` they stay
+    apart. For each proportion this returns the number of sites of the
+    ``rings``-ring patch, its bond count, and the sorted distinct valences of
+    its ``"vertex"`` sites (3 at the Hat point in the interior, 1 where the
+    corners do not merge). Exact, in Q(sqrt3).
+    """
+    from fractions import Fraction as Fr
+    from . import monotile as Mo
+    from .monotile import Quad
+    cases = {"Hat (sqrt3 : 1)": (Quad(0, 1, 3), Quad(1, 0, 3)),
+             "Spectre (1 : 1)": (Quad(1, 0, 3), Quad(1, 0, 3)),
+             "near Hat (17/10 : 1)": (Quad(Fr(17, 10), 0, 3), Quad(1, 0, 3))}
+    out = {}
+    for name, (a, b) in cases.items():
+        P = Mo.laves_patch(a=a, b=b, rings=rings)
+        val = [0] * len(P["sites"])
+        for i, j, _ in P["bonds"]:
+            val[i] += 1
+            val[j] += 1
+        out[name] = {"sites": len(P["sites"]), "bonds": len(P["bonds"]),
+                     "vertex_valences": sorted({val[i] for i, k in
+                                                enumerate(P["kind"])
+                                                if k == "vertex"})}
+    return out
+
+
 def laves_cusp_dictionary():
     """Per fundamental domain of B0 Z^2: Laves features against strata of W."""
     c = S.cusp_fibre()
