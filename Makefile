@@ -217,7 +217,7 @@ test:
 	$(PYTHON) run_tests.py
 
 # Emit the Nariai finite algebra as Mathlib-free Lean 4 and kernel-check it.
-# Needs a `lean` on PATH, or PYCICY_LEAN pointing at one; without a toolchain
+# Needs a `lean` on PATH, in ~/.elan/bin (elan), or PYCICY_LEAN pointing at one; without a toolchain
 # the file is still written and the module reports that it was not checked.
 lean:
 	$(PYTHON) -c "from pyCICY.theories import nariai_lean as N; \
