@@ -392,7 +392,19 @@ first contains $1$.
 
 The proof of distinctness does not depend on the conjugator search, which
 could in principle miss a large conjugator: two classes with different
-invariants cannot be conjugate, however hard one looks. 
+invariants cannot be conjugate, however hard one looks (\cref{fig:classes}). 
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{ss_funnel_classes.pdf}
+\caption{(a) The funnel at $B = \SSBox$, on a log scale: the stage counts of the
+table above, from \SSTried{} candidates to \SSUnimod{}. (b) The \SSUnimod{}
+survivors form four $\GL_4(\ZZ)$-conjugacy classes of \SSClassSize{}. Each is
+marked by the values of $|p|$, taken as $\min(x, 12 - x)$, that its admissible
+twists can reach; the four sets partition $\{0, \dots, 6\}$, and only the class
+containing Alpöge's matrices reaches $1$.}
+\label{fig:classes}
+\end{figure}
 
 The class that reaches $|p| = 1$ is the paper's:
 
@@ -421,7 +433,7 @@ the analytic side that we do not address.
 \subsection{The substrate at the Hat point}
 
 Every tile of the monotile family of Smith, Myers, Kaplan and
-Goodman-Strauss~\cite{SmithHat,SmithSpectre} is a union of eight kites whose
+Goodman-Strauss~\cite{SmithHat,SmithSpectre} is a union of eight kites (\cref{fig:hat}) whose
 two bond
 lengths are the family's parameters: $a$ from hexagon centre to edge
 midpoint and $b$ from edge midpoint to hexagon vertex, meeting at right
@@ -431,6 +443,18 @@ hexagon's twelve outer kite corners stay distinct; at $a : b = \sqrt3 : 1$,
 the Hat's proportions, and only there, they merge in pairs into the six
 vertices of the $[3.4.6.4]$ Laves tiling~\cite{SuppMonotile}. The monotile
 paper put it as: the substrate detects the Hat.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.78\textwidth]{ss_hat_kites.pdf}
+\caption{The Hat at $a : b = \sqrt3 : 1$ as a union of eight kites of the
+$[3.4.6.4]$ Laves lattice. Circles are hexagon centres (valence 6), squares
+edge midpoints (valence 4), triangles hexagon vertices (valence 3). The heavy
+outline is the Hat's thirteen-sided boundary; the eight kites inside it are
+whole kites of the lattice, and their areas add to the Hat's, $8\sqrt3$ in
+units where the shorter bond is $1$.}
+\label{fig:hat}
+\end{figure}
 
 On the six-sphere's side, the cusp fibre is built from a toric fan whose
 cross-section is the $A_2$ triangulation of the plane~\cite{Alpoge}: its
@@ -450,7 +474,7 @@ $<$ triangle. At any other proportions it is not.
 \begin{proof}[Computation]
 Embed $A_2$ in the plane by $e_1 \mapsto 2a(\cos 30^\circ, \sin 30^\circ)$,
 $e_2 \mapsto 2a(0,1)$, placing vertices at hexagon centres; edge midpoints
-and triangle centroids follow. For the two-ring patch of~\cite{SuppMonotile}
+and triangle centroids follow (\cref{fig:dictionary}). For the two-ring patch of~\cite{SuppMonotile}
 at the Hat point, all \SSLavesSites{} sites coincide exactly, in
 $\QQ(\sqrt3)$, with cells of the matching kind, and the \SSLavesIncidences{}
 cover relations among them are exactly its \SSLavesBonds{} bonds. At the
@@ -465,6 +489,18 @@ substrate is periodic, and the patch contains a fundamental domain together
 with every cell incident to it, so the identity on the patch is the identity
 everywhere.
 \end{proof}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{ss_dictionary.pdf}
+\caption{\Cref{thm:laves} at the Hat point. (a) The cells of the $A_2$
+triangulation, embedded as in the proof: vertices (circles), edge midpoints
+(squares) and triangle centroids (triangles). (b) The Laves substrate on the
+same sites; its bonds are exactly the cover relations vertex $<$ edge $<$
+triangle. The shaded hexagon marks one hexagon centre with its six edge
+midpoints and six hexagon vertices.}
+\label{fig:dictionary}
+\end{figure}
 
 \begin{figure}[t]
 \centering
@@ -483,7 +519,8 @@ longer the Hasse diagram of anything.}
 
 Since $|\det B_0| = 1$, the translations by $B_0\ZZ^2$ are exactly the
 translations of the Laves tiling by its period lattice, and the cusp fibre
-is that tiling rolled up on $\RR^2 / B_0\ZZ^2$:
+is that tiling rolled up on $\RR^2 / B_0\ZZ^2$
+(\cref{fig:torus,fig:dp6}):
 
 \begin{center}
 \small
@@ -514,6 +551,31 @@ kites per domain.
 edge midpoint is bonded to two hexagon vertices, and each hexagon side is a
 $(-1)$-curve, so $-1 - 1 + 2 = 0$.
 \end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{ss_torus.pdf}
+\caption{(a) One fundamental domain of $B_0\ZZ^2$. Filled marks are its
+representatives and hollow marks their images on the boundary; sides carrying
+equal arrows are identified. It holds one component, three double curves and
+two triple points. (b) The same sites and bonds on $\RR^2 / B_0\ZZ^2$, with
+the far side of the torus hidden: $6 - 12 + 6 = 0$ sites, bonds and kites per
+domain.}
+\label{fig:torus}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{tikz_dp6_hexagon.pdf}
+\caption{The component $E_0 \cong dP_6$ and the incidence structure of $W$.
+Left: the hexagon of six $(-1)$-curves. Opposite sides are glued (equal arrow
+counts) into the three double curves $D_a, D_b, D_c$, and the six corners
+fall on two triple points, $P$ (filled) and $Q$ (hollow), alternating. Right:
+the Hasse diagram of the strata, with $1$, $3$ and $2$ elements per rank; every
+double curve passes through both triple points. Drawn from the data of
+\texttt{sixsphere.cusp\_fibre}~\cite{Impl}.}
+\label{fig:dp6}
+\end{figure}
 
 \subsection{What descends, and what does not}
 
