@@ -32,6 +32,7 @@ distinguishes what is exact from what needs input this package cannot supply
 from what does not exist at all.
 
 ## Papers and figures
+- The Aperiodic Einstein Monotile on the Cusp Torus of Alpöge’s Complex Six-Sphere http://ai.viXra.org/abs/2610.0035
 - What Wedge-Locality Determines, and What the Phase Averages Out: Exact Tests and a Universal Negativity Bound for Entropic Gravity on the Nariai Horizon https://doi.org/10.5281/zenodo.21908671
 - What Real-Space Geometry Determines, and What Has No Momentum Space: Exact Methods for the Aperiodic Monotile Family https://doi.org/10.5281/zenodo.21893694
 - What Holomorphy Determines, and What a Rank Cannot See: Exact Methods for Twistor Geometry and Tree Amplitudes https://doi.org/10.5281/zenodo.21892738
