@@ -3235,6 +3235,33 @@ and valence 4 in the Laves lattice against the order-4 point.
 for the real fields it was used on, but wrong for `Q(√−3, i)`, whose classes
 it would have reported as those of `Q(√3)`.
 
+### An integer inflation on the same kind of torus
+
+`pyCICY.chair44_nested` sets Tsiokos's Chair44 (the three-dimensional einstein
+tile, `ioannist/six-birds-tiles`) beside the Hat. The Hat does not descend to
+the cusp torus. Chair44 inflates by the integer 2, so it has a tower of nested
+tori `R³ / 2^M Z³` of index `8^M` to nearly descend to, and the defect is exact:
+on a patch that is a union of whole level-`M` blocks, a translate by `2^M v`
+agrees on at least `1 − c(M)/8^M` of cells, with `c(M) = 28·2^M − 48` proved by
+a finite recurrence certificate on a 41-state automaton. A level-6 patch of
+1.8 million cells agrees with its own translate on 68.4%, 91.0% and 97.6% of
+cells at `M = 3, 4, 5`, and every translate that agrees on 90% has a 2-adic
+valuation of at least 3. Two tempting matches are settled as coincidences: the
+Kuhn triangulation of `Z³` (the 3D analogue of the cusp's A₂ triangulation) has
+24 simplices round a vertex, but the cube's 24 rotations do not preserve it,
+and the two order-48 groups are not `GL(3, Z)`-conjugate; and the `(3, 4, ∞)`
+orbifold group maps onto the cube group with a genus-0, 12-cusp cover that has
+no known link to the six-sphere's monodromy. Pure-point structure is quoted
+(Lee–Moody / Schlottmann), the substitution hull and Chair44's aperiodicity are
+upstream's, and no fourfold is built. Two figures; a ledger of seventeen rows in
+`AlpogeSixSphere.md`, Part VIII.
+
+```bash
+python3 tests/test_chair44_nested.py          # about 10 s
+python3 -m pyCICY.chair44_nested              # the report
+make chair44-figures                          # c44_nested_defect, c44_nested_curve (PDF, PNG)
+```
+
 ## The design rule
 
 One principle runs through the whole package and is the reason to trust it:

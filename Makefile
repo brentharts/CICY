@@ -56,7 +56,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper papers strings-paper strings-facts twistor-paper twistor-facts monotile-paper monotile-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor monotile knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help sixsphere-lean sixsphere-paper sixsphere-facts
+.PHONY: all paper papers strings-paper strings-facts twistor-paper twistor-facts monotile-paper monotile-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor monotile knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help sixsphere-lean sixsphere-paper sixsphere-facts chair44-figures
 
 all: paper
 
@@ -238,6 +238,10 @@ sixsphere-lean:
 	  print('facts', st['n_facts'], 'computed', st['all_computed'], \
 	        'toolchain', st['toolchain'], 'machine-checked', \
 	        st['all_machine_checked'], 'choice-free', st['n_choice_free'])"
+
+# Part VIII: Chair44 and the nested tori (pyCICY.chair44_nested), two matplotlib figures.
+chair44-figures:
+	$(PYTHON) $(PAPERDIR)/make_chair44_nested_figures.py
 
 data:
 	$(PYTHON) scripts/fetch_cicy_list.py --outdir data

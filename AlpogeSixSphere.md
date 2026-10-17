@@ -70,6 +70,17 @@ stating on their own:
    curve. Six is the number of oriented edges of the dual complex of `W`, a
    one-vertex, three-edge, two-triangle torus. At most 72 classes is proved;
    exactly six is a conjecture backed by finite patches.
+8. **An integer inflation behaves the other way on the same kind of torus.**
+   Tsiokos's Chair44, the three-dimensional einstein tile, inflates by the integer
+   2, so its supertiles sit on the nested sublattices `2^M Z³` of index `8^M` and the
+   tiling is exhausted by the tori `R³ / 2^M Z³`. Where no Hat tiling descends to the
+   cusp torus, a Chair44 patch of 1.8 million cells agrees with its own translate by
+   `2^M` along an axis on 68.4%, 91.0% and 97.6% of cells for `M = 3, 4, 5`, and the
+   disagreement is bounded by an exact, proved rate `c(M)/8^M` with
+   `c(M) = 28·2^M − 48`. Part VIII computes this, shows it, and says what it does
+   not connect: the six-sphere contains no Chair44, and two tempting matches
+   (24 simplices round a vertex against 24 rotations; the (3, 4, ∞) group against the
+   cube group) are settled as coincidences.
 
 What is *not* here is the theorem. That `X` is diffeomorphic to `S⁶` is
 declined, and nothing in this package bears on whether the proof is correct
@@ -106,7 +117,8 @@ compactifications transfers.
 
 The work was done in parts, each a code, a test and a documentation commit:
 five that implement the construction's exact layer, this write-up, and a
-seventh that asks which other data could have been used. `status()`, `status_periods()`,
+seventh that asks which other data could have been used, and an eighth (Part VIII,
+`pyCICY.chair44_nested`) that asks what an integer-inflation tile does on the same kind of torus. `status()`, `status_periods()`,
 `status_cusp()` and `status_invariants()` run the 17, 17, 18 and 30 checks of
 the first four parts; `sixsphere_lean.status()` runs the fifth.
 
@@ -635,6 +647,178 @@ period field and the monotiles'. It now keeps them.
 
 ---
 
+## Part VIII: an integer inflation on the same kind of torus
+
+Part VII ends with a negative: no Hat tiling descends to the cusp torus, and a
+Hat patch agrees with no lattice translate of itself beyond 0.796. That is what an
+aperiodic tiling with an irrational inflation does. Tsiokos's Chair44 — the
+three-dimensional "einstein" tile of arXiv 2609.19214 and 2609.23783
+(`ioannist/six-birds-tiles`, CC BY 4.0) — is the other kind of aperiodic object. It
+is a seven-cube chair, `2 × 2 × 2` minus a corner, decorated so that it tiles only
+aperiodically, and its substitution has **eight children and inflation factor 2, an
+integer**. Everything here is computed by `pyCICY.chair44_nested`, which carries its
+own copy of the substitution (the eight child poses, re-checked to tile every rotated
+doubled chair) and depends on nothing outside the package. The six-sphere does not
+contain Chair44; what follows is a comparison of two kinds of tiling on tori, and the
+ledger says for each statement what kind it is.
+
+### Why nested tori
+
+An integer inflation is a lattice map. A level-`M` supertile is a Chair44 scaled by
+`2^M`, so the level-`M` supertiles are placed on `2^M Z³`, a sublattice of index
+`8^M`; a level-`M` block contains `8^M` unit cells, one parent cell's worth. The
+natural family of tori is therefore `R³ / 2^M Z³`, each one a cover of the last. The
+Hat's and the Spectre's inflations are irrational (the fields in the previous section),
+so they leave no such family.
+
+This echoes, as a count and nothing more, Remark 4.9: `|det B₀| = d` gives `d`
+components, `3d` double curves, `2d` triple points and `e(W) = 2d`, so an index-`d`
+sublattice of the cusp lattice is `d` copies of the fundamental domain. In the plane the
+nested sublattices have index `4^M`; for Chair44 they have index `8^M`. The cusp
+fibre of Part III is two-dimensional; no complex fourfold with a Chair44 cusp fibre is
+built here, and none is claimed.
+
+### How nearly Chair44 descends
+
+The substitution acts on `168 = 24 × 7` labelled unit cells (24 rotations, 7 cells), sends
+each label to the eight labels of its `2 × 2 × 2` block, has every column sum equal to 8
+and is primitive at power 3. Reading `M` digits of a position inside a level-`M` block
+and tracking the set of labels still possible gives a subset automaton with 209 reachable
+sets, 41 of them with more than one label. Let `c(M)` count the addresses of the `2^M`
+cube at which the label is *not yet* the same for every starting label, and `E(M)` the
+total number of surplus candidate labels, `Σ(|set| − 1)`:
+
+| `M` | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| addresses `8^M` | 1 | 8 | 64 | 512 | 4096 | 32768 | 262144 | 2097152 | 16777216 |
+| `c(M)` | 1 | 8 | 64 | 176 | 400 | 848 | 1744 | 3536 | 7120 |
+| `E(M)` | 167 | 328 | 608 | 1168 | 2288 | 4528 | 9008 | 17968 | 35888 |
+
+The least coincidence depth is 3, with 336 of 512 addresses coincident, as upstream
+records (`THEOREM.md`, the modular coincidence). The closed forms are
+
+    c(M) = 28·2^M − 48,     E(M) = 140·2^M + 48,          for every M ≥ 1.
+
+They are *proved*, not fitted: both sequences are read off the 41-state transfer matrix, so
+the difference from a closed form with roots 2 and 1 is a linear recurrence of order at
+most 43, and it vanishes if it vanishes on 43 consecutive terms; 44 are checked. (The
+closed form for `c` holds from `M = 1`, a little earlier than the `M ≥ 3` first stated in
+the Spectre paper; it fails at `M = 0`.) The fraction of undetermined addresses,
+`c(M)/8^M ≈ 28·4^{−M}`, tends to 0.
+
+The consequence is an inequality with no experiment in it. If two cells lie `2^M v`
+apart, they sit at the same address of two level-`M` blocks, whatever the labels of the
+two parent cells. They must agree wherever the address is coincident. So on any patch that
+is a union of whole level-`M` blocks, **the agreement with the translate by `2^M v` is at
+least `1 − c(M)/8^M`.** The table measures what the actual patch does. The patch is the
+chair scaled by `2^6`, 1 835 008 cells, and the bound holds on all fifteen rows
+(three axes, `M = 1…5`):
+
+| translate along `x` | agreement | proved bound |
+| --- | --- | --- |
+| `2` | 0.000 | 0 |
+| `4` | 0.073 | 0 |
+| `8` | 0.684 | 0.656 |
+| `16` | 0.910 | 0.902 |
+| `32` | 0.976 | 0.974 |
+
+Translation by 2 agrees on *no* cell, and every odd translate tested agrees on none either;
+the disagreement then falls by about a factor of four per step, the same `4^{−M}` that
+the bound has.
+
+![Where a level-6 Chair44 patch disagrees with its own translate by 2^M along x, in one slice: the tiling, then M = 3, 4, 5](paper/figures/c44_nested_defect.png)
+
+*One `z`-slice of the level-6 patch. (a) the label field, coloured by rotation only.
+(b–d) cells whose label differs from the label `2^M` cells away along `x`, in blue: 21.0%,
+5.5% and 1.5% of the slice, against proved ceilings of 34.4%, 9.8% and 2.6%. The
+disagreement is a thin, regular set that thins by about four at each step; the grey strip
+is where the translate leaves the patch.*
+
+### Where the near-periods are
+
+The same agreement can be computed for *every* translate at once (the autocorrelation of
+the 168 label indicators, by FFT, in integers, with the rounding error checked below
+`10⁻³`). On a level-5 patch of 229 376 cells, restricting to translates that overlap the
+patch in at least an eighth of its cells:
+
+| agreement at least | translates | by 2-adic valuation of the vector |
+| --- | --- | --- |
+| 0.5 | 2550 | 2: 1254, 3: 1120, 4: 152, 5: 24 |
+| 0.9 | 342 | 3: 166, 4: 152, 5: 24 |
+| 0.99 | 6 | 5: 6 |
+
+Every near-period is divisible by a power of 2, none has valuation 0 or 1, and the six at
+99% are the corner translates `(±32, ±32, ±32)`, as large as the patch allows. This is
+one patch and an observation, not a theorem about all patches; the inequality above is
+what is proved.
+
+![The disagreement against the proved bound; the agreement with every in-plane translate; the valuation of the near-periods; the undetermined addresses against the volume](paper/figures/c44_nested_curve.png)
+
+*(a) Measured disagreement (blue) against the proved bound `c(M)/8^M` (orange) and its
+asymptote `28·4^{−M}`. The grey level is the Hat's best non-identity disagreement from
+Part VII, 1 − 0.796, drawn as a reference level and not as a series: it was measured on
+translates of a four-step Laves patch, not on this footing. Chair44's disagreement is
+below it from `M = 4`. (b) How nearly each in-plane translate is a period; the strongest
+are multiples of 16 and 32. (c) The valuations of the near-periods. (d) The undetermined
+addresses grow like `2^M`, the volume like `8^M`.*
+
+### What is left undetermined
+
+The undetermined set is small in the right sense. `c(M)` grows like `2^M` in a cube of
+`8^M` addresses, and the transfer matrix on the 41 non-singleton states has characteristic
+polynomial `x⁵(x − 2)⁴(x − 1)³²`, spectral radius exactly 2. In the 2-adic internal space
+`Z₂³` the set where the label is not yet fixed has box dimension `log₂ 2 = 1`.
+
+What remains at such an address is also structured. At `M = 12`, of `8^12 ≈ 6.9·10¹⁰`
+addresses 114 640 are undetermined; **114 624 of them carry exactly six candidate labels
+(six rotations), and the other 16 carry 24 labels, all 24 rotations.** The six rotations are
+in every case a coset of an order-6 subgroup of the cube's rotation group: one identity,
+three half-turns, two third-turns, all fixing a body diagonal as an axis. The substitution
+therefore fixes the orientation of such a cell up to the dihedral group of a body
+diagonal, which contains the symmetry the undecorated chair has about its own diagonal
+(the cyclic group of order 3; its other symmetries are mirrors). The count of 6 is not
+related here to the six mystic fibre classes of Part VII, where six is the number of
+oriented double curves of the dual complex; no mechanism is known and I treat it as a
+coincidence until one appears.
+
+### Two things that are not connections
+
+*The three-dimensional cusp analogue.* The A₂ triangulation behind the cusp fan is
+Kuhn's triangulation of `Z²`; its three-dimensional version is Kuhn's triangulation of
+`Z³`. Per fundamental domain it has 1, 7, 12 and 6 simplices (`χ = 0`; the plane has 1, 3,
+2), and 24 `= 4!` simplices round a vertex, whose dual polytope is the truncated
+octahedron, the analogue of the `dP6` hexagon. The count 24 is also the order of the cube's
+rotation group, which is the orientation group of Chair44, and one would like that to be
+a symmetry. It is not. Of the cube group's 48 elements, 12 preserve the complex (6 of the 24
+rotations); the complex has a linear automorphism group of its own, also of order 48,
+meeting the cube group in those 12 elements; and the two are not conjugate in `GL(3, Z)`,
+because reduced mod 2 the cube group fixes a nonzero vector of `F₂³` and the other group
+fixes none. The same mismatch is already visible in the plane, where the cusp torus is
+hexagonal and the square lattice is not. So 24 = 24 is numerology, and Chair44 does not sit
+equivariantly on this complex.
+
+*The orbifold group.* The cube's rotation group is a quotient of the base orbifold group
+`Z/3 * Z/4` of Alpöge's construction, with the cusp loop sent to a half-turn (the
+`(2, 3, 4)` triangle group). The corresponding `S₄` cover of the orbifold is
+smooth of genus 0 with 12 cusps (Riemann–Hurwitz). That is exact group theory, and
+nothing connects it to the six-sphere's monodromy representation; nothing computed here
+shows that representation factors through this quotient.
+
+### What this says, and does not
+
+The contrast is of kind. The Hat's substrate descends to the cusp torus and the Hat does
+not; Chair44's inflation is a lattice map, so it has a whole tower of tori to nearly descend
+to, with a defect that is exactly `c(M)/8^M ~ 28·4^{−M}`. That is the finite shadow of what
+the cited theory (Lee–Moody, Schlottmann; upstream tier T3, quoted, not re-proved)
+says in the limit: a primitive lattice substitution with a modular coincidence has pure
+point, limit-periodic structure. Nothing here shows that every Chair44 tiling lies in the
+substitution hull, which upstream leaves open; Chair44's aperiodicity and einstein
+property are Tsiokos's claimed proof, quoted. The comparison with 0.796 is on different
+footings and is a contrast, not a measured gap. And the six-sphere knows nothing of any of
+it.
+
+---
+
 ## The ledger, filled in
 
 Five statuses. *Exact* means computed in exact arithmetic; *two routes* means
@@ -685,6 +869,23 @@ means not computed here, with the reason.
 | `V` not self-dual over `Z` | proved: intertwiner determinant `36s⁴` |
 | period field against monotile and inflation fields | exact, signed square classes |
 | the `√6` and valence-4 resemblances | coincidences, settled |
+| Chair44: eight child poses tile every rotated doubled chair; 168 labels, column sum 8, primitive at power 3 | exact; poses quoted from upstream's certificate, tiling re-verified |
+| coincidence depth 3, 336 of 512 addresses; 209 label sets, 41 non-singleton | exact; agrees with upstream |
+| `c(M) = 28·2^M − 48` and `E(M) = 140·2^M + 48`, `M ≥ 1` | exact; proved by a finite recurrence certificate (44 terms against 43 needed) |
+| agreement with the `2^M v` translate ≥ `1 − c(M)/8^M` on a patch of whole level-`M` blocks | proved (counting); measured on a 1.8-million-cell patch, all 15 rows hold |
+| agreement 0.684, 0.910, 0.976 at `M = 3, 4, 5` along `x`; 0 at `M = 1` | exact integer counts, one patch |
+| translates with agreement ≥ 0.9 all have 2-adic valuation ≥ 3 | exact on a level-5 patch; not proved for all patches |
+| undetermined set has box dimension 1 (`x⁵(x−2)⁴(x−1)³²`) | exact |
+| undetermined addresses carry 6 or 24 labels; the six rotations are a dihedral coset about a body diagonal | exact (finite automaton), counts at `M = 12` |
+| the six candidate rotations and the six mystic fibre classes | coincidence; no mechanism found |
+| pure-point, limit-periodic structure of Chair44 | quoted: Lee–Moody / Schlottmann (upstream T3) |
+| every Chair44 tiling lies in the substitution hull | declined: open upstream |
+| Chair44 aperiodic, einstein | quoted: Tsiokos's claimed proof |
+| Kuhn complex of `Z³`: 1, 7, 12, 6 simplices, 24 round a vertex | exact |
+| the cube group does not preserve it (12 of 48); the two order-48 groups are not `GL(3, Z)`-conjugate | exact (mod-2 invariant); 24 = 24 is a coincidence |
+| the `S₄` cover of the `(3, 4, ∞)` orbifold: genus 0, 12 cusps | exact group theory; unrelated to the monodromy |
+| Hat best non-identity agreement 0.796 against Chair44's | quoted from Part VII; different footing, a contrast of kind |
+| a complex fourfold with a Chair44 cusp fibre | declined: not constructed, not claimed |
 | `X` diffeomorphic to `S⁶` | declined; formalised externally in plby/HopfProblem, not re-run here |
 
 ---
@@ -722,6 +923,9 @@ python3 paper/make_sixsphere_hat_torus.py         # the Hat rolled up, and the o
 python3 paper/make_sixsphere_dual_complex.py      # the dual complex of W
 python3 paper/make_sixsphere_proportions.py       # Hat, Spectre, Turtle
 python3 paper/make_sixsphere_mystic_fibres.py     # mystic fibres, n = 2 and n = 3
+python3 tests/test_chair44_nested.py           # Part VIII, about 10 s
+python3 -m pyCICY.chair44_nested                 # the report
+python3 paper/make_chair44_nested_figures.py     # the two Chair44 figures, PDF and PNG
 ```
 
 The figure scripts write to `paper/figures/` and asserts each geometric claim
@@ -757,6 +961,14 @@ X.funnel(5)["counts"]       # the stage counts
 X.status_search()           # four classes; the paper's is the one
 X.laves_is_cusp_hasse()     # the monotile's substrate is the cusp fan
 X.status_connections()      # chirality, duality, fields, coincidences
+
+from pyCICY import chair44_nested as N
+N.status()["all_pass"]      # Part VIII: 16 checks
+N.nested_agreement(6)       # agreement with the 2^M translates, against the proved bound
+N.coincidence_table(8)      # c(M), E(M), label-set sizes
+N.closed_forms_proved()     # c(M) = 28*2^M - 48, E(M) = 140*2^M + 48, by certificate
+N.kuhn_vs_cube()            # the 3D cusp analogue against the cube group
+N.ledger()                  # every quantity and its status
 
 T.get("complex-six-sphere")().describe()
 ```
@@ -797,6 +1009,18 @@ T.get("complex-six-sphere")().describe()
   instance through the monodromy of the degeneration) or a coincidence of the
   Hat point. The same count for the Hat itself is not computed. Whether the
   number of neighbourhood types per class is bounded is open.
+- **Chair44's defect at higher levels.** The inequality `agreement ≥ 1 − c(M)/8^M` is
+  proved; the measured values were taken to `M = 5` on a level-6 patch. A level-8 patch
+  would reach `M = 7`, where the bound is 99.8%.
+- **Why six.** The undetermined cells carry six candidate rotations, a dihedral coset;
+  the six mystic fibre classes of Part VII are six oriented double curves. Either a
+  mechanism or a clean separation is open.
+- **The Hat on the same footing.** Part VII's 0.796 is the best agreement over Laves-lattice
+  translates of a four-step patch. The agreement of a Hat patch with *every* translate,
+  by the same FFT, is not computed, and would turn the contrast of kind into a measured one.
+- **A three-dimensional cusp.** Whether a degeneration of abelian threefolds has a cusp
+  fibre with the Kuhn complex of `Z³` as dual complex is not examined; the group mismatch
+  above says a cube-symmetric Chair44 cannot be equivariant on it.
 - **The disagreement with [CDP20].** The paper locates it at the non-normal
   fibre `W`. That `W` is non-normal is computed here — opposite hexagon sides
   are glued — but the vanishing statement at issue is sheaf cohomology and is
@@ -835,3 +1059,12 @@ T.get("complex-six-sphere")().describe()
   aperiodic monotile* and *A chiral aperiodic monotile* — the Hat and the
   Spectre, whose Laves kite substrate is compared with the cusp fibre in
   Part VII.
+- I. Tsiokos (2026), the Chair44 three-dimensional einstein tile, arXiv:2609.19214 and
+  arXiv:2609.23783; code and data https://github.com/ioannist/six-birds-tiles (CC BY 4.0).
+  The preprints' titles are not reproduced here.
+- J.-Y. Lee and R. V. Moody (2001), *Lattice substitution systems and model sets*,
+  Discrete Comput. Geom. 25, 173–201.
+- M. Schlottmann (2000), *Generalized model sets and dynamical systems*, in: Directions in
+  Mathematical Quasicrystals, CRM Monograph Series 13, AMS, 143–159.
+- J.-Y. Lee, R. V. Moody and B. Solomyak (2003), *Consequences of pure point diffraction
+  spectra for multiset substitution systems*, Discrete Comput. Geom. 29, 525–560.
