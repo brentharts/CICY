@@ -963,7 +963,7 @@ X.laves_is_cusp_hasse()     # the monotile's substrate is the cusp fan
 X.status_connections()      # chirality, duality, fields, coincidences
 
 from pyCICY import chair44_nested as N
-N.status()["all_pass"]      # Part VIII: 16 checks
+N.status()["all_pass"]      # Part VIII: 17 checks
 N.nested_agreement(6)       # agreement with the 2^M translates, against the proved bound
 N.coincidence_table(8)      # c(M), E(M), label-set sizes
 N.closed_forms_proved()     # c(M) = 28*2^M - 48, E(M) = 140*2^M + 48, by certificate
