@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pyCICY import sixsphere as S
 from pyCICY import sixsphere_search as X
 from pyCICY import sixsphere_links as LK
+from pyCICY import chair44_nested as CH
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "figures")
 os.makedirs(OUT, exist_ok=True)
@@ -190,6 +191,73 @@ def link_facts():
     return f
 
 
+def _thin(n):
+    """1835008 -> 1\\,835\\,008"""
+    return "{:,}".format(n).replace(",", "\\,")
+
+
+def chair_facts():
+    """Numbers for the section on Chair44 and the nested tori (pyCICY.chair44_nested).
+
+    Refuses to return anything if a status check fails."""
+    st = CH.status()
+    bad = [k for k, v in st["checks"].items() if not v]
+    if bad:
+        raise SystemExit("chair44_nested.status failed: %s -- nothing written" % bad)
+    f = {}
+    tab = st["table"]
+    f["ChChecks"] = len(st["checks"])
+    f["ChLabels"] = 168
+    f["ChCoincDepth"] = next(r["M"] for r in tab if r["coincident"] > 0)
+    f["ChCoincAddr"] = tab[3]["coincident"]
+    f["ChCoincTotal"] = tab[3]["addresses"]
+    order = CH.subset_automaton()[0]
+    f["ChSets"] = len(order)
+    f["ChNonSingleton"] = sum(1 for A in order if len(A) > 1)
+    cf = st["closed_forms"]
+    assert cf["proved"]
+    # c(M) = a 2^M - b and E(M) = a' 2^M + b'; read off the table, then confirmed by the certificate
+    a = (tab[4]["non_coincident"] - tab[3]["non_coincident"]) // 8
+    b = a * 8 - tab[3]["non_coincident"]
+    a2 = (tab[4]["excess"] - tab[3]["excess"]) // 8
+    b2 = tab[3]["excess"] - a2 * 8
+    assert all(tab[m]["non_coincident"] == a * 2 ** m - b and tab[m]["excess"] == a2 * 2 ** m + b2
+               for m in range(1, len(tab)))
+    f["ChCCoef"], f["ChCConst"], f["ChECoef"], f["ChEConst"] = a, b, a2, b2
+    f["ChCharPoly"] = CH.transfer_charpoly()[2]
+    f["ChTermsNeeded"], f["ChTermsChecked"] = cf["terms_needed"], cf["terms_checked"]
+    f["ChRowAddr"] = " & ".join(str(tab[m]["addresses"]) for m in range(3, 9))
+    f["ChRowC"] = " & ".join(str(tab[m]["non_coincident"]) for m in range(3, 9))
+    f["ChRowE"] = " & ".join(str(tab[m]["excess"]) for m in range(3, 9))
+    na = st["nested"]
+    f["ChPatchCells"] = _thin(na["cells"])
+    f["ChAgreeRows"] = len(na["rows"])
+    assert all(r["holds"] for r in na["rows"])
+    x = {r["M"]: r for r in na["rows"] if r["v"][1:] == (0, 0)}
+    for M, w in ((2, "Two"), (3, "Three"), (4, "Four"), (5, "Five")):
+        f["ChAgree" + w] = "%.3f" % x[M]["fraction"]
+        f["ChBound" + w] = "%.3f" % float(x[M]["bound"])
+    sc = st["scan"]
+    th = sc["by_threshold"]
+    f["ChScanCells"] = _thin(sc["cells"])
+    f["ChScanHalf"], f["ChScanNinety"], f["ChScanFull"] = th[0.5]["count"], th[0.9]["count"], th[0.99]["count"]
+    val = lambda d: ", ".join("%d: %d" % (k, v) for k, v in sorted(d.items()))
+    f["ChScanHalfVal"] = val(th[0.5]["by_valuation"])
+    f["ChScanNinetyVal"] = val(th[0.9]["by_valuation"])
+    f["ChScanFullVal"] = val(th[0.99]["by_valuation"])
+    prof = CH.undetermined_profile(12)
+    f["ChUndetM"] = 12
+    f["ChUndet"] = _thin(sum(prof.values()))
+    f["ChSix"], f["ChTwentyFour"] = _thin(prof[6]), prof[24]
+    kv = st["kuhn"]
+    f["ChKuhnPreserve"], f["ChKuhnGroup"] = kv["cube_preserving"], kv["cube_group"]
+    f["ChKuhnRot"] = kv["rotations_preserving"]
+    f["ChKuhnAut"], f["ChKuhnMeet"] = kv["automorphism_group"], kv["intersection"]
+    oc = CH.orbifold_cover()
+    f["ChCoverCusps"], f["ChCoverGenus"] = oc["cusps"], int(oc["genus"])
+    return f
+
+
 def survey_table(sv):
     """The body of the triangle-group table, as LaTeX rows."""
     why = {"no unipotent cusp": "no unipotent cusp",
@@ -321,10 +389,30 @@ def links_only():
     print("updated", path, "with", len(new), "macros")
 
 
+def chair_only():
+    """Refresh only the Chair44 macros in the existing facts file."""
+    new = chair_facts()
+    path = os.path.join(OUT, "sixsphere_facts.tex")
+    keep = []
+    if os.path.exists(path):
+        for line in open(path).read().splitlines():
+            if not any("\\SS%s}" % k in line for k in new):
+                keep.append(line)
+    for k, v in sorted(new.items()):
+        keep.append("\\providecommand{\\SS%s}{}\\renewcommand{\\SS%s}{%s}"
+                    % (k, k, v))
+    with open(path, "w") as fh:
+        fh.write("\n".join(keep) + "\n")
+    print("updated", path, "with", len(new), "macros")
+
+
 def main():
     if "--links-only" in sys.argv:
         return links_only()
+    if "--chair44-only" in sys.argv:
+        return chair_only()
     facts, stab, _ = survey()
+    facts.update(chair_facts())
     write_facts(facts)
     for fig in (figure_laves, lambda: figure_funnel(stab)):
         try:

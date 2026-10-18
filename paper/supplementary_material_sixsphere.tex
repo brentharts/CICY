@@ -67,6 +67,30 @@
 \newcommand{\SSERootsSix}{?}\newcommand{\SSEDiscSeven}{?}
 \newcommand{\SSEDiscSix}{?}\newcommand{\SSEDiscSixA}{?}
 \newcommand{\SSMWRank}{?}\newcommand{\SSGuardRefused}{?}
+% Chair44 and the nested tori (pyCICY.chair44_nested): written by
+% paper/make_sixsphere_facts.py --chair44-only (or the full run).
+\newcommand{\SSChAgreeFive}{?}\newcommand{\SSChAgreeFour}{?}
+\newcommand{\SSChAgreeRows}{?}\newcommand{\SSChAgreeThree}{?}
+\newcommand{\SSChAgreeTwo}{?}\newcommand{\SSChBoundFive}{?}
+\newcommand{\SSChBoundFour}{?}\newcommand{\SSChBoundThree}{?}
+\newcommand{\SSChBoundTwo}{?}\newcommand{\SSChCharPoly}{?}\newcommand{\SSChCCoef}{?}
+\newcommand{\SSChCConst}{?}\newcommand{\SSChChecks}{?}
+\newcommand{\SSChCoincAddr}{?}\newcommand{\SSChCoincDepth}{?}
+\newcommand{\SSChCoincTotal}{?}\newcommand{\SSChCoverCusps}{?}
+\newcommand{\SSChCoverGenus}{?}\newcommand{\SSChECoef}{?}
+\newcommand{\SSChEConst}{?}\newcommand{\SSChKuhnAut}{?}
+\newcommand{\SSChKuhnGroup}{?}\newcommand{\SSChKuhnMeet}{?}
+\newcommand{\SSChKuhnPreserve}{?}\newcommand{\SSChKuhnRot}{?}
+\newcommand{\SSChLabels}{?}\newcommand{\SSChNonSingleton}{?}
+\newcommand{\SSChPatchCells}{?}\newcommand{\SSChRowAddr}{?}
+\newcommand{\SSChRowC}{?}\newcommand{\SSChRowE}{?}
+\newcommand{\SSChScanCells}{?}\newcommand{\SSChScanFull}{?}
+\newcommand{\SSChScanFullVal}{?}\newcommand{\SSChScanHalf}{?}
+\newcommand{\SSChScanHalfVal}{?}\newcommand{\SSChScanNinety}{?}
+\newcommand{\SSChScanNinetyVal}{?}\newcommand{\SSChSets}{?}
+\newcommand{\SSChSix}{?}\newcommand{\SSChTermsChecked}{?}
+\newcommand{\SSChTermsNeeded}{?}\newcommand{\SSChTwentyFour}{?}
+\newcommand{\SSChUndet}{?}\newcommand{\SSChUndetM}{?}
 \IfFileExists{figures/sixsphere_facts.tex}{\input{figures/sixsphere_facts.tex}}{}
 
 \newcommand{\ZZ}{\mathbb{Z}}
@@ -119,7 +143,19 @@ a hexagon, and six is the number of oriented edges of the dual complex of $W$,
 which we show is the torus with one vertex, three edges and two triangles. We
 prove that at most $72$ classes are possible, state six as a conjecture, and
 show by the boundary statistics of the folded tiling that equal fibres do not
-mean equal surroundings. The paper also records why the lattice data
+mean equal surroundings. The Hat's inflation is irrational, so it leaves no lattices to descend to.
+Tsiokos's Chair44, a three-dimensional einstein tile, inflates by the integer $2$, and
+its supertile lattices $2^M\ZZ^3$ give a tower of nested tori $\RR^3/2^M\ZZ^3$. For this
+tower we prove that a patch made of whole level-$M$ blocks agrees with its translate by
+$2^Mv$ on at least a fraction $1-c(M)/8^M$ of its cells, where
+$c(M)=\SSChCCoef\cdot2^M-\SSChCConst$ counts the addresses at which the substitution's
+modular coincidence has not yet occurred (a finite recurrence certificate), and we measure
+the agreement on a patch of $\SSChPatchCells$ cells: $\SSChAgreeThree$, $\SSChAgreeFour$ and
+$\SSChAgreeFive$ at $M=3,4,5$. The contrast with the Hat is one of kind and not an identity:
+the six-sphere contains no Chair44, and two tempting matches with it, the $24$ simplices
+round a vertex of the Kuhn triangulation of $\ZZ^3$ and the $(3,4,\infty)$ group against
+the rotation group of the cube, are shown to be coincidences.
+The paper also records why the lattice data
 behind the construction is forced, that its monodromy is achiral and its
 lattice not self-dual over $\ZZ$, and three exact contacts with standard
 objects (a polytope volume, a Kodaira configuration, and central charges).
@@ -211,6 +247,18 @@ $D_b$, dotted $D_c$), two orientations per curve. The legend gives the
 first-edge angle, the double curve and the number of mystics in the class.}
 \label{fig:n3}
 \end{figure}
+
+\paragraph{An integer inflation.} The Hat does not descend because its inflation factor is
+irrational and its tiling is aperiodic, so no lattice is left invariant. Tsiokos's
+Chair44~\cite{Tsiokos1}, a three-dimensional einstein tile, is aperiodic with the
+\emph{integer} inflation $2$, so its level-$M$ supertiles sit on the nested lattices
+$2^M\ZZ^3$ and the tiling is exhausted by the tori $\RR^3/2^M\ZZ^3$. \Cref{sec:chair44}
+proves that a patch of whole level-$M$ blocks agrees with its translate by $2^Mv$ on at
+least $1-c(M)/8^M$ of its cells, with $c(M)=\SSChCCoef\cdot2^M-\SSChCConst$, measures it on a
+patch of $\SSChPatchCells$ cells (agreement $\SSChAgreeThree$, $\SSChAgreeFour$,
+$\SSChAgreeFive$ at $M=3,4,5$, against the Hat's best $0.796$ on a different footing), and
+settles two tempting matches with the six-sphere as coincidences. It is a contrast of kind:
+the six-sphere contains no Chair44.
 
 
 % =====================================================================
@@ -1044,6 +1092,214 @@ four, whose fibre is a multiple fibre with no double curves at all.
 
 % =====================================================================
 
+\section{An Integer Inflation on the Same Kind of Torus: Chair44}
+\label{sec:chair44}
+
+\Cref{sec:rollup} ends with a negative result: no Hat tiling descends to $\TT$,
+and a four-step Hat patch agrees with no non-trivial lattice translate of itself
+beyond $0.796$ (\cref{fig:overlap}). That is what an aperiodic tiling does when
+its inflation factor is irrational. Tsiokos's \emph{Chair44}~\cite{Tsiokos1}
+is an aperiodic tile of the other kind. It is a seven-cube chair, the
+$2\times2\times2$ cube minus a corner, decorated so that it is claimed to tile only
+aperiodically, and its substitution has eight children and inflation factor the
+\emph{integer} $2$. That the decorated tile is aperiodic, and an einstein tile, is
+Tsiokos's claimed proof, which we quote; whether every tiling lies in the substitution
+hull is open upstream. What we compute is a finite and exact comparison, in \texttt{pyCICY.chair44\_nested}, which carries its own copy of the
+eight child poses and re-checks that they tile each of the $24$ rotated doubled
+chairs. The six-sphere contains no Chair44; the section sets two kinds of tiling
+side by side on tori.
+
+\subsection{Why nested tori}
+\label{sec:chair-nested}
+
+An integer inflation is a lattice map. A level-$M$ supertile is a Chair44 scaled by
+$2^M$, so level-$M$ supertiles are placed on the sublattice $2^M\ZZ^3\subset\ZZ^3$
+of index $8^M$, and a level-$M$ block of unit cells has $8^M$ cells. The natural
+family of tori is $\RR^3/2^M\ZZ^3$, each covering the last. The Hat's and the
+Spectre's inflations are irrational (\cref{sec:arith}), so they leave no such
+family.
+
+This echoes, as a count and nothing more, Remark~4.9 of~\cite{Alpoge}, as reproduced
+for the cusp fibre in \cref{sec:laves}: a sublattice of index $d$ of the cusp lattice is
+$d$ copies of the fundamental domain, giving $d$ components and $e(W)=2d$. In the plane
+the nested sublattices would have index $4^M$; for Chair44 they have index $8^M$. The cusp
+fibre is two-dimensional, no complex fourfold with a Chair44 cusp fibre is constructed
+here, and none is claimed.
+
+\subsection{Coincidence, and its rate}
+\label{sec:chair-rate}
+
+The substitution acts on the alphabet $\mathcal A$ of $\SSChLabels{}=24\times7$
+labelled unit cells (a rotation and a cell of the chair): $\sigma$ sends a label to the
+eight labels of its $2\times2\times2$ block, every column sum of $\sigma$ is $8$, and
+$\sigma$ is primitive. For $a\in\{0,\dots,2^M-1\}^3$ let $\sigma^M(\ell)(a)$ be the label
+of the cell at address $a$ inside the block of $\ell$ after $M$ steps. The address $a$
+is \emph{coincident} at depth $M$ if $\sigma^M(\ell)(a)$ does not depend on $\ell$.
+Let $c(M)$ be the number of addresses that are not, and
+$E(M)=\sum_a\bigl(\lvert\{\sigma^M(\ell)(a):\ell\in\mathcal A\}\rvert-1\bigr)$. The least
+depth with a coincident address is $\SSChCoincDepth{}$, and then $\SSChCoincAddr{}$ of
+the $\SSChCoincTotal{}$ addresses are coincident, as recorded upstream
+(\cite{Tsiokos1}, the modular coincidence).
+
+\begin{proposition}[the rate]
+\label{prop:chair-rate}
+For every $M\ge1$,
+\[
+c(M)=\SSChCCoef\cdot2^M-\SSChCConst,\qquad E(M)=\SSChECoef\cdot2^M+\SSChEConst .
+\]
+\end{proposition}
+
+\begin{center}
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+$M$ & 3 & 4 & 5 & 6 & 7 & 8 \\
+\midrule
+addresses $8^M$ & \SSChRowAddr \\
+$c(M)$ & \SSChRowC \\
+$E(M)$ & \SSChRowE \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{proof}
+Reading the digits of an address from the most significant, the set of labels still
+possible is obtained from $\mathcal A$ by applying $M$ of the eight maps
+$A\mapsto\{\sigma(\ell)_b:\ell\in A\}$. The reachable sets form an automaton with
+$\SSChSets{}$ states, $\SSChNonSingleton{}$ of which have more than one element. A
+singleton goes to a singleton, so $c(M)$ and $E(M)$ are linear functionals of $T^Me_0$,
+with $T$ the transfer matrix on the non-singleton states. By Cayley--Hamilton each
+satisfies a linear recurrence of order at most $\SSChNonSingleton{}$; the closed form
+satisfies one of order two, with roots $2$ and $1$. Their difference satisfies a
+recurrence of order at most $\SSChNonSingleton{}+2=\SSChTermsNeeded{}$, and vanishes for
+all $M\ge1$ as soon as it vanishes for $\SSChTermsNeeded{}$ consecutive values. It
+vanishes for $M=1,\dots,\SSChTermsChecked{}$, checked in exact integer arithmetic.
+\end{proof}
+
+The closed form for $c$ holds from $M=1$ and fails at $M=0$. The fraction of undetermined
+addresses, $c(M)/8^M\sim28\cdot4^{-M}$, tends to zero.
+
+\subsection{How nearly the tiling descends}
+\label{sec:chair-descent}
+
+\begin{proposition}[descent to the nested tori]
+\label{prop:chair-descent}
+Let $P$ be a finite patch that is a union of whole level-$M$ blocks, the block at
+$2^My$, $y\in Y$, carrying the labels $\sigma^M(\ell_y)$. For $v\in\ZZ^3$, among the cells
+$x\in P$ with $x+2^Mv\in P$, the labels at $x$ and $x+2^Mv$ differ for at most a fraction
+$c(M)/8^M$.
+\end{proposition}
+
+\begin{proof}
+Such cells are $x=2^My+a$ with $y,y+v\in Y$ and $a$ an address. The labels at $x$ and
+$x+2^Mv$ are $\sigma^M(\ell_y)(a)$ and $\sigma^M(\ell_{y+v})(a)$, which agree whenever $a$
+is coincident, whatever the two parent labels are. At most $c(M)$ of the $8^M$ addresses
+are not.
+\end{proof}
+
+The proposition has no experiment in it. The patch $P_N$ obtained by applying $\sigma^N$
+to the seven cells of one chair is a union of whole level-$M$ blocks for every $M\le N$.
+For $N=6$ it has $\SSChPatchCells{}$ cells, and the inequality holds on all
+$\SSChAgreeRows{}$ translates tested, three axes and $M=1,\dots,5$. Along $x$:
+
+\begin{center}
+\small
+\begin{tabular}{rcc}
+\toprule
+translate $2^M$ & agreement & proved lower bound $1-c(M)/8^M$ \\
+\midrule
+$2$ $(M=1)$ & $0$ & $0$ \\
+$4$ $(M=2)$ & $\SSChAgreeTwo$ & $\SSChBoundTwo$ \\
+$8$ $(M=3)$ & $\SSChAgreeThree$ & $\SSChBoundThree$ \\
+$16$ $(M=4)$ & $\SSChAgreeFour$ & $\SSChBoundFour$ \\
+$32$ $(M=5)$ & $\SSChAgreeFive$ & $\SSChBoundFive$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Translation by $2$ agrees on no cell, and neither does any odd translate tested; the
+disagreement then falls by about a factor of four per step, the same $4^{-M}$ as the
+bound. The Hat's best non-identity value, $0.796$, was measured on the agreement of the
+\emph{boundary pattern} of a four-step patch with translates of the Laves lattice
+(\cref{sec:rollup}), a different quantity on a different footing, so the comparison
+is a contrast of kind and not a measured gap.
+
+\begin{observation}[near-periods]
+\label{obs:chair-periods}
+On the level-$5$ patch, with $\SSChScanCells{}$ cells, the agreement with \emph{every}
+translate whose overlap is at least an eighth of the patch (the autocorrelation of the
+$\SSChLabels{}$ label indicators, by FFT, in integers) is at least $0.5$ for
+$\SSChScanHalf{}$ translates, at least $0.9$ for $\SSChScanNinety{}$ and at least $0.99$
+for $\SSChScanFull{}$. Writing each count by the $2$-adic valuation of the translation
+vector: $0.5$: \SSChScanHalfVal{}; $0.9$: \SSChScanNinetyVal{}; $0.99$: \SSChScanFullVal{}.
+\end{observation}
+
+Every near-period is divisible by a power of $2$, none has valuation $0$ or $1$ at the
+$0.9$ level, and the six at $0.99$ are the corner translates $(\pm32,\pm32,\pm32)$, as
+large as the patch allows. This is one patch; \cref{prop:chair-descent} is what is proved.
+
+\subsection{What remains undetermined}
+\label{sec:chair-undet}
+
+The transfer matrix of \cref{prop:chair-rate} on the $\SSChNonSingleton{}$ non-singleton
+sets has characteristic polynomial $\SSChCharPoly$, and spectral radius exactly $2$.
+Since $c(M)\sim2^M$ inside $8^M$ addresses, the set of addresses where the label is not
+yet determined has box dimension $\log_22=1$ in the $2$-adic internal space $\ZZ_2^3$, in
+keeping with window boundaries of measure zero.
+
+\begin{observation}[six candidate rotations]
+\label{obs:chair-six}
+At $M=\SSChUndetM$, of the $8^{\SSChUndetM}$ addresses $\SSChUndet{}$ are undetermined.
+Of these, $\SSChSix{}$ carry exactly six candidate labels, whose six rotations are in
+every case a coset of an order-six subgroup of the rotation group of the cube (one
+identity, three half-turns, two third-turns, all fixing a body diagonal as an axis), and
+$\SSChTwentyFour{}$ carry $24$ labels.
+\end{observation}
+
+The substitution thus fixes the orientation of such a cell up to the dihedral group of a
+body diagonal, which contains the symmetry the undecorated chair has about its own
+diagonal. The number six is not related here to the six mystic fibre classes of
+\cref{sec:mystic}, where it counts the oriented edges of the dual complex; no mechanism is
+known, and we record it as a coincidence.
+
+\subsection{Two matches that are not connections}
+\label{sec:chair-nolink}
+
+\paragraph{A three-dimensional cusp analogue.} The $A_2$ triangulation behind the cusp
+fan is Kuhn's triangulation of $\ZZ^2$. Its three-dimensional version, Kuhn's
+triangulation of $\ZZ^3$, has $1,7,12,6$ simplices per fundamental domain ($\chi=0$; the
+plane has $1,3,2$) and $24=4!$ simplices round a vertex, whose dual polytope, the
+truncated octahedron, plays the role of the hexagon of the $dP_6$. The count $24$ is
+also the order of the rotation group of the cube, the orientation group of Chair44, and
+one would like it to be a symmetry. It is not: of the $\SSChKuhnGroup{}$ elements of the
+cube group, $\SSChKuhnPreserve{}$ preserve the complex ($\SSChKuhnRot{}$ of the $24$
+rotations); the complex has a linear automorphism group of order $\SSChKuhnAut{}$ meeting
+the cube group in those $\SSChKuhnMeet{}$ elements; and the two groups are not conjugate
+in $\GL(3,\ZZ)$, because reduced modulo two the cube group fixes a nonzero vector of
+$\mathbb F_2^3$ and the other fixes none. The same mismatch is visible in the plane, where
+the cusp torus is hexagonal and the square lattice is not. So $24=24$ is numerology, and
+Chair44 does not sit equivariantly on this complex.
+
+\paragraph{The orbifold group.} The rotation group of the cube is a quotient of the base
+orbifold group $\mathbb Z/3*\mathbb Z/4$ of the construction, with the cusp loop sent to
+a half-turn (the $(2,3,4)$ triangle group). The corresponding $S_4$ cover of the orbifold
+is smooth, of genus $\SSChCoverGenus{}$ with $\SSChCoverCusps{}$ cusps
+(Riemann--Hurwitz). This is exact group theory; nothing computed here shows that the
+monodromy representation of the six-sphere factors through the quotient.
+
+\subsection{What this says}
+
+The Hat's substrate descends to $\TT$ and the Hat does not. Chair44's inflation is a
+lattice map, so it has a whole tower of tori to nearly descend to, with a defect that is
+exactly $c(M)/8^M\sim28\cdot4^{-M}$ (\cref{prop:chair-descent}). That is the finite
+shadow of what the cited theory states in the limit: a primitive lattice substitution
+with a modular coincidence has pure point, limit-periodic structure
+\cite{LeeMoody,Schlottmann,LMS}, which we quote and do not re-prove. All
+$\SSChChecks{}$ checks of \texttt{chair44\_nested.status} pass. Nothing here shows that
+every Chair44 tiling lies in the substitution hull.
+
+% =====================================================================
+
 \section{Central Charges on Calabi--Yau Threefolds}
 \label{sec:links}
 
@@ -1178,6 +1434,15 @@ bound of $72$ classes; the count of six is a conjecture backed by patches of thr
 and four substitution steps, and the dependence of surroundings on class rests on
 small samples.
 
+The Hat does not descend to $\TT$ because its inflation is irrational. Chair44, whose
+inflation is the integer $2$, nearly descends to every torus $\RR^3/2^M\ZZ^3$ of a nested
+tower, with a defect bounded by $c(M)/8^M\sim28\cdot4^{-M}$ that is proved from a finite
+recurrence certificate and measured on a patch of $\SSChPatchCells$ cells
+(\cref{prop:chair-rate,prop:chair-descent}). That is a contrast of kind. The six-sphere
+contains no Chair44, and two matches with it, the $24$ simplices round a vertex of the
+Kuhn triangulation of $\ZZ^3$ and the $(3,4,\infty)$ group against the cube's rotation
+group, are coincidences (\cref{sec:chair-nolink}).
+
 The lattice data was forced: within the flag class the triangle group by proof, the
 matrices up to conjugacy in every range searched, with finiteness of the search
 space the one step left unproved. The lattice is achiral and not self-dual over
@@ -1211,7 +1476,9 @@ verification suite \texttt{tests/test\_sixsphere\_search.py}, Lean facts in
 \texttt{pyCICY.sixsphere\_links}). The figures of
 \cref{sec:laves,sec:dual,sec:rollup,sec:proportions,sec:mystic} are produced by the
 \texttt{make\_sixsphere\_*.py} scripts in \texttt{paper/}, using the substitution
-tilings of \url{https://github.com/brentharts/spectre}.
+tilings of \url{https://github.com/brentharts/spectre}. \Cref{sec:chair44} is computed
+by \texttt{pyCICY.chair44\_nested} (test suite \texttt{tests/test\_chair44\_nested.py});
+its numbers are written by \texttt{paper/make\_sixsphere\_facts.py \-\--chair44-only}.
 \end{sloppypar}
 
 \subsection*{Limitations} 
@@ -1228,7 +1495,13 @@ elliptic surface, and the rational embedding is a necessary condition only.
 Every analytic question --- whether the
 near-miss classes support a complex structure, whether $X$ is biholomorphic
 to its conjugate --- is declined, as is the diffeomorphism $X \cong S^6$
-itself.
+itself. \Cref{sec:chair44}: \cref{prop:chair-rate,prop:chair-descent} are proved; \cref{obs:chair-periods}
+is one patch and \cref{obs:chair-six} is a finite automaton at $M=\SSChUndetM$. Chair44's
+aperiodicity and einstein property are Tsiokos's claimed proof, the pure point
+and limit-periodic structure is a cited theorem
+\cite{LeeMoody,Schlottmann,LMS}, and whether every tiling lies in the substitution hull
+is open upstream; none is re-proved here. The comparison with the Hat's $0.796$ is on a
+different footing, and no complex fourfold with a Chair44 cusp fibre is constructed.
 
 
 \begin{thebibliography}{99}
@@ -1306,6 +1579,30 @@ P.~Graf and M.~Schwald (2020).
 \emph{On the Kodaira problem for uniruled Kähler spaces.}
 Arkiv för Matematik, 58(2), 267–284. 
 \url{https://doi.org/10.4310/arkiv.2020.v58.n2.a3}
+
+\bibitem{Tsiokos1}
+I.~Tsiokos (2026),
+\emph{The Chair44 three-dimensional einstein tile},
+\href{https://arxiv.org/abs/2609.19214}{arXiv:2609.19214} and
+\href{https://arxiv.org/abs/2609.23783}{arXiv:2609.23783};
+code and data \url{https://github.com/ioannist/six-birds-tiles} (CC BY 4.0).
+The titles of the two preprints are not reproduced here.
+
+\bibitem{LeeMoody}
+J.-Y.~Lee and R.~V.~Moody,
+\emph{Lattice substitution systems and model sets},
+Discrete Comput.\ Geom.\ \textbf{25} (2001), 173--201.
+
+\bibitem{Schlottmann}
+M.~Schlottmann,
+\emph{Generalized model sets and dynamical systems},
+in: Directions in Mathematical Quasicrystals, CRM Monograph Series \textbf{13},
+AMS (2000), 143--159.
+
+\bibitem{LMS}
+J.-Y.~Lee, R.~V.~Moody and B.~Solomyak,
+\emph{Consequences of pure point diffraction spectra for multiset substitution
+systems}, Discrete Comput.\ Geom.\ \textbf{29} (2003), 525--560.
 
 \end{thebibliography}
 
