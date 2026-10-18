@@ -96,6 +96,10 @@ def test_closed_forms():
     check_true("c(M) = 28*2^M - 48 from M = 1", cf["c_closed_form"])
     check_true("E(M) = 140*2^M + 48 from M = 1", cf["E_closed_form"])
     check_true("proved", cf["proved"])
+    factors, T, text = C.transfer_charpoly()
+    check("characteristic polynomial of the transfer matrix", factors, {0: 5, 2: 4, 1: 32})
+    check("... as typeset", text, "x^{5}(x-1)^{32}(x-2)^{4}")
+    check("transfer matrix size", len(T), 41)
     co = C.coincidence_table(6)
     check_true("the formula fails at M = 0 (c(0) = 1, formula gives -20)",
               co[0]["non_coincident"] != 28 - 48)
