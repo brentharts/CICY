@@ -272,6 +272,38 @@ def closed_forms_proved(terms=44):
                 proved=bool(c_ok and e_ok and terms >= need))
 
 
+def transfer_charpoly():
+    """Characteristic polynomial of the transfer matrix on the non-singleton label sets, factored.
+
+    Returns (factors, string): factors = {root: multiplicity} when it splits over Z.  The
+    spectral radius is the largest root; here exactly 2, so the undetermined set (c(M) ~ 2^M
+    inside 8^M addresses) has box dimension log2(2) = 1 in the 2-adic internal space.
+    """
+    import sympy as sp
+    order, trans = subset_automaton()
+    ns = [k for k in range(len(order)) if len(order[k]) > 1]
+    idx = {k: i for i, k in enumerate(ns)}
+    T = [[0] * len(ns) for _ in ns]
+    for k in ns:
+        for b in range(8):
+            d = trans[k][b]
+            if d in idx:
+                T[idx[k]][idx[d]] += 1
+    x = sp.symbols("x")
+    poly = sp.Matrix(T).charpoly(x).as_expr()
+    _, fl = sp.factor_list(poly)
+    factors = {}
+    for f, m in fl:
+        root = sp.solve(f, x)
+        if len(root) == 1 and sp.degree(f, x) == 1:
+            factors[int(root[0])] = int(m)
+        else:
+            factors[str(f)] = int(m)
+    text = "".join(("x" if r == 0 else "(x%+d)" % -r if isinstance(r, int) else "(%s)" % r)
+                   + ("^{%d}" % m if m > 1 else "") for r, m in sorted(factors.items(), key=lambda t: str(t[0])))
+    return factors, T, text
+
+
 def undetermined_profile(M=12):
     """Label-set sizes at the non-coincident addresses of the 2^M cube."""
     h = coincidence_table(M)[M]["histogram"]
@@ -516,6 +548,7 @@ def status(N=6, scan_N=5):
     kv = kuhn_vs_cube()
     oc = orbifold_cover()
     first = next(r["M"] for r in co if r["coincident"] > 0)
+    tcp = transfer_charpoly()[0]
     th = ts["by_threshold"]
     checks = {
         "the eight child poses tile every rotated doubled chair (56 cells)": verify_children(),
@@ -528,6 +561,8 @@ def status(N=6, scan_N=5):
             and sum(1 for A in subset_automaton()[0] if len(A) > 1) == 41,
         "c(M) = 28*2^M - 48 and E(M) = 140*2^M + 48 for all M >= 1 (finite certificate)":
             cf["proved"],
+        "transfer matrix: characteristic polynomial x^5 (x-2)^4 (x-1)^32, spectral radius 2":
+            tcp == {0: 5, 2: 4, 1: 32},
         "descent inequality: agreement >= 1 - c(M)/8^M on every row": all(r["holds"] for r in na["rows"]),
         "agreement is 0 at v = 2e and below 1/2 at v = 4e":
             all(r["fraction"] == 0 for r in na["rows"] if r["M"] == 1)
@@ -573,6 +608,8 @@ def ledger():
          "quoted: Lee-Moody / Schlottmann import, upstream T3"),
         ("every Chair44 tiling lies in the substitution hull", "declined: open upstream"),
         ("Chair44 aperiodic; einstein property", "quoted: Tsiokos's claimed proof"),
+        ("transfer matrix on the 41 non-singleton sets: x^5 (x-2)^4 (x-1)^32; spectral radius 2",
+         "exact"),
         ("undetermined addresses carry 6 or 24 rotations; 6-sets are dihedral cosets",
          "exact (finite automaton), M = 12 for the counts"),
         ("the six candidates and the six mystic classes", "coincidence, no mechanism found"),
