@@ -459,6 +459,53 @@ def translate_scan(N=5, overlap_fraction=8, top=25):
                 slice_z0=frac[:, :, zc].copy(), radius=side - 1)
 
 
+def translate_counts(N=6, fractions=(2, 4, 8, 16), thresholds=(0.5, 0.9, 0.99)):
+    """The same scan as :func:`translate_scan`, summarised for a size-matched comparison.
+
+    Returns the number of cells, the number of labels present, the chance level (the
+    probability that two cells drawn independently carry the same label), the number
+    of translates scanned (overlap at least an eighth of the patch, zero excluded), how
+    many of them agree on at least each threshold, and, for each overlap fraction
+    ``1/f``, the best agreement with its translate and the overlap there. This is the
+    Chair44 side of the Hat comparison in ``paper/make_sixsphere_hat_fft.py``: the two
+    scans use the same rule, so the counts and the best values can be set side by side
+    (the Hat's translates form a plane lattice, Chair44's a three-dimensional one, so
+    the counts of translates scanned are not comparable but the best values are).
+    """
+    G = grid(N)
+    side = G.shape[0]
+    pad = 2 * side
+    ax = (0, 1, 2)
+    acc = np.zeros((pad, pad, pad // 2 + 1))
+    for lab in range(len(_sub()[0])):
+        ind = (G == lab).astype(np.float64)
+        if not ind.any():
+            continue
+        F = np.fft.rfftn(ind, s=(pad,) * 3, axes=ax)
+        acc += F.real ** 2 + F.imag ** 2
+    corr = np.fft.irfftn(acc, s=(pad,) * 3, axes=ax)
+    Fm = np.fft.rfftn((G >= 0).astype(np.float64), s=(pad,) * 3, axes=ax)
+    ov = np.fft.irfftn(Fm.real ** 2 + Fm.imag ** 2, s=(pad,) * 3, axes=ax)
+    err = max(np.abs(corr - np.rint(corr)).max(), np.abs(ov - np.rint(ov)).max())
+    corr, ov = np.rint(corr).astype(np.int64), np.rint(ov).astype(np.int64)
+    n = int((G >= 0).sum())
+    nz = np.ones(corr.shape, bool)
+    nz[0, 0, 0] = False
+    frac = corr / np.maximum(ov, 1)
+    labels, freq = np.unique(G[G >= 0], return_counts=True)
+    chance = float(((freq / n) ** 2).sum())
+    ok = nz & (ov >= n // 8)
+    counts = {thr: int((ok & (frac >= thr)).sum()) for thr in thresholds}
+    best = {}
+    for f in fractions:
+        m = nz & (ov >= n // f)
+        a = np.unravel_index(np.argmax(np.where(m, frac, -1.0)), frac.shape)
+        v = tuple(int(((x + pad // 2) % pad) - pad // 2) for x in a)
+        best[f] = dict(fraction=float(frac[a]), v=v, overlap=int(ov[a]), translates=int(m.sum()))
+    return dict(N=N, cells=n, labels=int(len(labels)), chance=chance, scanned=int(ok.sum()),
+                counts=counts, best=best, fft_rounding_error=float(err))
+
+
 # ---------------------------------------------------------------------------
 # 4. the 3D cusp analogue, and why it is not a connection
 # ---------------------------------------------------------------------------
