@@ -618,6 +618,86 @@ def test_lean_kernel():
                r["ok"] is False and len(r["errors"]) > 0)
 
 
+def test_lean_certificates():
+    print("\n[21] Lean certificates: saturation and Smith forms")
+    from sympy import Matrix, eye
+    from pyCICY import sixsphere_lean as L
+    from pyCICY.theories import nariai_lean as NL
+    py = L.check_python(L.CERT_FACTS)
+    check("number of certificate facts", len(py), 25)
+    check_true("every certificate computed True",
+               all(v is True for v in py.values()))
+    check("the 34 facts are untouched", len(L.FACTS), 34)
+    src = L.lean_source(L.CERT_FACTS)
+    check_true("every certificate is in the emitted source",
+               all(("theorem %s" % f.name) in src for f in L.CERT_FACTS))
+    check_true("every certificate has an axiom query",
+               all(("#print axioms SixSphere.%s" % f.name) in src
+                   for f in L.CERT_FACTS))
+    import re
+    code = re.sub(r"/-.*?-/", "", src, flags=re.S)
+    code = re.sub(r"--[^\n]*", "", code)
+    check_true("no sorry, native_decide or axiom in the code",
+               not re.search(r"\b(sorry|native_decide|axiom)\b", code))
+    m = S.monodromy()
+    check_true("the literal for A1 - I in the certificate is generated from A1",
+               ("sub A1 I4 = %s" % L.lean_mat(m["A1"] - eye(4))) in src)
+    R = S.presentation_matrix()
+    check("the relation matrix is 13 x 6", R.shape, (13, 6))
+    check_true("the Lean construction of R is the presentation matrix",
+               Matrix(L._h1_lean_rows()) == R)
+    Sinv = L._left_inverse(R)
+    check_true("H_1(X) = 0: the presentation has an integer left inverse",
+               Sinv * R == eye(6))
+
+    # controls that need no kernel
+    def raises(f):
+        try:
+            f()
+        except AssertionError:
+            return True
+        return False
+
+    check_true("control: the sign flip at one multiple fibre (|H_1| = 7) has "
+               "no integer left inverse",
+               raises(lambda: L._left_inverse(
+                   S.presentation_matrix(S.EPS, S.EPS_PRIME))))
+    check_true("control: a non-primitive 'basis' (2 x eps) is not saturated",
+               raises(lambda: L._left_inverse(
+                   Matrix([[2, 4, -8, 0], [0, 0, 0, 1]]).T)))
+    H1 = m["A1"] - eye(4)
+    B1 = S.fixed_lattice(m["A1"])
+    good = L._left_inverse(B1.T)
+    bad = good.copy()
+    bad[0, 0] += 1
+    check_true("control: a perturbed coordinate matrix K fails the checks",
+               raises(lambda: L._span_facts("bogus", H1, B1.T, bad, "True", "",
+                                            "", lambda: True)))
+    check_true("control: a lattice too small (1 vector) is not the kernel",
+               raises(lambda: L._span_facts(
+                   "bogus", H1, B1.T[:, :1], L._left_inverse(B1.T[:, :1]),
+                   "True", "", "", lambda: True)))
+
+    if NL.lean_executable() is None:
+        st = L.status_certificates()
+        check("toolchain", st["toolchain"], False)
+        check_true("without a kernel nothing is claimed machine-checked",
+                   not any(v["machine_checked"] for v in st["facts"].values()))
+        print("  (no lean found: the certificates are computed, not "
+              "kernel-checked)")
+        return
+    st = L.status_certificates()
+    check("the kernel accepts the certificates", st["lean_ok"], True)
+    check_true("every certificate machine-checked", st["all_machine_checked"])
+    check_true("standard axioms only",
+               all(v["standard_axioms_only"] for v in st["facts"].values()))
+    base = L.lean_source(L.CERT_FACTS)
+    tampered = base.replace("x1 = (2)*((1)*x0)", "x1 = (3)*((1)*x0)", 1)
+    r = L.check_lean(source=tampered)
+    check_true("control: a wrong coordinate in fixed_lattice_A1 is refused",
+               r["ok"] is False and len(r["errors"]) > 0)
+
+
 def main():
     test_monodromy()
     test_lattices()
@@ -639,6 +719,7 @@ def main():
     test_controls_invariants()
     test_lean_python()
     test_lean_kernel()
+    test_lean_certificates()
     print()
     if FAILURES:
         print("FAILED: %d" % len(FAILURES))
