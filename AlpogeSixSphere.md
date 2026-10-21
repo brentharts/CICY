@@ -980,21 +980,44 @@ T.get("complex-six-sphere")().describe()
 - **`h¹²`.** The one Hodge number neither the paper nor this implementation
   determines. The paper expects 1, and says what a computation would need: the
   direct images of `Ω¹` and `Ω²`, with the torsion of the relative forms along
-  the three singular fibres.
+  the three singular fibres. Topology does not bound it further. With
+  `m = h¹¹ = h¹² + 1`, the Frölicher sums are `(1, 1, m, 2m−2, m, 1, 1)` and the
+  cancellations needed to reach the Betti numbers of `S⁶` are
+  `(0, 1, m−1, m−1, 1, 0, 0)`; they are non-negative and close exactly at
+  degree 6 for every `m ≥ 1`. Each row of `E₁` is an exact complex for every
+  `m`, so the spectral sequence can degenerate at `E₂` with any `h¹² ≥ 0`.
 - **The period functions.** `τ` is computable numerically from `j(τ) = 1728t`,
   and `μ`, `β` are sections of explicit torsors. A numerical construction, with
   its precision stated, would let the nondegeneracy `D < 0` be seen rather than
   quoted — though it would be evidence, not the theorem.
-- **Smith forms in Lean.** The step from a relation determinant to a group
-  order is Python-only here. A small verified Smith normal form for 2×2 and
-  3×3 integer matrices would close it and make `H₁(X) = 0` machine-checked end
-  to end at the level of the presentation.
-- **Saturation in Lean**, for the same reason: containment of the fixed
-  vectors is proved; that they span the whole fixed lattice is not.
-- **Outside the flag class.** Part VII settles which triangle groups and
-  which lattice data work *within* the block shape the paper's matrices have.
-  Whether data outside it — `γ` not in the preserved rank-three sublattice, a
-  split rather than a flag — can satisfy the same conditions is open.
+- **Smith forms and saturation in Lean: certificates written, kernel check
+  pending.** Both steps are now stated without a Smith routine in Lean. A fixed
+  lattice is saturated if every `x` with `Hx = 0` equals `M(Kx)` for an integer
+  `K` read off the Smith decomposition (an integer left inverse), and
+  `H₁(X) = 0` is the statement that a 6×13 integer matrix times the 13×6
+  relation matrix is the identity, closed by `decide`. These are 25 facts
+  (`CERT_FACTS` in `pyCICY/sixsphere_lean.py`, test [21]); the Python half
+  passes exactly, including a tamper control. **None has been run through the
+  Lean kernel**: the environment that produced them had no toolchain. Until
+  that run is done they count as Python-verified only, and the
+  machine-checked counts above do not include them.
+- **Outside the flag class: excluded by an argument (written here, not
+  machine-checked).** Take `T₁³ = T₂⁴ = I`, a cusp `N = T₀ − I` with `N² = 0`
+  and rank 2, and coinvariants `Z`. Then `W = im(T₁−I) + im(T₂−I)` is a
+  saturated invariant rank-three sublattice with trivial action on `V/W`.
+  *No split:* a fixed vector outside `W⊗Q` would give `V⊗Q = W⊗Q ⊕ Qγ` with
+  `N` zero on `γ`, so `N` would be a square-zero map on a three-dimensional
+  space and have rank at most 1, not 2. *No other flag:* `T₀` is unipotent, so
+  every one-dimensional constituent is trivial (`ωᵃ·iᵇ = 1` forces
+  `a = b = 0`), and the only non-trivial two-dimensional constituent has
+  `T₁ ∼ (ω, ω̄)`, `T₂ ∼ (i, −i)`. If it were a sub of `W` with trivial quotient,
+  `G` would act trivially on the rank-two lattice `V/M`, since a finite-order
+  unipotent is the identity, and the coinvariants would have rank at least 2.
+  So `M` is the quotient of `W` by a fixed vector `γ`, which is the block shape
+  of `_blk`. What the argument leaves to computation is the middle block: the
+  product of an order-3 and an order-4 element of `SL₂(Z)` is unipotent with
+  index `n = 1` in every case found (20 pairs in box 4, 52 in box 7), observed
+  and not proved.
 - **Finiteness of the lattice data.** The final count of the funnel is 32 at
   every box tried; a proof that the `|det B₀| = 1` condition bounds the
   parameters would turn "the paper's data is forced" from an observation into
@@ -1002,22 +1025,57 @@ T.get("complex-six-sphere")().describe()
 - **The near misses, analytically.** The three other classes reach `|p|` = 3,
   2 and 6. Whether any supports the period functions — which would give a
   compact complex threefold with that homology, a rational homology sphere in
-  the `|p| = 2, 3` cases — is a question about the analytic side.
-- **The six mystic classes.** Prove or refute that every level of the
-  substitution has exactly six mystic fibre classes, one per oriented double
-  curve of the dual complex; and say whether that identification is natural (for
-  instance through the monodromy of the degeneration) or a coincidence of the
-  Hat point. The same count for the Hat itself is not computed. Whether the
-  number of neighbourhood types per class is bounded is open.
+  the `|p| = 2, 3` cases — is a question about the analytic side. The lattice
+  data does not separate them from the paper's class: each of the four has a
+  unique primitive invariant form with Pfaffian −6, `N² = 0`, `QN` symmetric,
+  and an indefinite `b` of discriminant −6 on `V/ker N`. The `b`-forms fall into
+  two genera: `⟨1, −6⟩` for the paper's class and the `|p| = 3` class, `⟨2, −3⟩`
+  for `|p| = 2` and `|p| = 6` (distinct: `x² − 6y² = −1` has no solution mod 3,
+  `2x² − 3y² = −1` does). Equivalences were worked by hand, not in code. The
+  period-matrix shape `[[6μ, τ], [β, μ]]` of Definition 3.3 carries over to all
+  four: in a basis where the invariant form is `Q0`, `laws_from_lattice` returns
+  the right shape for g₁, g₂ and g₀, and the laws close up (g₁³ = g₂⁴ = id,
+  g₀g₁g₂ = id, exactly, in sympy). So does the local rotation data: `T₁` and `T₂`
+  have the same characteristic polynomials, `(x−1)²(x²+x+1)` and `(x−1)²(x²+1)`,
+  in every class. This is expected rather than informative: the laws are a
+  function of `(T₁, T₂)` alone, closure follows from `T₁³ = T₂⁴ = I`, and the
+  twist, which is where `p` lives, never enters them. Nothing at the level of
+  the lattice and the transformation laws separates the near misses; the
+  question is whether the period functions themselves exist for each, which is
+  not examined here. The cusp widths are also the same: for every class
+  `N = T₀ − I` has Smith form `diag(1, 1, 0, 0)` and `im N = ker N`, as in the
+  paper's. The only cusp invariant that differs is the genus of `b`.
+- **The six mystic classes: counted exactly; naturalness open.** A class is a
+  pair (first-edge angle, anchor mod `Λ`), and the substitution acts on the
+  pairs through a finite automaton (`paper/make_sixsphere_mystic_automaton.py`),
+  so the count is exact rather than sampled: six classes for every level
+  `n ≥ 3`, with the class sets repeating with period 2, cross-checked against
+  whole-patch geometry to `n = 7`. The Hat itself also has exactly six classes
+  for `n ≥ 2`. What stays open is whether six oriented double curves is natural
+  (for instance through the monodromy of the degeneration) or a coincidence of
+  the Hat point, and whether the number of neighbourhood types per class is
+  bounded.
 - **Chair44's defect at higher levels.** The inequality `agreement ≥ 1 − c(M)/8^M` is
   proved; the measured values were taken to `M = 5` on a level-6 patch. A level-8 patch
   would reach `M = 7`, where the bound is 99.8%.
 - **Why six.** The undetermined cells carry six candidate rotations, a dihedral coset;
   the six mystic fibre classes of Part VII are six oriented double curves. Either a
   mechanism or a clean separation is open.
-- **The Hat on the same footing.** Part VII's 0.796 is the best agreement over Laves-lattice
-  translates of a four-step patch. The agreement of a Hat patch with *every* translate,
-  by the same FFT, is not computed, and would turn the contrast of kind into a measured one.
+- **The Hat on the same footing: measured, to level 6.** Part VII's 0.796 is the best
+  agreement over Laves-lattice translates of a four-step patch. The agreement of a Hat
+  patch with *every* translate is now computed by the same FFT
+  (`paper/make_sixsphere_hat_fft.py`), at matched size:
+
+  | | Hat, n = 6 (1,937,756 kites) | Chair44, level 6 (1,835,008 cells) |
+  |---|---|---|
+  | translates scanned | 849,072 | 5,122,718 |
+  | agreement ≥ 0.5 / 0.9 / 0.99 | 4,280 / 72 / 0 | 20,190 / 2,550 / 50 |
+  | best, overlap ≥ 1/2 | 0.948 | 0.978 |
+  | best, overlap ≥ 1/8 | 0.975 | 0.998 |
+
+  So the Hat has real near-periods, but weaker than Chair44's, and none at 0.99. A
+  level-7 run was started and did not finish; its disc is the same size as level 6,
+  so it would add little.
 - **A three-dimensional cusp.** Whether a degeneration of abelian threefolds has a cusp
   fibre with the Kuhn complex of `Z³` as dual complex is not examined; the group mismatch
   above says a cube-symmetric Chair44 cannot be equivariant on it.
