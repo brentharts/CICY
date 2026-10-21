@@ -141,6 +141,26 @@ def test_translates():
               all(abs(c) == 32 for c in ts["best"][0]["v"]))
 
 
+def test_scan_counts():
+    print("\n[5b] the size-matched scan summary")
+    N = 4
+    ts, sc = C.translate_scan(N), C.translate_counts(N)
+    check("same patch size", sc["cells"], ts["cells"])
+    check_true("the FFT is exact in integers", sc["fft_rounding_error"] < 1e-6)
+    for thr in (0.5, 0.9, 0.99):
+        check("agreement >= %.2f counts agree with translate_scan" % thr,
+              sc["counts"][thr], ts["by_threshold"][thr]["count"])
+    check_true("best agreement at overlap >= 1/8 matches translate_scan",
+               abs(sc["best"][8]["fraction"] - ts["best"][0]["fraction"]) < 1e-12)
+    fr = [sc["best"][f]["fraction"] for f in (2, 4, 8, 16)]
+    check_true("the best agreement does not decrease as the overlap rule loosens",
+               all(a <= b + 1e-12 for a, b in zip(fr, fr[1:])))
+    check_true("chance level is small and positive", 0 < sc["chance"] < 0.05)
+    check_true("a count of translates at a looser rule is no smaller",
+               sc["best"][16]["translates"] >= sc["best"][8]["translates"]
+               >= sc["best"][2]["translates"])
+
+
 def test_undetermined():
     print("\n[6] the undetermined addresses")
     prof = C.undetermined_profile(12)
@@ -225,7 +245,7 @@ def test_ledger():
 
 if __name__ == "__main__":
     for t in (test_substitution, test_coincidence, test_closed_forms, test_descent, test_translates,
-              test_undetermined, test_not_a_link, test_controls, test_ledger):
+              test_scan_counts, test_undetermined, test_not_a_link, test_controls, test_ledger):
         t()
     print()
     if FAILURES:
