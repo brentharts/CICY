@@ -1588,15 +1588,15 @@ def _top_pairing(a, qa, b, qb):
 
 # -- the fundamental group: a third route ----------------------------------
 
-def h1_from_presentation(v1=None, v2=None, mu=None):
-    r"""H_1(X) from the presentation of Theorem 7.17, abelianised directly.
+def presentation_matrix(v1=None, v2=None, mu=None):
+    r"""The relation matrix of Theorem 7.17, abelianised on all six generators.
 
-    Generators gamma^, u^, w^, delta^ (the fibre Lambda), x = rho_1, y = rho_2.
-    Relations: rho_j lambda rho_j^{-1} = A_j lambda for every basis vector
-    (abelianised: (A_j - I) lambda = 0); Lambda_tor = 1 (vanishing cycles at
-    the cusp); x^3 = t_{v1}, y^4 = t_{v2}; x y = t_mu (the toric meridian).
-    Smith form of the 12 x 6 relation matrix. No use is made of the paper's
-    simplification to three generators.
+    Rows are relations, columns the generators gamma^, u^, w^, delta^ (the
+    fibre Lambda), x = rho_1, y = rho_2: rho_j lambda rho_j^{-1} = A_j lambda
+    for every basis vector (abelianised: (A_j - I) lambda = 0, eight rows, the
+    transposes of A_1 - I and A_2 - I); Lambda_tor = 1 (the vanishing cycles
+    w^ and delta^); x^3 = t_{v1}; y^4 = t_{v2}; x y = t_mu (the toric
+    meridian). H_1(X) is Z^6 modulo the row space.
     """
     v1 = EPS if v1 is None else Matrix(v1)
     v2 = -EPS_PRIME if v2 is None else Matrix(v2)
@@ -1613,7 +1613,20 @@ def h1_from_presentation(v1=None, v2=None, mu=None):
     rows.append([-x for x in v1] + [3, 0])
     rows.append([-x for x in v2] + [0, 4])
     rows.append([-x for x in mu] + [1, 1])
-    f = [abs(int(t)) for t in invariant_factors(Matrix(rows))]
+    return Matrix(rows)
+
+
+def h1_from_presentation(v1=None, v2=None, mu=None):
+    r"""H_1(X) from the presentation of Theorem 7.17, abelianised directly.
+
+    Generators gamma^, u^, w^, delta^ (the fibre Lambda), x = rho_1, y = rho_2.
+    Relations: rho_j lambda rho_j^{-1} = A_j lambda for every basis vector
+    (abelianised: (A_j - I) lambda = 0); Lambda_tor = 1 (vanishing cycles at
+    the cusp); x^3 = t_{v1}, y^4 = t_{v2}; x y = t_mu (the toric meridian).
+    Smith form of the relation matrix (:func:`presentation_matrix`, 13 x 6).
+    No use is made of the paper's simplification to three generators.
+    """
+    f = [abs(int(t)) for t in invariant_factors(presentation_matrix(v1, v2, mu))]
     nz = [t for t in f if t]
     order = 1
     for t in nz:

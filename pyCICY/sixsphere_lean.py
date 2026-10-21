@@ -64,8 +64,9 @@ from . import sixsphere as S
 from .theories.nariai_lean import (Fact, check_source, lean_executable,
                                    NoToolchain)
 
-__all__ = ["FACTS", "lean_source", "check_python", "check_lean", "status",
-           "lean_mat", "lean_vec", "STANDARD_AXIOMS"]
+__all__ = ["FACTS", "CERT_FACTS", "lean_source", "check_python", "check_lean",
+           "status", "status_certificates", "lean_mat", "lean_vec",
+           "STANDARD_AXIOMS"]
 
 NAMESPACE = "SixSphere"
 FILENAME = "SixSphereFacts.lean"
@@ -533,6 +534,243 @@ FACTS = _facts()
 
 
 # ---------------------------------------------------------------------------
+# certificates: saturation and Smith forms as explicit integer identities
+# ---------------------------------------------------------------------------
+#
+# The facts above leave two things Python-only: that a fixed or annihilator
+# lattice is *saturated* (the basis found spans every integer solution), and
+# that Smith forms turn a relation matrix into a group (H_1 = 0, V_G = Z). Both
+# are statements that a lattice equals a span with *integer* coordinates, and
+# both have the same certificate:
+#
+#     for every integer x:   H x = 0   ==>   x = M (K x),     K an integer matrix,
+#
+# where the columns of M span the lattice and K produces the coordinates. The
+# hypothesis is a linear system, the conclusion is linear with integer
+# coefficients written out, so ``omega`` proves it; nothing about Smith's
+# algorithm enters the proof. Python finds K from the unimodular matrices of the
+# Smith decomposition (U N V = D, D entries 0 or +-1) and checks the same
+# statement over Q by a rank test, so a wrong certificate is caught without a
+# kernel. The concrete half -- H M = 0, K M = I, and that the literals are the
+# matrices of this file -- is ``decide``.
+#
+# These facts are kept in CERT_FACTS, apart from FACTS, so the 34 facts above
+# and what is claimed about them do not change; ``status_certificates()``
+# reports them in the same terms.
+
+def _lin(coeffs, names):
+    """sum c_i * name_i, as a Lean expression ('0' if empty)."""
+    terms = ["(%d)*%s" % (int(c), n) for c, n in zip(coeffs, names) if c != 0]
+    return " + ".join(terms) if terms else "0"
+
+
+def _unit_pinv(D):
+    """Pseudo-inverse of a Smith matrix whose nonzero entries are +-1."""
+    P = zeros(D.cols, D.rows)
+    for i in range(min(D.rows, D.cols)):
+        if D[i, i] != 0:
+            assert abs(D[i, i]) == 1, "an invariant factor is not a unit"
+            P[i, i] = D[i, i]
+    return P
+
+
+def _left_inverse(Bt):
+    """Integer W with W Bt = I for a matrix Bt whose columns are primitive."""
+    D, U, V = S.smith_normal_decomp(Matrix(Bt))
+    W = V * _unit_pinv(D) * U
+    assert W * Bt == eye(Bt.cols)
+    return W
+
+
+def _span_facts(name, H, Mm, K, tie, doc, note, check, extra=()):
+    """Two Facts: ``<name>_certificate`` (decide) and ``<name>`` (omega).
+
+    The universal one says: every integer x with H x = 0 equals M (K x), with
+    K x an integer vector -- the columns of M span the whole solution lattice.
+    ``tie`` is a Lean proposition tying the literal H (or M) to the matrices
+    defined in the preamble; ``extra`` are further concrete conjuncts.
+    """
+    H, Mm, K = Matrix(H), Matrix(Mm), Matrix(K)
+    n = H.cols
+    assert Mm.rows == n and K.cols == n and K.rows == Mm.cols
+    assert H * Mm == zeros(H.rows, Mm.cols)
+    # the implication over Q: the rows of I - M K lie in the row space of H
+    assert H.col_join(eye(n) - Mm * K).rank() == H.rank()
+    xs = ["x%d" % i for i in range(n)]
+    hyps = "\n    ".join("(h%d : %s = 0)" % (k, _lin(H.row(k), xs))
+                         for k in range(H.rows))
+    ws = ["(%s)" % _lin(K.row(k), xs) for k in range(K.rows)]
+    concl = " ∧\n    ".join(
+        "%s = %s" % (xs[i], " + ".join(
+            "(%d)*%s" % (Mm[i, k], ws[k]) for k in range(Mm.cols)
+            if Mm[i, k] != 0) or "0")
+        for i in range(n))
+    concrete = [tie, "mul %s %s = List.replicate %d (List.replicate %d 0)"
+                % (lean_mat(H), lean_mat(Mm), H.rows, Mm.cols)] + list(extra)
+    cert = ("/-- %s (concrete half: the literals are this file's matrices,\n"
+            "H M = 0, and the coordinate matrix K is a left inverse where it\n"
+            "should be). -/\ntheorem %s_certificate :\n    %s := by decide"
+            % (doc, name, " ∧\n    ".join(concrete)))
+    univ = ("/-- %s For every integer x with H x = 0, x = M (K x) with K x an\n"
+            "integer vector: the columns of M span the whole solution lattice. -/\n"
+            "theorem %s (%s : Int)\n    %s :\n    %s := by omega"
+            % (doc, name, " ".join(xs), hyps, concl))
+    return [Fact(name + "_certificate", cert, check, note),
+            Fact(name, univ, check, note)]
+
+
+def _kernel_span_facts(name, H, B, tie, doc, note, check):
+    """ker H = Z-span of the rows of B, with explicit integer coordinates."""
+    Bt = Matrix(B).T
+    W = _left_inverse(Bt)
+    return _span_facts(name, H, Bt, W, tie, doc, note, check,
+                       extra=["mul %s %s = ident %d" % (lean_mat(W),
+                                                        lean_mat(Bt), Bt.cols)])
+
+
+def _cokernel_facts(name, M, tie, doc, note, check):
+    """coker M = Z^k: psi M = 0, psi has a right inverse, and every integer y
+    with psi y = 0 is M (K y). Smith: U M V = D, psi the rows of U below rank D."""
+    M = Matrix(M)
+    D, U, V = S.smith_normal_decomp(M)
+    rk = sum(1 for i in range(min(D.rows, D.cols)) if D[i, i] != 0)
+    psi = U[rk:, :]
+    K = V * _unit_pinv(D) * U
+    Z = U.inv()[:, rk:]
+    assert psi * M == zeros(psi.rows, M.cols) and psi * Z == eye(psi.rows)
+    return _span_facts(name, psi, M, K, tie, doc, note, check,
+                       extra=["mul %s %s = ident %d"
+                              % (lean_mat(psi), lean_mat(Z), psi.rows)])
+
+
+def _certificate_facts():
+    m = S.monodromy()
+    A1, A2, N = m["A1"], m["A2"], m["N"]
+    I4 = eye(4)
+    F = []
+
+    # saturation of the fixed lattices (Lemma 2.6)
+    for j, Aj, basis_ok in ((1, A1, lambda: S.fixed_lattices()
+                             ["Lambda_A1_is_<eps,delta^>"]),
+                            (2, A2, lambda: S.fixed_lattices()
+                             ["Lambda_A2_is_<eps',delta^>"])):
+        H = Aj - I4
+        F += _kernel_span_facts(
+            "fixed_lattice_A%d" % j, H, S.fixed_lattice(Aj),
+            "sub A%d I4 = %s" % (j, lean_mat(H)),
+            "Lemma 2.6: the fixed lattice of A%d is exactly the span of the"
+            " saturated basis." % j,
+            "Lemma 2.6, saturation (Python-only until now)", basis_ok)
+
+    # V^G = Z gamma and Lambda^G = Z delta-hat (Lemma 2.7 (i), (ii))
+    inv = S.invariant_vectors()
+    HV = (S.T1 - I4).col_join(S.T2 - I4)
+    HL = (A1 - I4).col_join(A2 - I4)
+    F += _kernel_span_facts(
+        "invariants_V", HV, inv["V^G"],
+        "sub T1 I4 ++ sub T2 I4 = %s" % lean_mat(HV),
+        "Lemma 2.7 (i): V^G is the span of the saturated basis.",
+        "Lemma 2.7 (i)", lambda: inv["V^G_is_Z_gamma"])
+    F += _kernel_span_facts(
+        "invariants_Lambda", HL, inv["Lambda^G"],
+        "sub A1 I4 ++ sub A2 I4 = %s" % lean_mat(HL),
+        "Lemma 2.7 (ii): Lambda^G is the span of the saturated basis.",
+        "Lemma 2.7 (ii)", lambda: inv["Lambda^G_is_Z_delta^"])
+
+    # ker N = im N: x with N x = 0 is N (K x). Coordinates from a Smith solve.
+    kerN = Matrix(S.int_kernel(N))
+    Wn = _left_inverse(kerN.T)
+    D, U, V = S.smith_normal_decomp(N)
+    Dp = _unit_pinv(D)
+    Y = (V * Dp * U) * kerN.T                   # integer preimages of the basis
+    assert N * Y == kerN.T, "a basis vector of ker N is not in im N"
+    F += _span_facts(
+        "ker_N_equals_im_N", N, N, Y * Wn, "N = %s" % lean_mat(N),
+        "Lemma 2.2 / Prop. 7.12: N^2 = 0 gives im N inside ker N (decide);"
+        " this is the converse.",
+        "ker N = im N, the equality of Lemma 2.7's neighbourhood",
+        lambda: S.orders()["ker_N_equals_im_N"])
+
+    # coinvariants (Lemma 2.7 (iii)): coker [(A - I) | (B - I)] = Z
+    MV = (S.T1 - I4).row_join(S.T2 - I4)
+    ML = (A1 - I4).row_join(A2 - I4)
+    F += _cokernel_facts(
+        "coinvariants_V", MV,
+        "List.zipWith (· ++ ·) (sub T1 I4) (sub T2 I4) = %s" % lean_mat(MV),
+        "Lemma 2.7 (iii): V_G = Z, with psi the functional that kills the"
+        " images of T1 - I and T2 - I.",
+        "Lemma 2.7 (iii); Smith form diag(1,1,1,0), as a certificate",
+        lambda: S.coinvariants("V")["free_rank"] == 1
+        and not S.coinvariants("V")["torsion"])
+    F += _cokernel_facts(
+        "coinvariants_Lambda", ML,
+        "List.zipWith (· ++ ·) (sub A1 I4) (sub A2 I4) = %s" % lean_mat(ML),
+        "Lemma 2.7 (iii): Lambda_G = Z.",
+        "Lemma 2.7 (iii), the dual lattice",
+        lambda: S.coinvariants("L")["free_rank"] == 1
+        and not S.coinvariants("L")["torsion"])
+
+    # the annihilators behind the freeness of the logarithmic transforms
+    for (j, k) in sorted(_ANN):
+        P, _ = _ANN[(j, k)]
+        Aj = {1: A1, 2: A2}[j]
+        H = ((Aj ** k) - I4).T
+        F += _kernel_span_facts(
+            "annihilator_p%d_power%d" % (j, k), H, P,
+            "transpose (sub (mpow A%d %d) I4) = %s" % (j, k, lean_mat(H)),
+            "The rows of P are a Z-basis of every integer functional killing"
+            " im(A%d^%d - I): P is saturated." % (j, k),
+            "closes the 'saturation of P is checked in Python' of "
+            "log_transform_free_p%d_power%d" % (j, k),
+            (lambda j=j, k=k: dict(S.log_transform_free(
+                j, {1: S.EPS, 2: -S.EPS_PRIME}[j])[1])[k] is False))
+
+    F.append(_h1_fact())
+    return F
+
+
+def _h1_lean_rows():
+    """The relation matrix as the Lean statement builds it from A1, A2, eps,
+    epsp, written here in the same operations so that a drift is caught
+    without a kernel."""
+    m = S.monodromy()
+    pad = lambda A: [list(r) + [0, 0] for r in (A - eye(4)).T.tolist()]
+    return (pad(m["A1"]) + pad(m["A2"])
+            + [[0, 0, 1, 0, 0, 0], [0, 0, 0, 1, 0, 0],
+               [-x for x in S.EPS] + [3, 0],
+               list(S.EPS_PRIME) + [0, 4],
+               [0, 0, 0, 0, 1, 1]])
+
+
+def _h1_fact():
+    R = S.presentation_matrix()
+    assert Matrix(_h1_lean_rows()) == R, "the Lean construction of R drifted"
+    Sinv = _left_inverse(R)                       # 6 x 13, S R = I_6
+    assert Sinv * R == eye(6)
+    lean = r"""/-- H_1(X) = 0 at the level of the presentation, with no appeal to Smith
+form: the relation matrix of Theorem 7.17, abelianised on all six generators
+and built here from A1, A2, eps and epsp, has an integer left inverse, so its
+rows span Z^6. For the other sign at one multiple fibre (|H_1| = 7) no such
+inverse exists. -/
+theorem h1_presentation_trivial :
+    let R : Mat :=
+      (transpose (sub A1 I4)).map (fun r => r ++ [0, 0]) ++
+      (transpose (sub A2 I4)).map (fun r => r ++ [0, 0]) ++
+      [[0, 0, 1, 0, 0, 0], [0, 0, 0, 1, 0, 0],
+       (eps.map (fun x => -x)) ++ [3, 0], epsp ++ [0, 4], [0, 0, 0, 0, 1, 1]]
+    mul %s R = ident 6 := by decide""" % lean_mat(Sinv)
+    return Fact("h1_presentation_trivial", lean,
+                lambda: (S.h1_from_presentation()["order"] == 1
+                         and S.h1_from_presentation(S.EPS, S.EPS_PRIME)
+                         ["order"] == 7),
+                "Theorem 7.17 abelianised; closes the Smith-form gap for "
+                "H_1(X) = 0")
+
+
+CERT_FACTS = _certificate_facts()
+
+
+# ---------------------------------------------------------------------------
 # emission and checking
 # ---------------------------------------------------------------------------
 
@@ -565,7 +803,13 @@ def check_lean(path=None, timeout=900, require=False, source=None):
                         require=require, allowed=STANDARD_AXIOMS)
 
 
-def status(lean_path=None):
+def status_certificates(lean_path=None):
+    """:func:`status` for :data:`CERT_FACTS`: the saturation and Smith-form
+    certificates, emitted as a file of their own."""
+    return status(lean_path=lean_path, facts=CERT_FACTS)
+
+
+def status(lean_path=None, facts=None):
     """Per fact: computed; machine-checked or not; axioms; choice-free or not.
 
     ``machine_checked`` is True only when a kernel ran, the file compiled,
@@ -573,10 +817,11 @@ def status(lean_path=None):
     allow-list :data:`STANDARD_AXIOMS`. Nothing here ever claims a check that
     did not run.
     """
-    py = check_python()
-    ln = check_lean(path=lean_path)
+    facts = FACTS if facts is None else facts
+    py = check_python(facts)
+    ln = check_lean(path=lean_path, source=lean_source(facts))
     out = {}
-    for f in FACTS:
+    for f in facts:
         ax = ln["axioms"].get(f.name)
         checked = bool(ln["available"] and ln["ok"] and ax is not None
                        and f.name not in ln.get("unsound", []))
