@@ -990,17 +990,20 @@ T.get("complex-six-sphere")().describe()
   and `μ`, `β` are sections of explicit torsors. A numerical construction, with
   its precision stated, would let the nondegeneracy `D < 0` be seen rather than
   quoted — though it would be evidence, not the theorem.
-- **Smith forms and saturation in Lean: certificates written, kernel check
-  pending.** Both steps are now stated without a Smith routine in Lean. A fixed
+- **Smith forms and saturation in Lean: certificates written and kernel-checked.**
+  Both steps are now stated without a Smith routine in Lean. A fixed
   lattice is saturated if every `x` with `Hx = 0` equals `M(Kx)` for an integer
   `K` read off the Smith decomposition (an integer left inverse), and
   `H₁(X) = 0` is the statement that a 6×13 integer matrix times the 13×6
   relation matrix is the identity, closed by `decide`. These are 25 facts
   (`CERT_FACTS` in `pyCICY/sixsphere_lean.py`, test [21]); the Python half
-  passes exactly, including a tamper control. **None has been run through the
-  Lean kernel**: the environment that produced them had no toolchain. Until
-  that run is done they count as Python-verified only, and the
-  machine-checked counts above do not include them.
+  passes exactly, including a tamper control. They were put to the Lean
+  kernel (4.33.1, `paper/check_sixsphere_lean.py`) on the allow-listed axioms:
+  all 25 compile and carry only standard axioms (13 are choice-free), and the
+  34 main facts still pass (29 choice-free). The kernel also rejects the
+  tampered certificate. They are a separate group from the 34: the counts
+  above (thirty-four, twenty-nine choice-free) are for the main facts, and the
+  certificates bring the checked total to fifty-nine.
 - **Outside the flag class: excluded by an argument (written here, not
   machine-checked).** Take `T₁³ = T₂⁴ = I`, a cusp `N = T₀ − I` with `N² = 0`
   and rank 2, and coinvariants `Z`. Then `W = im(T₁−I) + im(T₂−I)` is a
