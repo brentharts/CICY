@@ -91,6 +91,13 @@
 \newcommand{\SSChSix}{?}\newcommand{\SSChTermsChecked}{?}
 \newcommand{\SSChTermsNeeded}{?}\newcommand{\SSChTwentyFour}{?}
 \newcommand{\SSChUndet}{?}\newcommand{\SSChUndetM}{?}
+% Two further matches (pyCICY.sixsphere_cosmology): written by
+% paper/make_sixsphere_facts.py --cosmo-only (or the full run).
+\newcommand{\SSCoAzeroSix}{?}\newcommand{\SSCoChecks}{?}\newcommand{\SSCoDim}{?}
+\newcommand{\SSCoEras}{?}\newcommand{\SSCoGridChecked}{?}\newcommand{\SSCoLevelsMissPercent}{?}
+\newcommand{\SSCoLevelsPerTurn}{?}\newcommand{\SSCoMultNum}{?}\newcommand{\SSCoNuEras}{?}
+\newcommand{\SSCoNuMultNum}{?}\newcommand{\SSCoNuPeriod}{?}\newcommand{\SSCoOneOffStarts}{?}
+\newcommand{\SSCoOrbifoldChi}{?}\newcommand{\SSCoPeriod}{?}\newcommand{\SSCoStabOrders}{?}
 \IfFileExists{figures/sixsphere_facts.tex}{\input{figures/sixsphere_facts.tex}}{}
 
 \newcommand{\ZZ}{\mathbb{Z}}
@@ -1219,6 +1226,49 @@ orders $(3, 4, \infty)$. But the valence-four sites are the double curves of
 $W$, which lie over the cusp $p_0$ --- not over $p_2$, the point of order
 four, whose fibre is a multiple fibre with no double curves at all.
 
+\subsection{Two more matches that are not connections}
+\label{sec:cosmo-nolink}
+
+Two further coincidences of numbers, both with a cosmological singularity, are exact and
+are not connections. They are computed in \texttt{pyCICY.sixsphere\_cosmology}, and all
+$\SSCoChecks{}$ of its checks pass.
+
+\paragraph{The Mixmaster map.} The BKL map of the Mixmaster universe, $u\mapsto u-1$ for
+$u\ge2$ and $u\mapsto1/(u-1)$ for $1<u<2$ \cite{BKL70}, is the Gauss map, so a closed orbit is a
+periodic continued fraction and its multiplier is the square of the unit of the matrix
+that the partial quotients multiply to. The Spectre's inflation $\lambda^2=4+\sqrt{15}$
+is that unit for the period $(6,1)$: the orbit of $u^*=3+\sqrt{15}=[6;1,6,1,\dots]$ closes
+after $\SSCoPeriod{}$ epochs, in eras of $\SSCoEras{}$ epochs, with multiplier
+$(4+\sqrt{15})^2=\lambda^4\approx\SSCoMultNum$ exactly; $\lambda^2$ is an eigenvalue of
+$\bigl(\begin{smallmatrix}7&6\\1&1\end{smallmatrix}\bigr)$, of characteristic polynomial $x^2-8x+1$.
+The growth rate $\nu=2+\sqrt5=\varphi^3=[4;4,\dots]$ of the supertile outline is the one-era orbit
+of $\SSCoNuPeriod{}$ epochs, with multiplier $-\nu^2\approx-\SSCoNuMultNum$, the sign being
+the determinant $-1$ of $\bigl(\begin{smallmatrix}4&1\\1&0\end{smallmatrix}\bigr)$. The dimension of the
+outline is therefore $D=\ln\nu/\ln\lambda=2\ln|m_\nu|/\ln m_\lambda=\SSCoDim$, a ratio of the
+logarithmic multipliers of two closed Mixmaster orbits. This holds for \emph{every} periodic
+continued fraction (checked over $\SSCoGridChecked{}$ periods), so it is a theorem about
+continued fractions and not a property of the monotile, and there is no dynamics on the
+tiling for it to describe. One more fact is a coincidence in the strict sense: the Kasner
+denominator $1+u+u^2=|u-\zeta_3|^2$ is an Eisenstein norm, on the lattice $\mathbb Z[\zeta_3]$ of the
+cusp torus, and at $u^*$ it equals $7\lambda^2$ with $7$ the number of epochs. That is a one-off:
+it is rational over the unit at no other starting point checked ($\SSCoOneOffStarts{}$ of
+$\SSCoOneOffStarts{}$), so it is left unexplained.
+
+\paragraph{The pancake.} In the non-singular pancake of Dechant, Lasenby and
+Hobson~\cite{DLH08} the collapsing fibre winds by $(2/a_0)\ln(t/t_{\rm in})$ over an Euler-angle
+period of $4\pi$ (the identification of that period is not checked). Reading one substitution level as a
+rescaling by $\lambda$ gives $2\pi a_0/\ln\lambda$ levels per fibre turn, and at $a_0=1$ that
+is $\SSCoLevelsPerTurn{}$, within $\SSCoLevelsMissPercent\%$ of the $6$ of $\mathbb Z/6$ and not equal to it: exactly
+$6$ would need $a_0=\SSCoAzeroSix{}$, a value chosen to give the answer, with $a_0$ free initial data. This is
+numerology and is asserted as a miss. The group-theoretic half is exact and was in part already
+here. The rotation by $60^\circ$ of the hexagonal cusp torus has stabilisers of orders
+$\SSCoStabOrders{}$ on the six site classes (the centre; the vertices; the edge midpoints, which are the
+double curves), so the torus modulo $\mathbb Z/6$ is the orbifold sphere $S^2(2,3,6)$ of Euler characteristic
+$\SSCoOrbifoldChi{}$, the Euclidean $(2,3,6)$ group already named as the substrate's symmetry. The same
+$\mathbb Z/6$ in the fibre circle gives the lens space $L(6,1)$ over the pancake's base. Sharing the group is
+the whole of the overlap: no map from the six fibre classes to the pancake's fibre is constructed.
+
+
 % =====================================================================
 
 \section{An Integer Inflation on the Same Kind of Torus: Chair44}
@@ -1606,7 +1656,9 @@ recurrence certificate and measured on a patch of $\SSChPatchCells$ cells
 (\cref{prop:chair-rate,prop:chair-descent}). That is a contrast of kind. The six-sphere
 contains no Chair44, and two matches with it, the $24$ simplices round a vertex of the
 Kuhn triangulation of $\ZZ^3$ and the $(3,4,\infty)$ group against the cube's rotation
-group, are coincidences (\cref{sec:chair-nolink}).
+group, are coincidences (\cref{sec:chair-nolink}). Two matches with cosmological singularities are of the same kind: the
+Spectre's inflation and perimeter growth are closed orbits of the Mixmaster map, as every quadratic unit is, and the
+pancake's fibre clock misses the six of $\mathbb Z/6$ (\cref{sec:cosmo-nolink}).
 
 The lattice data was forced: within the flag class the triangle group by proof, the
 matrices up to conjugacy in every range searched, with finiteness of the search
@@ -1644,6 +1696,9 @@ verification suite \texttt{tests/test\_sixsphere\_search.py}, Lean facts in
 tilings of \url{https://github.com/brentharts/spectre}. \Cref{sec:chair44} is computed
 by \texttt{pyCICY.chair44\_nested} (test suite \texttt{tests/test\_chair44\_nested.py});
 its numbers are written by \texttt{paper/make\_sixsphere\_facts.py \-\--chair44-only}.
+\Cref{sec:cosmo-nolink} is computed by \texttt{pyCICY.sixsphere\_cosmology} (test suite
+\texttt{tests/test\_sixsphere\_cosmology.py}); its numbers are written by
+\texttt{paper/make\_sixsphere\_facts.py \-\--cosmo-only}.
 The whole-patch counts and the automaton of \cref{sec:mystic} are
 \texttt{paper/make\_sixsphere\_mystic\_levels.py} and
 \texttt{paper/make\_sixsphere\_mystic\_automaton.py}; the Hat scan of
@@ -1691,6 +1746,7 @@ and limit-periodic structure is a cited theorem
 \cite{LeeMoody,Schlottmann,LMS}, and whether every tiling lies in the substitution hull
 is open upstream; none is re-proved here. The Hat's $0.796$ is on a different footing;
 \cref{obs:hat-fft} compares the two on the same footing at one size (level $6$). No complex fourfold with a Chair44 cusp fibre is constructed.
+\Cref{sec:cosmo-nolink}: the closed orbits and the orbifold are exact; the pancake's winding coefficient $2/a_0$ is quoted from a numerical solution and the Euler-angle period is not checked; the proposed dictionary from substitution levels to the pancake's time is a choice made to ask the question, and neither match is claimed to be a connection.
 
 
 \begin{thebibliography}{99}
@@ -1792,6 +1848,17 @@ AMS (2000), 143--159.
 J.-Y.~Lee, R.~V.~Moody and B.~Solomyak,
 \emph{Consequences of pure point diffraction spectra for multiset substitution
 systems}, Discrete Comput.\ Geom.\ \textbf{29} (2003), 525--560.
+
+
+\bibitem{BKL70}
+V.~A.~Belinskii, I.~M.~Khalatnikov and E.~M.~Lifshitz,
+\emph{Oscillatory approach to a singular point in the relativistic cosmology},
+Adv.\ Phys.\ \textbf{19} (1970), 525--573.
+
+\bibitem{DLH08}
+P.-P.~Dechant, A.~N.~Lasenby and M.~P.~Hobson,
+\emph{An anisotropic, non-singular early universe model leading to a realistic cosmology},
+\href{https://arxiv.org/abs/0809.4335}{arXiv:0809.4335}.
 
 \end{thebibliography}
 
