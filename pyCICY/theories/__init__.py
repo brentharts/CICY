@@ -79,6 +79,29 @@ Currently implemented:
                                    holomorphic volume form, so every physics
                                    verb raises NoSuchTheory
 
+    kasner-vacuum                  the Kasner solution: exponents exact, the
+                                   curvature by three independent routes
+                                   (closed form, a sympy Riemann tensor,
+                                   EinsteinPy), morphology and horizon rule
+    mixmaster-bkl                  vacuum Bianchi IX: the BKL map exact in
+                                   rational arithmetic, the curvature
+                                   numerical, and the horizon sum, which
+                                   converges: every axis has a finite horizon
+    pancake-bigbang                the non-singular pancake of Dechant,
+                                   Lasenby and Hobson: series, K(0) in closed
+                                   form, a logarithmic horizon along the
+                                   collapsing fibre only; a finite-curvature
+                                   vacuum pancake does not exist
+    flrw-toys                      flat FLRW: LCDM, our own sigmoid and
+                                   coupled-black-hole toys, Tsallis and Pade
+                                   models, an exact bounce, horizon entropy
+                                   and its second-law criterion; nothing is
+                                   fitted to data
+    moduli-kasner                  Bianchi I driven by the freely rolling
+                                   Kahler moduli of a CICY: the exponent
+                                   budget sum p = 1, sum p^2 = 1 - |s|^2,
+                                   |s|^2 <= 2/3, from d_ijk alone
+
 Not every construction here is a compactification any more, and one of them is
 not even shaped like `Theory`. `surface` adds a sibling base class,
 :class:`~pyCICY.theories.surface.SurfaceTheory`, for amplitudes: same
@@ -225,6 +248,10 @@ from . import nariai_lean
 from . import surfaceology
 from .hopf import ComplexSixSphere
 from . import hopf
+from .cosmobase import CosmologyTheory
+from . import cosmobase
+from .cosmology import KasnerVacuum, MixmasterBKL, PancakeBigBang, FLRWToys, ModuliKasner
+from . import cosmology
 
 __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "StandardEmbedding", "LineBundleModel", "yukawa",
@@ -244,4 +271,6 @@ __all__ = ["Theory", "NeedsMetric", "registry", "register", "get",
            "CutsAndContours", "contours",
            "FlavorTheory", "NeedsFit", "flavorbase",
            "NineLinkTexture", "ninelink", "nariai_lean",
-           "ComplexSixSphere", "hopf"]
+           "ComplexSixSphere", "hopf",
+           "CosmologyTheory", "cosmobase", "KasnerVacuum", "MixmasterBKL",
+           "PancakeBigBang", "FLRWToys", "ModuliKasner", "cosmology"]
