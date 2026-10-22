@@ -2,3 +2,8 @@ numpy
 scipy
 sympy
 texttable
+# exact-GR cross-checks (pyCICY.kasner, the cosmology tests) and the multi-precision Mixmaster horizon map
+einsteinpy>=0.4
+mpmath>=1.2
+# the cosmology test suites are written for pytest
+pytest>=7.0

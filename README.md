@@ -82,7 +82,7 @@ forms, the split web over the published list of 7890 threefolds.
 
 **String constructions (`theories/`)**
 A subpackage where different constructions live, sharing the exact machinery
-underneath and each declaring what it can compute. Sixteen are registered:
+underneath and each declaring what it can compute. Twenty-one are registered:
 `StandardEmbedding` (V = TX, E₆), `LineBundleModel` (SU(5) and the Standard
 Model), `FTheory6D` (elliptic threefold over a surface, six-dimensional
 N=(1,0), spectrum exact from anomaly cancellation), `FTheory4D` (elliptic
@@ -124,6 +124,12 @@ the group as explicit matrices. Plus, on a
 [cymetric fork](https://github.com/brentharts/cymetric), an equivariant point
 generator and a group-averaged network that makes the learned metric exactly
 invariant under the quotient group.
+
+**Cosmological singularities (`kasner`, `bkl`, `pancake`, `horizons`, `tidal`, `flrw`, `ccbh`)**
+Four more registry entries, under a fourth base class `CosmologyTheory`: the
+Kasner solution, vacuum Mixmaster, the non-singular pancake Big Bang, and flat
+FLRW toys with an exact bounce. Ported from Quantum Gravity Lab; see
+[Cosmological singularities](#cosmological-singularities) below.
 
 **Toric and polytope geometry (`toric`, `polytope`)**
 The sixteen reflexive polygons, rederived rather than tabulated. Reflexive
@@ -726,8 +732,8 @@ Next, in order of what would change what this package can claim:
 
 ```bash
 git clone https://github.com/brentharts/CICY.git && cd CICY
-pip install -r requirements.txt
-python3 run_tests.py            # 39 suites
+make install                    # Ubuntu: apt packages, a .venv, and every Python package, EinsteinPy included
+python3 run_tests.py            # 59 suites (after `make install`, `make test` uses the .venv)
 make help                       # every worked example
 ```
 
@@ -2505,6 +2511,60 @@ is the point rather than a limitation: a quantity computed once is a result,
 computed twice by unrelated routes it is a test.
 
 
+## Cosmological singularities
+
+Four registry entries that are not compactifications (`X = None`, like `NariaiEntropic` and `ComplexSixSphere`),
+under a fourth base class, `CosmologyTheory`, with its own verbs (`exponents`, `curvature`, `singularity_type`,
+`horizon`). The modules underneath were ported from
+[Quantum Gravity Lab](https://github.com/brentharts/Quantum_Gravity_Lab) (CC0) and copied rather than imported, so
+this package stays self-contained. Left behind on purpose: that project's Jaynes-Cummings sensor and "complexity
+scalar", which map K(t) to a number through a stated modelling choice. That is a fair experiment and not an exact
+result, and the discipline of this package is to keep the two apart.
+
+| entry | what is exact | what is not |
+|---|---|---|
+| `kasner-vacuum` | exponents (exact for rational `u`); `K = -16 p1 p2 p3 / t^4` by three routes: closed form, a sympy Riemann tensor written out from the metric, EinsteinPy; morphology; horizon rule | that a vacuum Kasner solution is a physical early universe |
+| `mixmaster-bkl` | the BKL map in rational arithmetic (the orbit of a rational `u` terminates at `u = 1`); `K t^4` per epoch; Bianchi IX Kretschmann against a brute-force Riemann tensor | the Bianchi IX solution (numerical, constraint monitored); the infinite epoch sequence (a calibrated sharp-wall map); the horizon criterion (a proxy) |
+| `pancake-bigbang` | the odd-parity series, `K(0) = 16 e^2 + (128 - 48 a0^2) / b0^4`, tidal eigenvalues at `t = 0`, the logarithmic horizon coefficient `2/a0` | the solution away from `t = 0` (numerical); the fibre period `4 pi` (standard `S^3`, not checked against the paper) |
+| `flrw-toys` | LCDM, the sigmoid toy, Tsallis and Pade models, `K = 12 [(a''/a)^2 + H^4]` against both symbolic routes, horizon entropy and its second-law criterion (`dS/dt >= 0` iff `q >= -1`), the dust bounce with `K(0) = 27 (rho_c h0^2)^2` | any fit to data: `NeedsFit`. The sigmoid and coupled-black-hole toys are our own and are not the models that inspired them |
+| `moduli-kasner` | the Kahler-moduli metric `G_ij = -3 kappa_ij/V + 9/2 kappa_i kappa_j/V^2` from `d_ijk` (also rational), the budget `sum p = 1`, `sum p^2 = 1 - |s|^2`, `|s|^2 <= 2/3`, the dilation Killing norm `3/2` and the bound `lambda ~ (t-t_s)^sigma`, `|sigma| <= 2/3`; checked against sympy and an independent Euler-Lagrange integration | geodesics for `h11 > 1` are numerical; classical large-volume `K` only (no alpha' corrections, axions, potential or other moduli); whether kinetic domination is reached is moduli stabilisation |
+
+`moduli-kasner` is the bridge to the compactification: it takes the triple intersection numbers `d_ijk` of a CICY
+and gives the Bianchi I exponent budget for freely rolling Kahler moduli (`sum p = 1`, `sum p^2 = 1 - |s|^2`,
+`|s|^2 <= 2/3`), with the dilation bound `|sigma| <= 2/3` on how fast the internal size can grow. Its figures and
+facts are built by `make cosmology-paper` (`paper/make_cosmology_figures.py`, `paper/supplementary_material_cosmology.tex`).
+
+Two results are absences, in the ledger's sense, and the entries say so rather than return a number.
+`PancakeBigBang().vacuum_pancake()` raises `NoSuchTheory`: the only vacuum Kasner exponents with one collapsing axis
+and two finite ones are `(1, 0, 0)`, which is flat spacetime, so a pancake with finite non-zero curvature needs
+matter. And the horizon claim that motivated `horizons` fails twice. A pancake's *open* directions keep an ordinary
+finite horizon, of proper size about `t`; it is the collapsing fibre whose horizon diverges, logarithmically,
+round a circle whose circumference goes to zero. And in Mixmaster every axis has a *finite* horizon under
+`int dt / a_i`, the opposite of Misner's hope, because `t / a_i` shrinks like `t^(1-p_i)` in every epoch and
+`p_i < 1`: the numerical solution and the multi-precision BKL map both saturate. That criterion is exact for
+Bianchi I and used here as a proxy for Bianchi IX; real null geodesics were not integrated. Misner's own argument was
+about the Hubble horizon of a momentarily static axis, a different quantity, and Chitre (1972) found circumnavigating
+light has vanishing measure (abstract only read).
+
+EinsteinPy is installed by default (`make install`, `requirements.txt`, `setup.py`). It is the independent
+symbolic route that checks `pyCICY.kasner`'s curvature and the FLRW Kretschmann formula; `mpmath` carries the
+Mixmaster horizon map.
+
+```bash
+make test-cosmology      # the 13 cosmology suites only
+make cosmology-demo      # each entry's exact / declined ledger
+```
+
+```python
+from pyCICY import theories as T
+k = T.get("kasner-vacuum")(2)
+k.exponents()                      # (-2/7, 3/7, 6/7), exact
+k.verify_curvature()               # closed form, sympy and EinsteinPy: all 576/343
+T.get("mixmaster-bkl")("37/10").epochs(10)    # exact BKL orbit
+T.get("pancake-bigbang")().curvature()        # K(0) in closed form
+T.get("flrw-toys")().second_law("bounce")     # False: H' > 0 just after the bounce
+```
+
 ## Nine-link Yukawa textures
 
 *Implemented. The exact layer only; the numerical scan is declined and says
@@ -3331,6 +3391,10 @@ The module has been developed in the context of the following papers:
 
 - Hubsch, Tristan (1994) Calabi-Yau manifolds: A Bestiary for physicists
   - World Scientific; 9789810219277, 981021927X
+- P.-P. Dechant, A. N. Lasenby, M. P. Hobson, An anisotropic, non-singular early universe model leading to a realistic cosmology
+  - https://arxiv.org/abs/0809.4335
+- Chitre (1972) Investigation of Vanishing of a Horizon for Bianchi Type IX (the Mixmaster) Universe, PhD thesis, University of Maryland
+  - https://drum.lib.umd.edu/handle/1903/29504 (abstract only read)
 - Lara B. Anderson (2008) Heterotic and M-theory Compactifications for String Phenomenology
   - arXiv;hep-th;0808.3621 https://inspirehep.net/record/793857/files/arXiv:0808.3621.pdf
 
