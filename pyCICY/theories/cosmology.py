@@ -436,6 +436,16 @@ class ModuliKasner(CosmologyTheory):
     def geodesic(self, t0, s0, u_span=(0.0, 3.0), **kw):
         return _mk.moduli_geodesic(self.d, t0, s0, u_span, **kw)
 
+    def with_dilaton(self, speed2_kahler=0.0, sigma_s=0.0):
+        """Total |s|^2 = |s_K|^2 + sigma_S^2 / 2 with the heterotic dilaton, and whether it is inside the budget 2/3."""
+        total = _mk.product_speed2(speed2_kahler, sigma_s)
+        return dict(speed2=total, allowed=bool(total <= float(self.budget()) + 1e-15))
+
+    def racetrack_drift(self, N1, N2, ratio=10.0, F=2.0):
+        """Thought experiment: the extreme alpha_GUT and Lambda_QCD ratios if a potential-free dilaton at its racetrack
+        value used the whole budget while the scale grew by F. The condensation ratio is an input."""
+        return _mk.racetrack_kinetic_budget(N1, N2, ratio, F)
+
     def exact_content(self):
         return [
             "the Kahler-moduli metric G_ij = -3 kappa_ij / V + (9/2) kappa_i kappa_j / V^2 (also in rational "
@@ -445,6 +455,9 @@ class ModuliKasner(CosmologyTheory):
             "the dilation t -> lambda t is Killing with G(xi, xi) = 3/2, so rays are geodesics and "
             "lambda ~ (t - t_s)^sigma needs |sigma| <= 2/3",
             "the Kretschmann coefficient for any exponents, checked against a symbolic Riemann tensor",
+            "the heterotic dilaton as a product factor G_ss = 1/(2 s^2): |s|^2 = |s_K|^2 + sigma_S^2/2 <= 2/3, "
+            "so sigma_S^2 <= 4/3 alone and a joint dilation (G(xi, xi) = 2) has sigma^2 <= 1/3; "
+            "alpha_GUT ~ F^(-sigma_S) and, at one loop, Lambda_QCD ~ exp(-8 pi^2 Re S / |b_3|) in closed form",
         ]
 
     def declined(self):
@@ -454,5 +467,7 @@ class ModuliKasner(CosmologyTheory):
             "alpha' corrections, complex-structure and bundle moduli, axions, a potential, and the heterotic "
             "dilaton beyond the product-metric rule: the truncation is classical large-volume only",
             "whether kinetic domination is reached from any initial condition: that is moduli stabilisation",
+            "that the racetrack dilaton ever rolls: the racetrack pins sigma_S = 0, and racetrack_drift only bounds "
+            "what a failure of stabilisation could do (a thought experiment, with the condensation ratio an input)",
             "any comparison with observation (NeedsFit)",
         ]
