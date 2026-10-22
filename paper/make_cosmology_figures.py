@@ -109,6 +109,18 @@ def fig_moduli():
     r = mk.einstein_scalar_check(d, [1, 1], s, p, t_end=50.0)
     fact("ELExponentDev", float(np.abs(r["p"] - np.array(p)).max()), "%.1e")
     fact("ELConstraint", abs(r["constraint"]), "%.1e")
+    sg, s0 = 0.5, 1.7
+    tot = s2 + float(mk.dilaton_speed2(sg))
+    pd = mk.exponents_from_speed2(tot, 0.9)
+    rd = mk.einstein_scalar_check(d, [1, 1], s, pd, t_end=50.0, dilaton=(s0, s0 * sg))
+    fact("DilatonELSigmaDev", abs(rd["sigma_s"] - sg), "%.1e")
+    fact("DilatonELSpeedDev", abs(rd["speed2"] - tot), "%.1e")
+    rb = mk.racetrack_kinetic_budget(4, 5, 10.0, 2.0)
+    fact("RacetrackSzero", rb["re_s0"], "%.3f")
+    fact("RacetrackAlphaDown", rb["alpha_ratio_down"], "%.3f")
+    fact("RacetrackAlphaUp", rb["alpha_ratio_up"], "%.3f")
+    fact("RacetrackLambdaDown", rb["lambda_ratio_down"], "%.3g")
+    fact("RacetrackLambdaUp", rb["lambda_ratio_up"], "%.3g")
     fact("DilationNorm", mk.speed2(d, [0.5, 1.1], [0.5, 1.1]), "%.12g")
     fact("QuinticMetricAtTwo", mk.moduli_metric(mk.triple_numbers([[4, 5]]), [2.0])[0, 0], "%.6g")
 

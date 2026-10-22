@@ -21,6 +21,9 @@
 \providecommand{\CFMixmasterEpochs}{?}\providecommand{\CFMixmasterLogHFinal}{?}
 \providecommand{\CFMixmasterLogHChange}{?}\providecommand{\CFKasnerMaxP}{?}\providecommand{\CFKasnerMinP}{?}
 \providecommand{\CFModuliSpeedDrift}{?}\providecommand{\CFELExponentDev}{?}\providecommand{\CFELConstraint}{?}
+\providecommand{\CFDilatonELSigmaDev}{?}\providecommand{\CFDilatonELSpeedDev}{?}
+\providecommand{\CFRacetrackSzero}{?}\providecommand{\CFRacetrackAlphaDown}{?}\providecommand{\CFRacetrackAlphaUp}{?}
+\providecommand{\CFRacetrackLambdaDown}{?}\providecommand{\CFRacetrackLambdaUp}{?}
 \providecommand{\CFDilationNorm}{?}\providecommand{\CFQuinticMetricAtTwo}{?}
 \IfFileExists{figures/cosmology_facts.tex}{\input{figures/cosmology_facts.tex}}{}
 
@@ -85,6 +88,19 @@ metric is $G_{11}=\tfrac{3}{2t^2}$, giving \CFQuinticMetricAtTwo{} at $t=2$.
 \paragraph{Independent check.} The Euler--Lagrange equations of the Bianchi~I minisuperspace Lagrangian
 $L=\tfrac12e^{S}[\sum\dot x_i^2-(\sum\dot x_i)^2+G_{ab}\dot t^a\dot t^b]$ are derived by sympy from $L$ alone and
 integrated; the exponents are conserved to \CFELExponentDev{} and the constraint stays at \CFELConstraint.
+
+\paragraph{The heterotic dilaton.} With $K\supset-\ln(S+\bar S)$ and $s=\mathrm{Re}\,S$ the dilaton factor is
+$G_{ss}=1/(2s^2)$, flat in $\ln s$, and the total space is a Riemannian product, so the Kähler speed and
+$\sigma_S=d\ln s/du$ are separately conserved and $|s|^2=|s_K|^2+\sigma_S^2/2\le\tfrac23$. The dilaton alone is bounded
+by $\sigma_S^2\le\tfrac43$, and the joint dilation (norm $\tfrac32+\tfrac12=2$) by $\sigma^2\le\tfrac13$. The same
+Euler--Lagrange integration with the dilaton added conserves $\sigma_S$ to \CFDilatonELSigmaDev{} and $|s|^2$ to
+\CFDilatonELSpeedDev. Since $\alpha_{\rm GUT}=1/(4\pi\,\mathrm{Re}\,S)$, a dilaton growing by $F$ changes
+$\alpha_{\rm GUT}$ by $F^{-\sigma_S}$, and at one loop $\Lambda_{\rm QCD}\propto\exp(-8\pi^2 s/|b_3|)$ exactly, matching
+\texttt{running.lambda\_qcd}. As a thought experiment only, from the racetrack value $\mathrm{Re}\,S=\CFRacetrackSzero$
+($N_1,N_2=4,5$, condensation ratio $10$ as input), using the whole budget for a factor $F=2$ would change
+$\alpha_{\rm GUT}$ by $\CFRacetrackAlphaUp$ or $\CFRacetrackAlphaDown$ and $\Lambda_{\rm QCD}$ by $\CFRacetrackLambdaUp$ or
+$\CFRacetrackLambdaDown$. The racetrack pins $\sigma_S=0$, so this bounds what a failure of stabilisation could do and
+says nothing about whether it happens.
 
 \paragraph{What is not claimed.} Geodesics for $h^{1,1}>1$ are numerical. The truncation omits $\alpha'$ corrections,
 complex-structure and bundle moduli, axions and any potential; a heterotic dilaton enters only through the product
