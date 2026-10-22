@@ -1,0 +1,94 @@
+% supplementary_material_cosmology.tex
+%
+% Build with:  python3 paper/make_cosmology_figures.py && pdflatex supplementary_material_cosmology.tex
+%
+% Every number quoted below is written to figures/cosmology_facts.tex by paper/make_cosmology_figures.py,
+% which runs the pyCICY modules, so the prose and the computations cannot drift apart silently.
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage[hidelinks]{hyperref}
+\graphicspath{{figures/}}
+
+% fallbacks so the document typesets before the facts exist; the \input overrides them
+\providecommand{\CFPancakeContactTime}{?}\providecommand{\CFPancakePiBOverTwo}{?}
+\providecommand{\CFPancakeFibreTurns}{?}\providecommand{\CFPancakeTin}{?}
+\providecommand{\CFMixmasterEpochs}{?}\providecommand{\CFMixmasterLogHFinal}{?}
+\providecommand{\CFMixmasterLogHChange}{?}\providecommand{\CFKasnerMaxP}{?}\providecommand{\CFKasnerMinP}{?}
+\providecommand{\CFModuliSpeedDrift}{?}\providecommand{\CFELExponentDev}{?}\providecommand{\CFELConstraint}{?}
+\providecommand{\CFDilationNorm}{?}\providecommand{\CFQuinticMetricAtTwo}{?}
+\IfFileExists{figures/cosmology_facts.tex}{\input{figures/cosmology_facts.tex}}{}
+
+\title{Supplement: cosmological singularities and kinetic-dominated K\"ahler moduli in \texttt{pyCICY}}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{What is here and what is not}
+The modules \texttt{kasner}, \texttt{bkl}, \texttt{pancake}, \texttt{horizons}, \texttt{tidal}, \texttt{flrw} and
+\texttt{ccbh} were ported from Quantum Gravity Lab (CC0). The sensor and ``complexity scalar'' of that project are not
+ported: they map $K(t)$ to a number through a modelling choice, which is an experiment and not an exact result. The
+toy cosmologies are our own, are not fitted, and are not reproductions of the models that inspired them. The one new
+module, \texttt{moduli\_kasner}, is the only one that uses a Calabi--Yau: it takes the triple intersection numbers
+$d_{ijk}$ and returns the exponent budget of section~\ref{sec:moduli}.
+
+\section{Horizons}
+\begin{figure}[h]\centering
+\includegraphics[width=\textwidth]{cosmo_horizons.pdf}
+\caption{Left: comoving null angle of the pancake along the collapsing fibre and along the base
+($a_0=1,b_0=3,f_0=2,m=1/2$). Middle: fibre circumference. Right: cumulative Mixmaster horizon on each axis through
+\CFMixmasterEpochs{} epochs of the sharp-wall BKL map, $u_0=\pi$ (irrational, since rational $u$ terminates the map).}
+\end{figure}
+The Kasner rule is exact: $\int_0^t t'^{-p}dt'$ is finite for $p<1$ and diverges logarithmically at $p=1$, so a
+vacuum Kasner with $u>1$ has finite horizons on every axis (largest exponent for $u\in[1,6]$ is \CFKasnerMaxP{}, smallest
+\CFKasnerMinP{}). The pancake's \emph{open} directions keep a finite horizon, reaching the antipodal angle $\pi$ of the
+base at $t=\CFPancakeContactTime$ (compare $\pi b_0/2=\CFPancakePiBOverTwo$); the collapsing fibre is the one that
+diverges, as $(2/a_0)\ln(t/t_{\rm in})$ with $t_{\rm in}=\CFPancakeTin$, a ray winding \CFPancakeFibreTurns{} times by $t=1$.
+For Mixmaster the criterion $\int dt/a_i$ is finite on all three axes: the cumulative horizon changes by
+\CFMixmasterLogHChange{} in $\log_{10}$ between the last two epochs, and the largest axis sits at
+$\log_{10}h=\CFMixmasterLogHFinal$. That is a proxy criterion for Bianchi~IX, not a statement about causal contact in
+the full solution.
+
+\section{Moduli-driven Kasner exponents}\label{sec:moduli}
+\paragraph{Setting.} Units $M_P=1$, action $R/2-K_{i\bar j}\partial T^i\partial\bar T^j$, classical large-volume
+$K=-\ln(d_{ijk}t^it^jt^k)$, axions fixed (the slice $\mathrm{Im}\,T=0$ is totally geodesic, so the truncation is
+consistent), no potential, Bianchi~I. In the real coordinates $t^i$
+\begin{equation}
+G_{ij}=\tfrac12\partial_i\partial_jK=-\frac{3\kappa_{ij}}{V}+\frac{9\kappa_i\kappa_j}{2V^2},\quad
+V=d_{ijk}t^it^jt^k,\ \kappa_{ij}=d_{ijk}t^k,\ \kappa_i=d_{ijk}t^jt^k .
+\end{equation}
+\paragraph{Derivation.} (1) The shear equation is $\frac{d}{dt}(VH_i)=0$ with $V=a_1a_2a_3$, so
+$H_i=p_i/(t-t_s)$ with $\sum p_i=1$. (2) The Hamiltonian constraint becomes
+$\sum p_i^2=1-|s|^2$, where $s^a=d\phi^a/d\ln(t-t_s)$ and $|s|^2=G_{ab}s^as^b$ is conserved along the geodesic that the
+moduli follow. (3) For $\sum p=1$ one has $\sum p^2\ge 1/3$, so real exponents exist iff
+\begin{equation}
+0\le |s|^2\le \tfrac23 ,
+\end{equation}
+with equality only at $p=(\tfrac13,\tfrac13,\tfrac13)$, the isotropic stiff fluid; at fixed $|s|$ the exponents lie on a
+circle of squared radius $\tfrac23-|s|^2$ about that point. (4) The dilation $\xi=t^i\partial_i$ is Killing with
+$G(\xi,\xi)=\tfrac32$ (computed as \CFDilationNorm{} at a test point), so its integral curves are geodesics and for
+$\lambda\sim(t-t_s)^\sigma$ one has $|s|^2=\tfrac32\sigma^2$, i.e.\ $|\sigma|\le\tfrac23$: a kinetic-dominated
+Calabi--Yau cannot grow its linear size faster than $(t-t_s)^{2/3}$. For the quintic ($h^{1,1}=1$, $d_{111}=5$) the
+metric is $G_{11}=\tfrac{3}{2t^2}$, giving \CFQuinticMetricAtTwo{} at $t=2$.
+\begin{figure}[h]\centering
+\includegraphics[width=0.85\textwidth]{cosmo_moduli.pdf}
+\caption{Left: circles of Kasner exponents for several $|s|^2$. Right: a numerical geodesic of the bicubic
+($h^{1,1}=2$); $|s|^2$ drifts by \CFModuliSpeedDrift{} (relative) over $u\in[0,6]$.}
+\end{figure}
+\paragraph{Independent check.} The Euler--Lagrange equations of the Bianchi~I minisuperspace Lagrangian
+$L=\tfrac12e^{S}[\sum\dot x_i^2-(\sum\dot x_i)^2+G_{ab}\dot t^a\dot t^b]$ are derived by sympy from $L$ alone and
+integrated; the exponents are conserved to \CFELExponentDev{} and the constraint stays at \CFELConstraint.
+
+\paragraph{What is not claimed.} Geodesics for $h^{1,1}>1$ are numerical. The truncation omits $\alpha'$ corrections,
+complex-structure and bundle moduli, axions and any potential; a heterotic dilaton enters only through the product
+rule $|s|^2\to|s|^2+\tfrac12(d\ln s/du)^2$. Whether kinetic domination is reached at all is a question of moduli
+stabilisation, which this package does not address, and nothing here is compared with data.
+
+\end{document}
