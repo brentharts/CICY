@@ -50,7 +50,21 @@ SUITES = ["tests/test_viz.py", "tests/test_pycicy.py",
           "tests/test_centralcharge.py",
           "tests/test_firstlaw.py",
           "tests/test_entropy.py",
-          "tests/test_sixsphere_links.py"]
+          "tests/test_sixsphere_links.py",
+          "tests/test_kasner.py",
+          "tests/test_kasner_types.py",
+          "tests/test_kasner_geodesic.py",
+          "tests/test_bkl.py",
+          "tests/test_bkl_geodesic.py",
+          "tests/test_bkl_sweep.py",
+          "tests/test_pancake.py",
+          "tests/test_pancake_extended.py",
+          "tests/test_tidal.py",
+          "tests/test_flrw.py",
+          "tests/test_ccbh.py",
+          "tests/test_horizons.py",
+          "tests/test_cosmology.py",
+          "tests/test_moduli_kasner.py"]
 
 
 def main():

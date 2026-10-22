@@ -30,6 +30,10 @@ setuptools.setup(
         "scipy",
         "sympy",
         "texttable",
+        # EinsteinPy is installed by default: it is the independent symbolic route that checks
+        # pyCICY.kasner's curvature, and mpmath carries the Mixmaster horizon map.
+        "einsteinpy>=0.4",
+        "mpmath>=1.2",
     ],
     extras_require={
         # pyCICY.viz and CICY.plot_cohomologies need a plotting stack;
