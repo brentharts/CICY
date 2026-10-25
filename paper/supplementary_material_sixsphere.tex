@@ -91,6 +91,7 @@
 \newcommand{\SSChSix}{?}\newcommand{\SSChTermsChecked}{?}
 \newcommand{\SSChTermsNeeded}{?}\newcommand{\SSChTwentyFour}{?}
 \newcommand{\SSChUndet}{?}\newcommand{\SSChUndetM}{?}
+\newcommand{\SSChTubeM}{?}\newcommand{\SSChTubeOverlap}{?}
 % Two further matches (pyCICY.sixsphere_cosmology): written by
 % paper/make_sixsphere_facts.py --cosmo-only (or the full run).
 \newcommand{\SSCoAzeroSix}{?}\newcommand{\SSCoChecks}{?}\newcommand{\SSCoDim}{?}
@@ -1282,8 +1283,10 @@ is an aperiodic tile of the other kind. It is a seven-cube chair, the
 $2\times2\times2$ cube minus a corner, decorated so that it is claimed to tile only
 aperiodically, and its substitution has eight children and inflation factor the
 \emph{integer} $2$. That the decorated tile is aperiodic, and an einstein tile, is
-Tsiokos's claimed proof, which we quote; whether every tiling lies in the substitution
-hull is open upstream. What we compute is a finite and exact comparison, in \texttt{pyCICY.chair44\_nested}, which carries its own copy of the
+Tsiokos's claimed proof, which we quote. That every tiling lies in the substitution hull
+is a theorem of Romanov, in the joint paper~\cite{HartshornRomanov} (it is conditional on
+Tsiokos's registration of tilings and on a unique parent tiling), which we also quote and do
+not re-derive. What we compute is a finite and exact comparison, in \texttt{pyCICY.chair44\_nested}, which carries its own copy of the
 eight child poses and re-checks that they tile each of the $24$ rotated doubled
 chairs. The six-sphere contains no Chair44; the section sets two kinds of tiling
 side by side on tori.
@@ -1472,9 +1475,43 @@ $\SSChTwentyFour{}$ carry $24$ labels.
 
 The substitution thus fixes the orientation of such a cell up to the dihedral group of a
 body diagonal, which contains the symmetry the undecorated chair has about its own
-diagonal. The number six is not related here to the six mystic fibre classes of
-\cref{sec:mystic}, where it counts the oriented edges of the dual complex; no mechanism is
-known, and we record it as a coincidence.
+diagonal. Where the undetermined addresses sit is also exactly describable, and that
+explains the number six.
+
+\begin{proposition}[the undetermined set is four tubes]
+\label{prop:chair-tubes}
+For every $M=1,\dots,\SSChTubeM$, the addresses of the $2^M$-cube at which the label is not
+yet determined are exactly the union of four \emph{tubes}, one along each body diagonal. A
+tube is the set of cells $(x,y,z)$ whose difference $(x-z,\,y-z)$ is that of one of the
+seven cells of the chair: the chair swept along its notch diagonal, with $7\cdot2^M-6$
+cells. The four tubes overlap in $\SSChTubeOverlap$ cells, so
+\[
+  c(M)=4\,(7\cdot2^M-6)-\SSChTubeOverlap=\SSChCCoef\cdot2^M-\SSChCConst,
+  \qquad \SSChCCoef=4\times7,
+\]
+and the label excess $E(M)=\SSChECoef\cdot2^M+\SSChEConst$ is five for each six-label
+address plus $23$ for each of the sixteen $24$-label addresses.
+\end{proposition}
+
+\noindent
+\emph{Status.} The identity of the two sets, and both counts, are checked for every
+$M\le\SSChTubeM$ against the subset automaton (\texttt{chair44\_nested.undetermined\_is\_diagonal\_tubes},
+one of the $\SSChChecks{}$ checks). That the tubes lie in the undetermined set for every $M$ is
+the \emph{chair stack} of the joint paper~\cite{HartshornRomanov}: six labels $j$ with
+$\sigma(j)_{000}=\sigma(j)_{111}=j$ whose chairs form a stack along the notch diagonal, each
+filling the notch of the next, so that each of the seven cells of the chair gives a diagonal
+line of identical labels in $\sigma^n(j)$ for every $n$ (an induction of $14$ finite cases; the
+computation is \texttt{chair44\_lines.py}, commit \texttt{799f70d} of
+\texttt{brentharts/spectre}~\cite{SpectreRepo}). Six different frames put six different labels on
+the same cell. The converse, that nothing else is undetermined, is the finite check, not a
+proof for all $M$.
+
+The six frames of those six labels are exactly the frames with notch $\pm(1,1,1)$, that is,
+the stabiliser of a body diagonal, the order-six dihedral group of
+\cref{obs:chair-six}. So the mechanism for the six candidate rotations is that the label is
+undetermined where a stack can sit, and a stack can be rotated about its diagonal. The number
+six is still not related to the six mystic fibre classes of \cref{sec:mystic}, where it counts
+the oriented edges of the dual complex; we record that as a coincidence.
 
 \subsection{Two matches that are not connections}
 \label{sec:chair-nolink}
@@ -1509,8 +1546,8 @@ exactly $c(M)/8^M\sim28\cdot4^{-M}$ (\cref{prop:chair-descent}). That is the fin
 shadow of what the cited theory states in the limit: a primitive lattice substitution
 with a modular coincidence has pure point, limit-periodic structure
 \cite{LeeMoody,Schlottmann,LMS}, which we quote and do not re-prove. All
-$\SSChChecks{}$ checks of \texttt{chair44\_nested.status} pass. Nothing here shows that
-every Chair44 tiling lies in the substitution hull.
+$\SSChChecks{}$ checks of \texttt{chair44\_nested.status} pass. The hull theorem is quoted
+from~\cite{HartshornRomanov}, not re-derived here.
 
 % =====================================================================
 
@@ -1740,11 +1777,13 @@ lattice data says), whether $X$ is biholomorphic
 to its conjugate, and the value of $h^{1,2}$, which the Hodge numbers and the
 Fr\"olicher spectral sequence leave at any integer from $0$ up --- is declined, as is the
 diffeomorphism $X \cong S^6$ itself. \Cref{sec:chair44}: \cref{prop:chair-rate,prop:chair-descent} are proved; \cref{obs:chair-periods}
-is one patch and \cref{obs:chair-six} is a finite automaton at $M=\SSChUndetM$. Chair44's
+is one patch, \cref{obs:chair-six} is a finite automaton at $M=\SSChUndetM$, and \cref{prop:chair-tubes} is a finite check. Chair44's
 aperiodicity and einstein property are Tsiokos's claimed proof, the pure point
 and limit-periodic structure is a cited theorem
-\cite{LeeMoody,Schlottmann,LMS}, and whether every tiling lies in the substitution hull
-is open upstream; none is re-proved here. The Hat's $0.796$ is on a different footing;
+\cite{LeeMoody,Schlottmann,LMS}, and that every tiling lies in the substitution hull is
+Romanov's theorem~\cite{HartshornRomanov}, conditional on registration and a unique parent
+tiling; none is re-proved here. \cref{prop:chair-tubes} is exact for $M\le\SSChTubeM$ and its
+inclusion of the tubes in the undetermined set is quoted from~\cite{HartshornRomanov}. The Hat's $0.796$ is on a different footing;
 \cref{obs:hat-fft} compares the two on the same footing at one size (level $6$). No complex fourfold with a Chair44 cusp fibre is constructed.
 \Cref{sec:cosmo-nolink}: the closed orbits and the orbifold are exact; the pancake's winding coefficient $2/a_0$ is quoted from a numerical solution and the Euler-angle period is not checked; the proposed dictionary from substitution levels to the pancake's time is a choice made to ask the question, and neither match is claimed to be a connection.
 
@@ -1832,6 +1871,17 @@ I.~Tsiokos (2026),
 \href{https://arxiv.org/abs/2609.23783}{arXiv:2609.23783};
 code and data \url{https://github.com/ioannist/six-birds-tiles} (CC BY 4.0).
 The titles of the two preprints are not reproduced here.
+
+\bibitem{HartshornRomanov}
+B.~Hartshorn and T.~Romanov (2026),
+\emph{The Internal Space and Boundary Growth of the Spectre and Tsiokos's Chair44 Tilings},
+joint paper, in preparation; its Section ``Every tiling lies in the hull'' is Romanov's theorem
+(draft of 24 October 2026), and its Section ``Uniform frequencies hold in boxes, not along lines''
+contains the chair stacks.
+
+\bibitem{SpectreRepo}
+B.~Hartshorn, \texttt{brentharts/spectre}, \texttt{chair44\_lines.py} and \texttt{chair44facts.py},
+commit \texttt{799f70db1ed1} (\url{https://github.com/brentharts/spectre/commit/799f70db1ed13b5e94782fe6c420f8f1d94c6c09}).
 
 \bibitem{LeeMoody}
 J.-Y.~Lee and R.~V.~Moody,
