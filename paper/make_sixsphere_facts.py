@@ -250,6 +250,9 @@ def chair_facts():
     f["ChUndetM"] = 12
     f["ChUndet"] = _thin(sum(prof.values()))
     f["ChSix"], f["ChTwentyFour"] = _thin(prof[6]), prof[24]
+    tb = st["tubes"]
+    assert all(r["equal"] and r["tube_formula"] and r["c_formula"] and r["excess_formula"] for r in tb)
+    f["ChTubeM"], f["ChTubeOverlap"] = tb[-1]["M"], tb[-1]["overlap"]
     kv = st["kuhn"]
     f["ChKuhnPreserve"], f["ChKuhnGroup"] = kv["cube_preserving"], kv["cube_group"]
     f["ChKuhnRot"] = kv["rotations_preserving"]
