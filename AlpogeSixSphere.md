@@ -1037,8 +1037,9 @@ narrow for the patch.
 
 **The Hat in a field (measured, one patch).** The same real-space formula is the
 one that applies to the Hat. On the level-3 patch it resolves **no Hofstadter gap
-with a nonzero Chern number**: the marker stays small over the whole
-(φ, `E_F`) grid of panel (c), and the bulk-weighted spectrum shows only the narrow
+with a nonzero Chern number**: over the whole (φ, `E_F`) grid of panel (c)
+(41 × 141 points) the marker forms no integer plateau. Its largest value is 0.93,
+at isolated points inside bands, and the bulk-weighted spectrum shows only the narrow
 Chern-0 dips near `E ≈ ±1` that are already visible at zero field. The substrate
 under it has clean ±1 Chern gaps over wide ranges of flux. Deleting the bonds
 inside tiles (about half of the substrate's bonds; the patch keeps 46%) closes them. This is a
