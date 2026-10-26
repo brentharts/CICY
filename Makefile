@@ -56,7 +56,7 @@ FIGURES := $(FIGDIR)/hodge_depth.pdf \
 # Sources whose modification should invalidate the figures.
 PYSRC := $(wildcard pyCICY/*.py) $(FIGSCRIPT)
 
-.PHONY: all paper papers strings-paper strings-facts twistor-paper twistor-facts monotile-paper monotile-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor monotile knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help sixsphere-lean sixsphere-paper sixsphere-facts chair44-figures
+.PHONY: all paper papers strings-paper strings-facts twistor-paper twistor-facts monotile-paper monotile-facts figures test survey toric-survey ftheory ftheory-fibrations orientifold twistor monotile knot-chirality chirality hyperbolic aj new-figures supplement clean distclean cache-info cache-clear data symmetries compare help sixsphere-lean sixsphere-paper sixsphere-facts chair44-figures hat-hofstadter-figure
 
 all: paper
 
@@ -242,6 +242,11 @@ sixsphere-lean:
 # Part VIII: Chair44 and the nested tori (pyCICY.chair44_nested), two matplotlib figures.
 chair44-figures:
 	$(PYTHON) $(PAPERDIR)/make_chair44_nested_figures.py
+
+# Part X: the Hat in a field on the cusp substrate (needs the spectre repo,
+# $SPECTRE_DIR or ../spectre; about 15 min)
+hat-hofstadter-figure:
+	$(PYTHON) $(PAPERDIR)/make_sixsphere_hat_hofstadter.py
 
 data:
 	$(PYTHON) scripts/fetch_cicy_list.py --outdir data
