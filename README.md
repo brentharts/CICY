@@ -3322,6 +3322,57 @@ python3 -m pyCICY.chair44_nested              # the report
 make chair44-figures                          # c44_nested_defect, c44_nested_curve (PDF, PNG)
 ```
 
+### The fibre structure and its holonomy, after Gomes
+
+`pyCICY.sixsphere_gauge` runs the recipe of H. Gomes's *Gauge Theory Without
+Principal Fiber Bundles* on the six-sphere's torus fibration: solve for the
+structure every fibre carries, derive the gauge group as its automorphisms, and
+see how much of it the holonomy reaches. The invariant tensors reduce to
+`(Q₀, γ)`, a symplectic lattice with a marked vector. Its automorphism group is the
+integral Jacobi group `SL(2, Z) ⋉ Heis`, which is Part VII's flag shape, derived,
+with the row forced. **`⟨T₁, T₂⟩` is exactly the kernel of a `Z/12` character** of
+it: the `η²`-character of `SL(2, Z)` plus an odd theta characteristic on the
+Heisenberg part. The proof is finite, with explicit words. The holonomy is
+Zariski-dense in the real Jacobi group, which acts on `(τ, μ, β)` by the Jacobi
+laws, preserves `D`, and has stabiliser `SO(2)`. The four near-miss classes of
+Part VII turn out to be the four divisibilities `d ∈ {1, 2, 3, 6}` of `γ` under
+the invariant form, with Pfaffian 6 throughout, and on every survivor `d` divides
+`p`. `AlpogeSixSphere.md`, Part IX.
+
+### Electrons on the cusp fibre, and the Hat as a subgraph
+
+`pyCICY.cusp_hofstadter` puts a tight-binding electron on the cusp fibre's Laves
+substrate. Its characteristic polynomial is
+`E⁶ − (12+s)E⁴ − 3(s−6)E² − |Δ|²`, with `s` the A₂ root sum and `Δ` the A₂ Weyl
+denominator, so the zero modes lie on the Weyl mirror lines of the Brillouin
+torus. Every Hat edge is a substrate bond, so a magnetic field, as a line bundle
+on the cusp torus, restricts to the Hat with no gauge chosen on the tiling. The
+Hat's butterfly then has period 1/2, because its faces are 8 and 10 kites.
+Substrate Chern numbers agree by FHS, TKNN and Kitaev's real-space formula. On a
+2948-site Hat patch, no quantised Chern gap is resolved (measured).
+`AlpogeSixSphere.md`, Part X.
+
+### The index 12 as a theta multiplier
+
+`pyCICY.sixsphere_theta` turns Part IX's character into a function. On the
+period domain, `F = e(β/12)·θ₁(τ, μ)/η(τ)` has multiplier exactly `e(χ(g)/12)`
+under every element of the integral Jacobi group, with no automorphy factor. So
+the holonomy group `⟨T₁, T₂⟩` is the invariance group of `F` (Theorem XI, the
+holonomy–multiplier theorem), and `F¹²` is
+invariant under all of the structure group. This is a second, analytic route
+to the index 12. It is proved exactly, generator by generator: the classical
+`θ₁`/`η` laws plus each generator's `β` shift simplify in sympy to the constant
+`χ/12`. `α` is checked against the `η²` multiplier without decomposing
+`M`. Of 80 nearby theta/eta candidates, only this one is fixed by `T₁` and `T₂`.
+`AlpogeSixSphere.md`, Part XI.
+
+```bash
+python3 tests/test_sixsphere_gauge.py          # about a minute
+python3 tests/test_cusp_hofstadter.py          # about 10 s
+python3 tests/test_sixsphere_theta.py          # about 3 s
+SPECTRE_DIR=../spectre python3 paper/make_sixsphere_hat_hofstadter.py   # ss_hat_hofstadter.png
+```
+
 ## The design rule
 
 One principle runs through the whole package and is the reason to trust it:

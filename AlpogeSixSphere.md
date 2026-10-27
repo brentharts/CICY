@@ -81,6 +81,30 @@ stating on their own:
    not connect: the six-sphere contains no Chair44, and two tempting matches
    (24 simplices round a vertex against 24 rotations; the (3, 4, ∞) group against the
    cube group) are settled as coincidences.
+9. **The holonomy is an index-12 subgroup of the fibre's automorphisms.** The
+   fibre structure fixed by the monodromy is a symplectic lattice with a marked
+   vector, `(Q₀, γ)`. Following Gomes's gauge theory without principal bundles,
+   the gauge group derived from it is the integral Jacobi group
+   `SL(2, Z) ⋉ Heis`. The monodromy group `⟨T₁, T₂⟩` is *exactly* the kernel of a
+   `Z/12` character of it: the `η²`-character on `SL(2, Z)` plus an odd theta
+   characteristic on the Heisenberg part. This is proved by a finite argument.
+   The same computation explains Part VII's four near-miss classes. They are the
+   four divisibilities `d ∈ {1, 2, 3, 6}` of `γ` under the invariant form, and
+   `d | p`.
+10. **Electrons on the cusp fibre, and the Hat as a subgraph.** The tight-binding
+   bands of the cusp fibre's substrate are written in A₂ invariants, and the zero
+   modes sit on the Weyl mirror lines. The Hat's vertex graph is a subgraph of
+   that substrate, so a magnetic field on the cusp torus restricts to the Hat
+   with no gauge choice. This forces the Hat's Hofstadter spectrum to have period
+   1/2 in kite flux. The substrate's Chern gaps, found by two routes, do not
+   survive on a finite Hat patch.
+11. **The index 12 is the multiplier of one theta function.** On the period
+   domain, `F(τ, μ, β) = e(β/12)·θ₁(τ, μ)/η(τ)` satisfies
+   `F(g·x) = e(χ(g)/12)·F(x)` for every element of the integral Jacobi group,
+   with no automorphy factor. So the holonomy group is exactly the invariance
+   group of `F`, and `F¹²` is invariant under the whole structure group. This
+   gives index 12 a second route, analytic and independent of the word search.
+   Among 80 nearby candidates it is the only one fixed by `T₁` and `T₂`.
 
 What is *not* here is the theorem. That `X` is diffeomorphic to `S⁶` is
 declined, and nothing in this package bears on whether the proof is correct
@@ -819,6 +843,338 @@ it.
 
 ---
 
+## Part IX: the fibres as a structure, and how much of it the holonomy reaches
+
+Henrique Gomes, in *Gauge Theory Without Principal Fiber Bundles* (Philosophy of
+Science 92 (2025) 511–527), proposes starting from vector bundles whose fibres
+carry a structure. The gauge group is then *derived* as the automorphism group
+of that structure, and the structure group comes back as a holonomy group. The
+Hopf fibration is the simplest case and is worked in
+[`HopfFibration/HOPF_WITHOUT_PRINCIPAL_BUNDLES.md`](https://github.com/brentharts/HopfFibration/blob/main/HOPF_WITHOUT_PRINCIPAL_BUNDLES.md).
+Alpöge's `X` is a family of 2-tori over `P¹` whose integral homology is a flat
+local system with monodromy `T₁, T₂`. So it is a bundle of exactly this kind,
+with discrete fibre `V = Z⁴`, and Gomes's recipe can be run on it to the end.
+Everything below is `pyCICY.sixsphere_gauge` (`status_gauge()`, 10 checks;
+`tests/test_sixsphere_gauge.py`, 7 sections). Only Gomes's recipe is used: nothing
+here bears on his philosophical claims.
+
+### The structure, solved for
+
+The tensors of degree ≤ 2 fixed by both generators are solved for directly. They
+are `γ` in `V`; `δ̂` in `V*`; `Q₀` and its dual bivector `η` (Part I); `γ²` and
+`δ̂²`; and the commutant `⟨I, γ⊗δ̂⟩`. The dimensions are (1, 1, 2, 2, 2). They are
+not independent: `η = ⋆Q₀` and `δ̂ = Q₀(γ, ·)`. **The structure each fibre carries
+is therefore the pair `(Q₀, γ)`: a symplectic lattice with a marked vector.**
+
+### The derived gauge group is the integral Jacobi group
+
+The automorphisms of `(Q₀, γ)` are, in the basis `(γ, u, w, δ)`,
+
+    g = L(M)·h(c, s),   h(c, s) = [[1, −6c₂, 6c₁, s], [0, 1, 0, c₁], [0, 0, 1, c₂], [0, 0, 0, 1]],
+
+with `M ∈ SL(2, Z)`, `c ∈ Z²`, `s ∈ Z`, and the Heisenberg law
+`h(c, s)h(c′, s′) = h(c + c′, s + s′ + 6ω(c, c′))`. This is `SL(2, Z) ⋉ Heis`, the
+integral Jacobi group. It is also the flag-class shape that Part VII took from
+Lemma 2.7 (iii), now derived from the structure, with one difference: the
+structure *forces* the row `r = (−6c₂, 6c₁)M`, which the flag class leaves free.
+The paper's generators split as
+
+| | Levi part `M` | Heisenberg part `(c₁, c₂, s)` |
+| --- | --- | --- |
+| `T₁` | `M₁ = T S⁻¹` | `(−1, 0, 2)` |
+| `T₂` | `S` | `(0, −1, −3)` |
+| `T₀⁻¹ = T₁T₂` | `T` | `(0, 0, −1)` |
+
+### The holonomy group has index 12, and the quotient is cyclic
+
+Let `α : SL(2, Z) → Z/12` be the abelianisation, with `S ↦ 9` and `T ↦ 1`. (The
+presentation `⟨S, T | S⁴, (ST)³S⁻²⟩` is quoted, and both relations hold in `Z/12`.
+`α` is the character of the multiplier of `η(τ)²`.) On the Heisenberg group, set
+
+    f(h(c, s)) = s − 6q(c)  mod 12,     q(c) = 0 if c ≡ 0 mod 2, and 1 otherwise,
+
+using the odd quadratic refinement of `ω mod 2`. Then `f` is a homomorphism: the
+defect `6[ω(c, c′) − q(c+c′) + q(c) + q(c′)]` depends only on `c, c′ mod 2`, and all
+sixteen cases vanish. `f` is also `SL(2, Z)`-invariant, because
+`L(M)h(c, s)L(M)⁻¹ = h(Mc, s)` holds symbolically and `q` is `GL(2, F₂)`-invariant. So
+
+    χ(L(M)·h) = α(M) + f(h)
+
+is a character of the Jacobi group. Its values are `χ(T₁) = 4 + 8 = 0`,
+`χ(T₂) = 9 + 3 = 0` and `χ(z) = 1`, where `z = h(0, 0, 1)` is the central
+transvection `δ ↦ δ + γ`.
+
+**Theorem (proved; finite).** `⟨T₁, T₂⟩ = ker χ`. The holonomy group is a normal
+subgroup of index 12 in the automorphism group of the fibre structure, with
+quotient `Z/12` generated by the centre. Equivalently, the structure group is
+`H · ⟨z⟩` and `H ∩ ⟨z⟩ = ⟨z¹²⟩`.
+
+*Proof.* `χ` kills both generators, so `H ⊆ ker χ`. `M₁ = TS⁻¹` and `M₂ = S`
+generate `SL(2, Z)`, so `H` maps onto it. Three explicit words (found by a
+breadth-first search and verified) give elements of `H`:
+`T₂T₁T₂²T₁²T₂ = h(0, 1, 6)`, `T₂²T₁T₂²T₁² = h(−1, 0, 6)` and
+`T₁²T₂²T₁T₂²T₁T₂²T₁T₂²T₁T₂²T₁ = h(1, 0, 6)`. Their product gives
+`h(1, 0, 6)·h(−1, 0, 6) = z¹²`. These three elements generate `ker f`. So for
+`g ∈ ker χ`, pick `h ∈ H` with the same Levi part: then `h⁻¹g ∈ ker f ⊆ H`. ∎
+
+The "untwisted" lifts `L(M₁), L(M₂)` show what the Heisenberg parts are for.
+These lifts have `χ = 4` and `9`, generate a complement isomorphic to `SL(2, Z)`,
+and fail the cusp condition: their product is unipotent of rank 1, not 2. The
+Heisenberg parts of `T₁` and `T₂` cancel the `η²`-character exactly.
+
+Read through Gomes, a principal-bundle presentation would postulate the Jacobi
+group as the structure group. The holonomy recovers it only up to `Z/12`, and
+what it misses is exactly the central translations `δ ↦ δ + kγ` with `12 ∤ k`.
+
+### Zariski closure and the period domain
+
+- The Lie algebra generated by the logarithms of `T₀` and `[T₂², T₁]` under
+  conjugation and bracket has dimension **6**. That equals the stabiliser of
+  `(Q₀, γ)` in `sp(4)`, which is `sl(2) ⋉ heis(3)`. So the holonomy is
+  Zariski-dense in the real Jacobi group.
+- One-parameter subgroups of the real Jacobi group can be fed through
+  `sixsphere.laws_from_lattice`, the routine that derived the period laws from
+  `T₁, T₂` in Part II. This gives the classical Jacobi action on `(τ, μ, β)`:
+  `μ ↦ μ + t`, `(μ, β) ↦ (μ − tτ, β − 12μt + 6t²τ)`, `β ↦ β + t`, and Möbius maps
+  of `τ`. Each keeps the `6μ` shape and preserves `D = Im β − 6(Im μ)²/Im τ`.
+  At `(i, 0, iD)` the orbit has real dimension 5 and the stabiliser is the
+  circle `SO(2)`. The level sets of `D` are `G(R)/SO(2)`. The Hodge form on `F¹`
+  is indefinite (Part II), yet the compact group the structure-first reading
+  derives at a point is `U(1)`.
+
+### The four near-miss classes are the four divisibilities of γ
+
+Part VII split the 32 flag-class survivors into four `GL(4, Z)` classes, told
+apart by the reachable `|p|` mod 12. Their invariant forms explain the split.
+Each class has a primitive invariant alternating form `Q` with Pfaffian **6**. The
+divisibility `d` of the functional `Q(γ, ·)` is
+
+| reachable `\|p\|` mod 12 (Part VII) | `d` | `(Q(γ, δ), Q(u, w))` | least nonzero `\|p\|` |
+| --- | --- | --- | --- |
+| `{1, 5}` (the paper's) | 1 | (1, 6) | 1 |
+| `{2, 4}` | 2 | (2, 3) | 2 |
+| `{3}` | 3 | (3, 2) | 3 |
+| `{0, 6}` | 6 | (6, 1) | 6 |
+
+These are the four ordered factorisations of 6, with eight survivors each. On every
+survivor, `d` divides every reachable `p`, and the least nonzero `|p|` is `d`. The
+mechanism is visible in the twists: `3 | d` forces `3 | ℓ₁`, and `2 | d` forces
+`ℓ₂` even. **The paper's class is the one in which the structure pairs `γ`
+unimodularly. The near misses stop at `|p| = 2, 3, 6` because `d | p`.** This is
+checked on all 32 survivors, not proved for the infinite family. In all four
+classes the central transvection first enters the holonomy at `z¹²`. A word
+search observes this; it is proved above for the paper's class only.
+
+---
+
+## Part X: electrons on the cusp fibre, and the Hat as a subgraph of it
+
+![Zero-field DOS of the cusp substrate W and of a Hat patch; Kitaev's Chern number over flux and Fermi energy for the substrate and for the Hat](paper/figures/ss_hat_hofstadter.png)
+
+*(a) The density of states at zero field: the substrate `W` (exact Bloch bands) and
+a level-3 Hat patch (2948 sites, unit hopping). The Hat curve is the model of the first panel of the
+[quantum-lattice](https://github.com/brentharts/quantum-lattice) tiling figure
+(Hat, Spectre and Turtle coincide there, their vertex graphs being identical), on a
+different level-3 patch.
+(b) Kitaev's real-space Chern number on an open substrate patch over (flux per kite,
+`E_F`), with the FHS integers of the magnetic Bloch bundle printed at φ = 1/6, 1/4,
+1/3, 2/3, 3/4. (c) The same marker on the Hat patch over one period, φ ∈ [0, 1/2].*
+
+Part VII established that the cusp fibre's substrate is the [3.4.6.4] Laves
+lattice rolled up on the cusp torus. Per domain it has one hexagon centre `C`,
+three edge midpoints `E` and two hexagon vertices `V`, with 6 + 6 bonds. In
+lattice coordinates the sites are torsion points: `C = 0`, the `E`s are `E[2]` and
+the `V`s are `(1/3, 1/3)` and `(2/3, 2/3)` (the torsion dictionary of the spectre
+repository). `pyCICY.cusp_hofstadter` places a tight-binding electron on that
+graph (`tests/test_cusp_hofstadter.py`). `paper/make_sixsphere_hat_hofstadter.py`
+brings in a generated Hat tiling.
+
+**The bands in A₂ invariants (exact).** The Bloch Hamiltonian is 6×6 and
+bipartite, with `E` against `C + V`. With `x = e^{ik₁}`, `y = e^{ik₂}`,
+
+    det(E − H) = E⁶ − (12 + s)E⁴ − 3(s − 6)E² − |Δ|²,
+    s = x + 1/x + y + 1/y + x/y + y/x,     Δ = (1 − x)(1 − y)(1 − x/y) = det B (up to a unit).
+
+`s` is the sum over the six roots of A₂, and `Δ` is the A₂ Weyl denominator: the
+triangulation behind the cusp fan of Part III shows up again in the spectrum. So
+`E = 0` occurs exactly where `Δ = 0`, on the three mirror lines `k₁ = 0`, `k₂ = 0`,
+`k₁ = k₂` of the Weyl group acting on the Brillouin torus. These are nodal *lines*,
+not Dirac points; checked on a grid, nothing off the lines and nothing missing on
+them. At Γ the polynomial is `E⁴(E² − 18)`. The 18 is the row sum of `BBᵀ` on the
+`E` sublattice, 4 + 2·5 + 2·2: the degree, two hexagon cliques and two triangle
+cliques. The spectrum fills `[−3√2, 3√2]`.
+
+**The Hat graph is a subgraph of `W`'s substrate (asserted on the patch).** At the
+Hat's proportions every edge of `Tile(1, √3)` in its 14-edge form, and every edge
+of the mystic, is a single kite edge (`C–E` has length √3 and `E–V` length 1). The
+Hat's vertex graph is therefore the substrate with the bonds inside tiles
+deleted. On the level-3 patch this gives 443 tiles, 2948 vertices and 3390 edges,
+degrees {2, 3, 4}, and `V − E + F = 1`. Part VII's twelve boundary fractions are
+the densities of the bond orbits that survive.
+
+**A field as a connection, restricted.** A uniform field with flux φ per kite is a
+connection on the substrate (Landau gauge, checked kite by kite). On the cusp
+torus it is a line bundle exactly when the flux per domain, 6φ, is an integer,
+its Chern number. Restricting the substrate's Peierls phases to the Hat graph
+restricts the connection. The Hat therefore inherits its magnetic model with no
+gauge chosen on the tiling. That is Gomes's order of construction: an aperiodic
+tiling has no torus and so no principal bundle to start from, and nothing is
+lost without one. The patch confirms it: the flux through every Hat is 8φ and
+through every mystic 10φ.
+
+**Periods (exact, and confirmed on the patch).** A spectrum on a planar graph
+depends only on face fluxes mod 1. The substrate's faces are kites, so its
+butterfly has period 1. The Hat's bounded faces have 8 and 10 kites, so its
+butterfly has **period 1/gcd(8, 10) = 1/2**. On the patch, the spectra at
+φ = 0.137 and 0.637 agree to 10⁻¹⁴, and at φ = 1/2 the Hat spectrum *equals* the
+zero-field spectrum. The substrate at φ = 1/2 carries π flux through every kite
+and differs from zero field by up to 1.23. The Spectre is not a union of kites
+and has no such statement.
+
+**Chern numbers, two routes, on the substrate.** For φ = p/q, Fukui–Hatsugai–Suzuki
+on the magnetic Bloch bundle of a q×1 supercell is a projector computation, with
+no gauge fixed. It gives integer Chern numbers, and every gap obeys the
+Středa/TKNN relation `ρ = σ·6φ + s` with integer `s`, where `ρ` is states per
+domain. At φ = 1/3 the two gaps carry ∓1. Kitaev's real-space formula
+`ν = 12πi Σ_{A,B,C}(P_jk P_kl P_lj − P_jl P_lk P_kj)` on an *open* patch uses
+neither a torus nor a Bloch bundle. It reproduces the same integers on every
+wide gap at φ = 1/3 and 1/4, with one overall orientation convention fixed. It
+does not reproduce them on the narrow gap at φ = 1/4, `E ≈ ±0.94`, which is too
+narrow for the patch.
+
+**The Hat in a field (measured, one patch).** The same real-space formula is the
+one that applies to the Hat. On the level-3 patch it resolves **no Hofstadter gap
+with a nonzero Chern number**: over the whole (φ, `E_F`) grid of panel (c)
+(41 × 141 points) the marker forms no integer plateau. Its largest value is 0.93,
+at isolated points inside bands, and the bulk-weighted spectrum shows only the narrow
+Chern-0 dips near `E ≈ ±1` that are already visible at zero field. The substrate
+under it has clean ±1 Chern gaps over wide ranges of flux. Deleting the bonds
+inside tiles (about half of the substrate's bonds; the patch keeps 46%) closes them. This is a
+statement about one finite patch. Small-flux Landau gaps would need patches larger
+than the magnetic length, and are not excluded.
+
+## Part XI: the holonomy character as a theta multiplier
+
+Part IX remarked that `α` looks like the multiplier of `η²` and `f` like an odd
+theta characteristic, and left it there. This part computes it. Everything
+below is `pyCICY.sixsphere_theta` (`status_theta()`, 11 checks;
+`tests/test_sixsphere_theta.py`, about 3 s). The multiplier is measured at 25
+digits, with every comparison at a tolerance of `10⁻¹²`, and then proved
+exactly from the classical transformation laws (see "The proof" below).
+
+### The function
+
+On the period domain, with Alpöge's coordinates `Z = [[6μ, τ], [β, μ]]`, put
+
+    F(τ, μ, β) = e(β/12) · θ₁(τ, μ) / η(τ),     e(x) = exp(2πi x).
+
+`θ₁/η` is a Jacobi form of weight 0 and index 1/2. Under `L(M)` its index
+produces the factor `e(−cμ²/2(cτ+d))`. The `β` coordinate transforms with
+`−6cμ²/(cτ+d)`, for example `L(S): β ↦ β − 6μ²/τ`, so `e(β/12)` cancels that
+factor exactly. The Heisenberg translations `μ ↦ μ + c₁ + c₂τ` shift `β` by
+the matching quasi-periodicity term (`h(0,1,0): β ↦ β − 12μ + 6τ`). What is
+left is a root of unity.
+
+**Theorem XI, the holonomy–multiplier theorem (proved below; also measured).**
+For every `g ∈ G(Z)`, acting by
+the law that its integer matrix alone forces (`sixsphere.laws_from_lattice`),
+
+    F(g·x) = e(χ(g)/12) · F(x).
+
+| generator | `χ` | measured `12·arg/2π` | `\|ratio\|` |
+| --- | --- | --- | --- |
+| `L(S)` | 9 | −3 | 1 |
+| `L(T)` | 1 | 1 | 1 |
+| `h(1,0,0)` | 6 | 6 | 1 |
+| `h(0,1,0)` | 6 | −6 | 1 |
+| `z` | 1 | 1 | 1 |
+| `T₁`, `T₂` | 0 | 0 (to `10⁻²⁶`) | 1 |
+
+Equivalently, `⟨T₁, T₂⟩ = ker χ` is exactly the group of `g` with
+`F(g·x) = F(x)`: the holonomy group of the fibration is the kernel of the
+multiplier of one explicit function.
+
+*Name and standard form.* In the language of Jacobi forms (Eichler–Zagier,
+*The Theory of Jacobi Forms*), `θ₁/η` is a Jacobi form of weight 0 and index
+1/2. Its multiplier system is `v_η²`, a character of order 12, on `SL(2, Z)`,
+times a sign character on the Heisenberg part. `e(β/12)` lifts it to a function
+on the Jacobi group with the index as central character (Berndt–Schmidt,
+*Elements of the Representation Theory of the Jacobi Group*). Both phrasings
+are from memory; verify them before citing. All of that is classical. What is
+new here is that this multiplier's kernel is the monodromy group of the
+fibration. That identification is what "the holonomy–multiplier theorem" refers
+to below.
+
+It also holds on random words in these generators. Here `α` comes from a
+Euclid decomposition of `M` into `S` and `T`. It is checked against the `η²`
+multiplier `η(Mτ)²/((cτ+d)η(τ)²)` read off numerically, a route that never
+decomposes `M`.
+
+### The proof
+
+The proof works one generator at a time. Write each factor as `e(·)` and add
+the exponents. The inputs are the classical laws of `θ₁` and `η` (Mumford,
+*Tata Lectures on Theta I*, §I.5 and §I.7; they are quoted, and checked against
+the series to `10⁻²⁶` by `classical_laws_check()`). The `β` shift is that
+generator's own law from `laws_from_lattice`:
+
+| generator | law | `θ₁/η` gains | `e(β/12)` gains | sum |
+| --- | --- | --- | --- | --- |
+| `L(S)` | `(−1/τ, μ/τ, β − 6μ²/τ)` | `−i·e(μ²/2τ)` | `e(−μ²/2τ)` | `−i = e(9/12)` |
+| `L(T)` | `(τ+1, μ, β)` | `e(1/8)/e(1/24)` | 1 | `e(1/12)` |
+| `h(1,0,0)` | `(τ, μ+1, β)` | `−1` | 1 | `e(6/12)` |
+| `h(0,1,0)` | `(τ, μ−τ, β − 12μ + 6τ)` | `−e(μ − τ/2)` | `e(−μ + τ/2)` | `e(6/12)` |
+| `z` | `(τ, μ, β+1)` | 1 | `e(1/12)` | `e(1/12)` |
+
+`proof_by_generators()` does this in sympy. Every sum simplifies to a constant
+(no `τ`, `μ` or `β` left), and `12·` that constant is `χ` mod 12. The
+`√(−iτ)` of `θ₁` and of `η` cancel, so there is no automorphy factor. These
+five elements generate `G(Z)` (`S`, `T` generate `SL(2, Z)`; the other three
+generate the Heisenberg group). The action is a group action, and `χ` is a
+homomorphism (Part IX). So by induction on word length,
+`F(gh·x) = e(χ(g)/12)F(h·x) = e((χ(g)+χ(h))/12)F(x)` holds for every `g`.
+The control is that, without the `β` shift, the `L(S)` and `h(0,1,0)`
+exponents are not constant: `β` is exactly what absorbs the index-1/2 factor.
+
+Combined with Part IX, this gives a second proof of index 12, with no search:
+`ker χ` is the stabiliser of `F`, and `e(χ/12)` takes 12 values.
+
+### What it gives
+
+Since `e(χ/12)` is a faithful character of `Z/12`, the stabiliser of `F` in
+`G(Z)` is `ker χ`. Part IX proved that this is `⟨T₁, T₂⟩`. So:
+
+- **The holonomy group is the invariance group of one explicit function.** In
+  Gomes's terms, the structure that the holonomy preserves, beyond `(Q₀, γ)`,
+  is a section of a flat line bundle with holonomy `e(χ/12)`. `F` is that
+  section, written down.
+- **`F¹²` is invariant under all of `G(Z)`**, and `z^k` for `k = 0..11` reach
+  all twelve multipliers. The 12 is the order of `e(1/12)`, which is the
+  multiplier of `η²` on `T`. It is the same 12 as `η²⁴ = Δ`.
+- **The two halves of `χ` are the two factors of `F`.** `α` is the
+  multiplier of `θ₁/η` on `SL(2, Z)`, which equals that of `η²`, because
+  `θ₁(τ, μ)/η(τ) = 2πμ·η(τ)² + O(μ³)`. `f` is the multiplier of the
+  Heisenberg translations, which is the odd characteristic `(1/2, 1/2)` of
+  `θ₁`. That is why `q` had to be the *odd* refinement in Part IX.
+
+### The control
+
+80 nearby candidates: `e(kβ)·θ_j(τ, ±μ)·η^r` with `k = ±1/12`, `j = 1..4` and
+`r ∈ {−1, 1, −3, 2, −2}`. Only `k = 1/12, j = 1, r = −1` is fixed by `T₁` and
+`T₂`, for both signs of `μ` (`θ₁` is odd). The other 76 fail. So do the even
+thetas, which carry the wrong characteristic, and so does `e(β/6)·θ₁/η`, whose
+index is doubled in `β`.
+
+### Its zeros
+
+`F` vanishes exactly where `θ₁` does, on `μ ∈ Z + τZ`. It is nonzero at the
+other three 2-torsion points. In Part X's coordinates on the cusp torus, `μ ≡ 0`
+is the C site of the substrate, and the three half periods are the E sites.
+What this divisor is on the period domain, and whether it meets the
+degeneration, is open (below).
+
+---
+
 ## The ledger, filled in
 
 Five statuses. *Exact* means computed in exact arithmetic; *two routes* means
@@ -886,6 +1242,21 @@ means not computed here, with the reason.
 | the `S₄` cover of the `(3, 4, ∞)` orbifold: genus 0, 12 cusps | exact group theory; unrelated to the monodromy |
 | Hat best non-identity agreement 0.796 against Chair44's | quoted from Part VII; different footing, a contrast of kind |
 | a complex fourfold with a Chair44 cusp fibre | declined: not constructed, not claimed |
+| invariant tensors of degree ≤ 2: `γ`, `δ̂`, `Q₀`, `η`, `γ²`, `δ̂²`, `⟨I, γ⊗δ̂⟩` | exact, solved for |
+| automorphisms of `(Q₀, γ)` = integral Jacobi group, `r` forced | exact, symbolic |
+| `⟨T₁, T₂⟩ = ker χ`, index 12, quotient `Z/12` generated by the centre | proved (finite: 16-case mod-2 identity, explicit words); presentation of `SL(2, Z)` quoted |
+| Zariski closure = real Jacobi group | exact (Lie algebra dimension 6) |
+| real Jacobi action on `(τ, μ, β)`, `D` invariant, stabiliser `SO(2)` | exact, symbolic |
+| near-miss classes = divisibility `d` of `γ`; `d \| p`, least `\|p\| = d` | exact on all 32 survivors; not proved for the infinite family |
+| central index 12 in all four classes | observed (word search); proved for the paper's class |
+| `F(g·x) = e(χ(g)/12)F(x)` for `F = e(β/12)θ₁/η`, all of `G(Z)` | proved (exact, by generators, from quoted classical `θ₁`/`η` laws, themselves checked against the series); also measured at 25 digits on random words; `α` by Euclid = `α` from `η²` numerically |
+| `⟨T₁, T₂⟩` = stabiliser of `F`; `F¹²` invariant | follows from the row above and Part IX's theorem |
+| `θ₁/η` with `e(β/12)` unique among 80 candidates | numerical search; 76 controls fail |
+| zero divisor of `F` = `{μ ∈ Z + τZ}` | `θ₁` zeros quoted; checked numerically |
+| substrate charpoly in A₂ invariants; zero modes on the mirror lines | exact (symbolic), lines checked on a grid |
+| Hat graph ⊂ substrate; Hat face fluxes 8φ, 10φ; period 1/2 | asserted on a level-3 patch; the period is exact given the face sizes |
+| substrate Chern numbers: FHS = TKNN = Kitaev on wide gaps | two routes, numerical integers |
+| no quantised Chern gap on the Hat patch | measured, one patch of 2948 sites |
 | `X` diffeomorphic to `S⁶` | declined; formalised externally in plby/HopfProblem, not re-run here |
 
 ---
@@ -926,6 +1297,10 @@ python3 paper/make_sixsphere_mystic_fibres.py     # mystic fibres, n = 2 and n =
 python3 tests/test_chair44_nested.py           # Part VIII, about 10 s
 python3 -m pyCICY.chair44_nested                 # the report
 python3 paper/make_chair44_nested_figures.py     # the two Chair44 figures, PDF and PNG
+python3 tests/test_sixsphere_gauge.py          # Part IX, about a minute
+python3 tests/test_cusp_hofstadter.py          # Part X, about 10 s
+python3 tests/test_sixsphere_theta.py          # Part XI, about 3 s
+python3 paper/make_sixsphere_hat_hofstadter.py   # Part X figure (needs ../spectre), about 15 min
 ```
 
 The figure scripts write to `paper/figures/` and asserts each geometric claim
@@ -970,6 +1345,19 @@ N.closed_forms_proved()     # c(M) = 28*2^M - 48, E(M) = 140*2^M + 48, by certif
 N.kuhn_vs_cube()            # the 3D cusp analogue against the cube group
 N.ledger()                  # every quantity and its status
 
+from pyCICY import sixsphere_gauge as G, cusp_hofstadter as C
+G.status_gauge()            # Part IX: structure, Jacobi group, index 12, classes
+G.holonomy_index()          # the proof that <T1, T2> = ker chi
+G.class_divisibility()      # d in {1, 2, 3, 6} and d | p
+C.status_cusp_hofstadter()  # Part X: A2 bands, kite fluxes, Chern numbers
+C.gap_cherns(1/3)           # FHS + TKNN in every gap
+
+from pyCICY import sixsphere_theta as Th
+Th.status_theta()           # Part XI: F = e(beta/12) theta_1/eta has multiplier chi
+Th.multiplier_check()       # generator by generator
+Th.proof_by_generators()    # the exact proof: classical laws + beta shift
+Th.candidate_search()       # the 80-candidate control
+
 T.get("complex-six-sphere")().describe()
 ```
 
@@ -977,6 +1365,12 @@ T.get("complex-six-sphere")().describe()
 
 ## What remains open
 
+- **Beyond Part XI.** The holonomy–multiplier theorem (Theorem XI) is now proved (Part XI, "The
+  proof"). The open questions go further. Does each of the three other near-miss classes (`d = 1, 2, 3`) have
+  its own theta function, with the central index it observed? What is the
+  zero divisor of `F` on the period domain, and does it meet the boundary at
+  the cusp fibre? And does the odd spin structure that `θ₁` selects on the
+  fibre torus agree with the boundary condition of Part X's lowest Landau level?
 - **`h¹²`.** The one Hodge number neither the paper nor this implementation
   determines. The paper expects 1, and says what a computation would need: the
   direct images of `Ω¹` and `Ω²`, with the torsion of the relative forms along
