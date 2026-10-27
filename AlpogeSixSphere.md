@@ -1075,7 +1075,8 @@ factor exactly. The Heisenberg translations `μ ↦ μ + c₁ + c₂τ` shift `�
 the matching quasi-periodicity term (`h(0,1,0): β ↦ β − 12μ + 6τ`). What is
 left is a root of unity.
 
-**Theorem (proved below; also measured).** For every `g ∈ G(Z)`, acting by
+**Theorem XI, the holonomy–multiplier theorem (proved below; also measured).**
+For every `g ∈ G(Z)`, acting by
 the law that its integer matrix alone forces (`sixsphere.laws_from_lattice`),
 
     F(g·x) = e(χ(g)/12) · F(x).
@@ -1088,6 +1089,21 @@ the law that its integer matrix alone forces (`sixsphere.laws_from_lattice`),
 | `h(0,1,0)` | 6 | −6 | 1 |
 | `z` | 1 | 1 | 1 |
 | `T₁`, `T₂` | 0 | 0 (to `10⁻²⁶`) | 1 |
+
+Equivalently, `⟨T₁, T₂⟩ = ker χ` is exactly the group of `g` with
+`F(g·x) = F(x)`: the holonomy group of the fibration is the kernel of the
+multiplier of one explicit function.
+
+*Name and standard form.* In the language of Jacobi forms (Eichler–Zagier,
+*The Theory of Jacobi Forms*), `θ₁/η` is a Jacobi form of weight 0 and index
+1/2. Its multiplier system is `v_η²`, a character of order 12, on `SL(2, Z)`,
+times a sign character on the Heisenberg part. `e(β/12)` lifts it to a function
+on the Jacobi group with the index as central character (Berndt–Schmidt,
+*Elements of the Representation Theory of the Jacobi Group*). Both phrasings
+are from memory; verify them before citing. All of that is classical. What is
+new here is that this multiplier's kernel is the monodromy group of the
+fibration. That identification is what "the holonomy–multiplier theorem" refers
+to below.
 
 It also holds on random words in these generators. Here `α` comes from a
 Euclid decomposition of `M` into `S` and `T`. It is checked against the `η²`
@@ -1349,7 +1365,7 @@ T.get("complex-six-sphere")().describe()
 
 ## What remains open
 
-- **Beyond Part XI.** The multiplier identity is now proved (Part XI, "The
+- **Beyond Part XI.** The holonomy–multiplier theorem (Theorem XI) is now proved (Part XI, "The
   proof"). The open questions go further. Does each of the three other near-miss classes (`d = 1, 2, 3`) have
   its own theta function, with the central index it observed? What is the
   zero divisor of `F` on the period domain, and does it meet the boundary at

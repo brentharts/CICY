@@ -22,7 +22,8 @@ e(-c mu^2 / 2(c tau + d)) that index 1/2 produces is exactly what the beta
 coordinate absorbs, because beta transforms with -6 c mu^2 / (c tau + d)
 (e.g. L(S): beta -> beta - 6 mu^2 / tau). The claims, each checked here:
 
-1. **Multiplier = chi** (:func:`multiplier_check`). For every g in G(Z),
+1. **Multiplier = chi** (Theorem XI, the holonomy-multiplier theorem;
+   :func:`multiplier_check`). For every g in G(Z),
    acting by the law that the integer matrix alone forces
    (:func:`pyCICY.sixsphere.laws_from_lattice`),
 

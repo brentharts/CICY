@@ -3357,7 +3357,8 @@ Substrate Chern numbers agree by FHS, TKNN and Kitaev's real-space formula. On a
 `pyCICY.sixsphere_theta` turns Part IX's character into a function. On the
 period domain, `F = e(β/12)·θ₁(τ, μ)/η(τ)` has multiplier exactly `e(χ(g)/12)`
 under every element of the integral Jacobi group, with no automorphy factor. So
-the holonomy group `⟨T₁, T₂⟩` is the invariance group of `F`, and `F¹²` is
+the holonomy group `⟨T₁, T₂⟩` is the invariance group of `F` (Theorem XI, the
+holonomy–multiplier theorem), and `F¹²` is
 invariant under all of the structure group. This is a second, analytic route
 to the index 12. It is proved exactly, generator by generator: the classical
 `θ₁`/`η` laws plus each generator's `β` shift simplify in sympy to the constant
