@@ -1057,9 +1057,10 @@ than the magnetic length, and are not excluded.
 
 Part IX remarked that `α` looks like the multiplier of `η²` and `f` like an odd
 theta characteristic, and left it there. This part computes it. Everything
-below is `pyCICY.sixsphere_theta` (`status_theta()`, 8 checks;
-`tests/test_sixsphere_theta.py`, about 3 s). It is numerical at 25 digits, and
-every comparison is with a tolerance of `10⁻¹²`.
+below is `pyCICY.sixsphere_theta` (`status_theta()`, 11 checks;
+`tests/test_sixsphere_theta.py`, about 3 s). The multiplier is measured at 25
+digits, with every comparison at a tolerance of `10⁻¹²`, and then proved
+exactly from the classical transformation laws (see "The proof" below).
 
 ### The function
 
@@ -1074,7 +1075,7 @@ factor exactly. The Heisenberg translations `μ ↦ μ + c₁ + c₂τ` shift `�
 the matching quasi-periodicity term (`h(0,1,0): β ↦ β − 12μ + 6τ`). What is
 left is a root of unity.
 
-**Claim (verified numerically, both routes).** For every `g ∈ G(Z)`, acting by
+**Theorem (proved below; also measured).** For every `g ∈ G(Z)`, acting by
 the law that its integer matrix alone forces (`sixsphere.laws_from_lattice`),
 
     F(g·x) = e(χ(g)/12) · F(x).
@@ -1092,6 +1093,35 @@ It also holds on random words in these generators. Here `α` comes from a
 Euclid decomposition of `M` into `S` and `T`. It is checked against the `η²`
 multiplier `η(Mτ)²/((cτ+d)η(τ)²)` read off numerically, a route that never
 decomposes `M`.
+
+### The proof
+
+The proof works one generator at a time. Write each factor as `e(·)` and add
+the exponents. The inputs are the classical laws of `θ₁` and `η` (Mumford,
+*Tata Lectures on Theta I*, §I.5 and §I.7; they are quoted, and checked against
+the series to `10⁻²⁶` by `classical_laws_check()`). The `β` shift is that
+generator's own law from `laws_from_lattice`:
+
+| generator | law | `θ₁/η` gains | `e(β/12)` gains | sum |
+| --- | --- | --- | --- | --- |
+| `L(S)` | `(−1/τ, μ/τ, β − 6μ²/τ)` | `−i·e(μ²/2τ)` | `e(−μ²/2τ)` | `−i = e(9/12)` |
+| `L(T)` | `(τ+1, μ, β)` | `e(1/8)/e(1/24)` | 1 | `e(1/12)` |
+| `h(1,0,0)` | `(τ, μ+1, β)` | `−1` | 1 | `e(6/12)` |
+| `h(0,1,0)` | `(τ, μ−τ, β − 12μ + 6τ)` | `−e(μ − τ/2)` | `e(−μ + τ/2)` | `e(6/12)` |
+| `z` | `(τ, μ, β+1)` | 1 | `e(1/12)` | `e(1/12)` |
+
+`proof_by_generators()` does this in sympy. Every sum simplifies to a constant
+(no `τ`, `μ` or `β` left), and `12·` that constant is `χ` mod 12. The
+`√(−iτ)` of `θ₁` and of `η` cancel, so there is no automorphy factor. These
+five elements generate `G(Z)` (`S`, `T` generate `SL(2, Z)`; the other three
+generate the Heisenberg group). The action is a group action, and `χ` is a
+homomorphism (Part IX). So by induction on word length,
+`F(gh·x) = e(χ(g)/12)F(h·x) = e((χ(g)+χ(h))/12)F(x)` holds for every `g`.
+The control is that, without the `β` shift, the `L(S)` and `h(0,1,0)`
+exponents are not constant: `β` is exactly what absorbs the index-1/2 factor.
+
+Combined with Part IX, this gives a second proof of index 12, with no search:
+`ker χ` is the stabiliser of `F`, and `e(χ/12)` takes 12 values.
 
 ### What it gives
 
@@ -1203,7 +1233,7 @@ means not computed here, with the reason.
 | real Jacobi action on `(τ, μ, β)`, `D` invariant, stabiliser `SO(2)` | exact, symbolic |
 | near-miss classes = divisibility `d` of `γ`; `d \| p`, least `\|p\| = d` | exact on all 32 survivors; not proved for the infinite family |
 | central index 12 in all four classes | observed (word search); proved for the paper's class |
-| `F(g·x) = e(χ(g)/12)F(x)` for `F = e(β/12)θ₁/η`, all of `G(Z)` | two routes (`χ` exact; multiplier numerical, 25 digits, on generators and random words); `α` by Euclid = `α` from `η²` numerically |
+| `F(g·x) = e(χ(g)/12)F(x)` for `F = e(β/12)θ₁/η`, all of `G(Z)` | proved (exact, by generators, from quoted classical `θ₁`/`η` laws, themselves checked against the series); also measured at 25 digits on random words; `α` by Euclid = `α` from `η²` numerically |
 | `⟨T₁, T₂⟩` = stabiliser of `F`; `F¹²` invariant | follows from the row above and Part IX's theorem |
 | `θ₁/η` with `e(β/12)` unique among 80 candidates | numerical search; 76 controls fail |
 | zero divisor of `F` = `{μ ∈ Z + τZ}` | `θ₁` zeros quoted; checked numerically |
@@ -1309,6 +1339,7 @@ C.gap_cherns(1/3)           # FHS + TKNN in every gap
 from pyCICY import sixsphere_theta as Th
 Th.status_theta()           # Part XI: F = e(beta/12) theta_1/eta has multiplier chi
 Th.multiplier_check()       # generator by generator
+Th.proof_by_generators()    # the exact proof: classical laws + beta shift
 Th.candidate_search()       # the 80-candidate control
 
 T.get("complex-six-sphere")().describe()
@@ -1318,10 +1349,8 @@ T.get("complex-six-sphere")().describe()
 
 ## What remains open
 
-- **Part XI, as theorems.** The multiplier identity is checked numerically. A
-  proof is a calculation with the transformation laws of `θ₁` and `η` on two
-  `SL(2, Z)` generators and two Heisenberg generators. The open questions go
-  further. Does each of the three other near-miss classes (`d = 1, 2, 3`) have
+- **Beyond Part XI.** The multiplier identity is now proved (Part XI, "The
+  proof"). The open questions go further. Does each of the three other near-miss classes (`d = 1, 2, 3`) have
   its own theta function, with the central index it observed? What is the
   zero divisor of `F` on the period domain, and does it meet the boundary at
   the cusp fibre? And does the odd spin structure that `θ₁` selects on the

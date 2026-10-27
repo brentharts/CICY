@@ -3359,7 +3359,9 @@ period domain, `F = e(β/12)·θ₁(τ, μ)/η(τ)` has multiplier exactly `e(χ
 under every element of the integral Jacobi group, with no automorphy factor. So
 the holonomy group `⟨T₁, T₂⟩` is the invariance group of `F`, and `F¹²` is
 invariant under all of the structure group. This is a second, analytic route
-to the index 12. `α` is checked against the `η²` multiplier without decomposing
+to the index 12. It is proved exactly, generator by generator: the classical
+`θ₁`/`η` laws plus each generator's `β` shift simplify in sympy to the constant
+`χ/12`. `α` is checked against the `η²` multiplier without decomposing
 `M`. Of 80 nearby theta/eta candidates, only this one is fixed by `T₁` and `T₂`.
 `AlpogeSixSphere.md`, Part XI.
 

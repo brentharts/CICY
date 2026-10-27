@@ -41,7 +41,15 @@ coordinate absorbs, because beta transforms with -6 c mu^2 / (c tau + d)
    r in {-1, 1, -3, 2, -2}, only k = 1/12, j = 1, r = -1 (both signs of mu,
    theta_1 being odd) is invariant under T1 and T2. This is the control that
    has to fail: the other 76 do.
-4. **Zero divisor** (:func:`zero_divisor`). F vanishes exactly where
+4. **Proof** (:func:`proof_by_generators`). The identity of claim 1 holds
+   as a theorem, not only numerically: on each of the five generators the
+   classical transformation laws of theta_1 and eta (Mumford, Tata I),
+   added to the beta shift of the law, give an exponent that sympy
+   simplifies to a constant, equal to chi / 12 mod 1. The five generate
+   G(Z), the action is a group action and chi a homomorphism, so it holds on
+   every word. The five classical laws are themselves checked numerically
+   against the theta series, as the quoted inputs.
+5. **Zero divisor** (:func:`zero_divisor`). F vanishes exactly where
    theta_1 does, mu in Z + tau Z, and is nonzero at the other 2-torsion
    points. Its meaning on the period domain is left open.
 
@@ -53,7 +61,7 @@ q^(1/4) that gives the wrong multiplier for T.
 import random
 
 import mpmath as mp
-from sympy import Matrix, eye, lambdify
+from sympy import Matrix, Rational, eye, lambdify, nsimplify, simplify
 
 from . import sixsphere as S
 from . import sixsphere_gauge as G
@@ -269,6 +277,53 @@ def wrong_index_control():
 
 
 # --------------------------------------------------------------------------
+# 3b. the proof: classical laws + the beta shift, exactly
+# --------------------------------------------------------------------------
+
+def _classical_exponent(name, t, m):
+    """log_e of (theta_1/eta)(g tau, g mu) / (theta_1/eta)(tau, mu), from the
+    classical laws (quoted, Mumford Tata I, I.5 and I.7):
+      theta_1(-1/t, m/t) = -i sqrt(-it) e(m^2/2t) theta_1(t, m),
+      eta(-1/t) = sqrt(-it) eta(t);
+      theta_1(t+1, m) = e(1/8) theta_1,  eta(t+1) = e(1/24) eta;
+      theta_1(t, m+1) = -theta_1;  theta_1(t, m-t) = -e(m - t/2) theta_1."""
+    return {"L(S)": -Rational(1, 4) + m ** 2 / (2 * t),
+            "L(T)": Rational(1, 8) - Rational(1, 24),
+            "h(1,0,0)": Rational(1, 2),
+            "h(0,1,0)": Rational(1, 2) + m - t / 2,
+            "z": 0}[name]
+
+
+def proof_by_generators():
+    """For each generator: classical exponent + (beta' - beta)/12, simplified
+    exactly. It must be a constant c with 12 c = chi(g) mod 12."""
+    out = {}
+    t, m, b = S.TAU, S.MU, S.BETA
+    for k in ("L(S)", "L(T)", "h(1,0,0)", "h(0,1,0)", "z"):
+        law = S.laws_from_lattice(GENERATORS[k])["law"]
+        c = simplify(_classical_exponent(k, t, m) + (law[2] - b) / 12)
+        const = c.free_symbols == set()
+        out[k] = {"exponent": c, "constant": const, "chi": chi(GENERATORS[k]),
+                  "ok": const and (12 * nsimplify(c) - chi(GENERATORS[k])) % 12 == 0}
+    return out
+
+
+def classical_laws_check(tol=1e-20):
+    """The quoted laws used by :func:`proof_by_generators`, against the
+    series: max relative error over the five."""
+    t, m, _ = BASE
+    errs = [
+        abs(theta(1, -1 / t, m / t) / (-1j * mp.sqrt(-1j * t) * e(m ** 2 / (2 * t))
+                                       * theta(1, t, m)) - 1),
+        abs(eta(-1 / t) / (mp.sqrt(-1j * t) * eta(t)) - 1),
+        abs(theta(1, t + 1, m) / (e(mp.mpf(1) / 8) * theta(1, t, m)) - 1),
+        abs(eta(t + 1) / (e(mp.mpf(1) / 24) * eta(t)) - 1),
+        abs(theta(1, t, m + 1) / -theta(1, t, m) - 1),
+        abs(theta(1, t, m - t) / (-e(m - t / 2) * theta(1, t, m)) - 1)]
+    return {"max_rel_err": float(max(errs)), "ok": max(errs) < tol}
+
+
+# --------------------------------------------------------------------------
 # 4. the zero divisor
 # --------------------------------------------------------------------------
 
@@ -307,6 +362,14 @@ def status_theta():
        == [(1.0, -1, -1, 1), (1.0, 1, -1, 1)])
     ok("control: e(beta/6) theta_1 / eta not fixed by T1",
        not wrong_index_control()["fixed_by_T1"])
+    pr = proof_by_generators()
+    ok("proof: classical laws + beta shift = chi/12 exactly, 5 generators",
+       all(v["ok"] for v in pr.values()))
+    ok("control: without the beta shift, L(S) and h(0,1,0) are not constant",
+       all(simplify(_classical_exponent(k, S.TAU, S.MU)).free_symbols
+           for k in ("L(S)", "h(0,1,0)")))
+    ok("the quoted classical laws hold against the series",
+       classical_laws_check()["ok"])
     zd = zero_divisor()
     ok("F = 0 on mu in Z + tau Z, nonzero at half periods",
        zd["max_on_lattice"] < 1e-15 and zd["min_at_half_periods"] > 1e-3)

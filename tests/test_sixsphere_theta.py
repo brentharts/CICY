@@ -10,6 +10,9 @@ is the holonomy character chi of Part IX).
   [4] uniqueness    80 nearby candidates, only theta_1/eta with e(beta/12)
                     is fixed by T1 and T2 (the 76 others are the control)
   [5] zeros         F = 0 on mu in Z + tau Z, nonzero at the half periods
+  [6] proof         classical theta/eta laws + the beta shift simplify to
+                    the constant chi/12 on the 5 generators (exact); the laws
+                    themselves against the series; control without the shift
 
 Run with:  python3 tests/test_sixsphere_theta.py   or   python3 run_tests.py
 """
@@ -85,9 +88,24 @@ def test_zeros():
                zd["min_at_half_periods"] > 1e-3)
 
 
+def test_proof():
+    print("\n[6] the proof by generators")
+    pr = T.proof_by_generators()
+    want = {"L(S)": "-1/4", "L(T)": "1/12", "h(1,0,0)": "1/2",
+            "h(0,1,0)": "1/2", "z": "1/12"}
+    for k, v in pr.items():
+        check("exponent for %s (exact)" % k, str(v["exponent"]), want[k])
+        check_true("12 * exponent = chi(%s) mod 12" % k, v["ok"])
+    check_true("classical theta/eta laws against the series",
+               T.classical_laws_check()["ok"])
+    for k in ("L(S)", "h(0,1,0)"):
+        check_true("control: %s exponent without the beta shift is not constant" % k,
+                   T.simplify(T._classical_exponent(k, T.S.TAU, T.S.MU)).free_symbols)
+
+
 def main():
     for section in (test_multiplier, test_alpha, test_index, test_uniqueness,
-                    test_zeros):
+                    test_zeros, test_proof):
         try:
             section()
         except Exception as exc:
