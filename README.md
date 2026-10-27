@@ -3352,9 +3352,21 @@ Substrate Chern numbers agree by FHS, TKNN and Kitaev's real-space formula. On a
 2948-site Hat patch, no quantised Chern gap is resolved (measured).
 `AlpogeSixSphere.md`, Part X.
 
+### The index 12 as a theta multiplier
+
+`pyCICY.sixsphere_theta` turns Part IX's character into a function. On the
+period domain, `F = e(β/12)·θ₁(τ, μ)/η(τ)` has multiplier exactly `e(χ(g)/12)`
+under every element of the integral Jacobi group, with no automorphy factor. So
+the holonomy group `⟨T₁, T₂⟩` is the invariance group of `F`, and `F¹²` is
+invariant under all of the structure group. This is a second, analytic route
+to the index 12. `α` is checked against the `η²` multiplier without decomposing
+`M`. Of 80 nearby theta/eta candidates, only this one is fixed by `T₁` and `T₂`.
+`AlpogeSixSphere.md`, Part XI.
+
 ```bash
 python3 tests/test_sixsphere_gauge.py          # about a minute
 python3 tests/test_cusp_hofstadter.py          # about 10 s
+python3 tests/test_sixsphere_theta.py          # about 3 s
 SPECTRE_DIR=../spectre python3 paper/make_sixsphere_hat_hofstadter.py   # ss_hat_hofstadter.png
 ```
 

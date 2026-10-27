@@ -98,6 +98,13 @@ stating on their own:
    with no gauge choice. This forces the Hat's Hofstadter spectrum to have period
    1/2 in kite flux. The substrate's Chern gaps, found by two routes, do not
    survive on a finite Hat patch.
+11. **The index 12 is the multiplier of one theta function.** On the period
+   domain, `F(τ, μ, β) = e(β/12)·θ₁(τ, μ)/η(τ)` satisfies
+   `F(g·x) = e(χ(g)/12)·F(x)` for every element of the integral Jacobi group,
+   with no automorphy factor. So the holonomy group is exactly the invariance
+   group of `F`, and `F¹²` is invariant under the whole structure group. This
+   gives index 12 a second route, analytic and independent of the word search.
+   Among 80 nearby candidates it is the only one fixed by `T₁` and `T₂`.
 
 What is *not* here is the theorem. That `X` is diffeomorphic to `S⁶` is
 declined, and nothing in this package bears on whether the proof is correct
@@ -1046,6 +1053,80 @@ inside tiles (about half of the substrate's bonds; the patch keeps 46%) closes t
 statement about one finite patch. Small-flux Landau gaps would need patches larger
 than the magnetic length, and are not excluded.
 
+## Part XI: the holonomy character as a theta multiplier
+
+Part IX remarked that `α` looks like the multiplier of `η²` and `f` like an odd
+theta characteristic, and left it there. This part computes it. Everything
+below is `pyCICY.sixsphere_theta` (`status_theta()`, 8 checks;
+`tests/test_sixsphere_theta.py`, about 3 s). It is numerical at 25 digits, and
+every comparison is with a tolerance of `10⁻¹²`.
+
+### The function
+
+On the period domain, with Alpöge's coordinates `Z = [[6μ, τ], [β, μ]]`, put
+
+    F(τ, μ, β) = e(β/12) · θ₁(τ, μ) / η(τ),     e(x) = exp(2πi x).
+
+`θ₁/η` is a Jacobi form of weight 0 and index 1/2. Under `L(M)` its index
+produces the factor `e(−cμ²/2(cτ+d))`. The `β` coordinate transforms with
+`−6cμ²/(cτ+d)`, for example `L(S): β ↦ β − 6μ²/τ`, so `e(β/12)` cancels that
+factor exactly. The Heisenberg translations `μ ↦ μ + c₁ + c₂τ` shift `β` by
+the matching quasi-periodicity term (`h(0,1,0): β ↦ β − 12μ + 6τ`). What is
+left is a root of unity.
+
+**Claim (verified numerically, both routes).** For every `g ∈ G(Z)`, acting by
+the law that its integer matrix alone forces (`sixsphere.laws_from_lattice`),
+
+    F(g·x) = e(χ(g)/12) · F(x).
+
+| generator | `χ` | measured `12·arg/2π` | `\|ratio\|` |
+| --- | --- | --- | --- |
+| `L(S)` | 9 | −3 | 1 |
+| `L(T)` | 1 | 1 | 1 |
+| `h(1,0,0)` | 6 | 6 | 1 |
+| `h(0,1,0)` | 6 | −6 | 1 |
+| `z` | 1 | 1 | 1 |
+| `T₁`, `T₂` | 0 | 0 (to `10⁻²⁶`) | 1 |
+
+It also holds on random words in these generators. Here `α` comes from a
+Euclid decomposition of `M` into `S` and `T`. It is checked against the `η²`
+multiplier `η(Mτ)²/((cτ+d)η(τ)²)` read off numerically, a route that never
+decomposes `M`.
+
+### What it gives
+
+Since `e(χ/12)` is a faithful character of `Z/12`, the stabiliser of `F` in
+`G(Z)` is `ker χ`. Part IX proved that this is `⟨T₁, T₂⟩`. So:
+
+- **The holonomy group is the invariance group of one explicit function.** In
+  Gomes's terms, the structure that the holonomy preserves, beyond `(Q₀, γ)`,
+  is a section of a flat line bundle with holonomy `e(χ/12)`. `F` is that
+  section, written down.
+- **`F¹²` is invariant under all of `G(Z)`**, and `z^k` for `k = 0..11` reach
+  all twelve multipliers. The 12 is the order of `e(1/12)`, which is the
+  multiplier of `η²` on `T`. It is the same 12 as `η²⁴ = Δ`.
+- **The two halves of `χ` are the two factors of `F`.** `α` is the
+  multiplier of `θ₁/η` on `SL(2, Z)`, which equals that of `η²`, because
+  `θ₁(τ, μ)/η(τ) = 2πμ·η(τ)² + O(μ³)`. `f` is the multiplier of the
+  Heisenberg translations, which is the odd characteristic `(1/2, 1/2)` of
+  `θ₁`. That is why `q` had to be the *odd* refinement in Part IX.
+
+### The control
+
+80 nearby candidates: `e(kβ)·θ_j(τ, ±μ)·η^r` with `k = ±1/12`, `j = 1..4` and
+`r ∈ {−1, 1, −3, 2, −2}`. Only `k = 1/12, j = 1, r = −1` is fixed by `T₁` and
+`T₂`, for both signs of `μ` (`θ₁` is odd). The other 76 fail. So do the even
+thetas, which carry the wrong characteristic, and so does `e(β/6)·θ₁/η`, whose
+index is doubled in `β`.
+
+### Its zeros
+
+`F` vanishes exactly where `θ₁` does, on `μ ∈ Z + τZ`. It is nonzero at the
+other three 2-torsion points. In Part X's coordinates on the cusp torus, `μ ≡ 0`
+is the C site of the substrate, and the three half periods are the E sites.
+What this divisor is on the period domain, and whether it meets the
+degeneration, is open (below).
+
 ---
 
 ## The ledger, filled in
@@ -1122,7 +1203,10 @@ means not computed here, with the reason.
 | real Jacobi action on `(τ, μ, β)`, `D` invariant, stabiliser `SO(2)` | exact, symbolic |
 | near-miss classes = divisibility `d` of `γ`; `d \| p`, least `\|p\| = d` | exact on all 32 survivors; not proved for the infinite family |
 | central index 12 in all four classes | observed (word search); proved for the paper's class |
-| reading of `χ` as `η²` multiplier × odd theta characteristic | remark, not computed |
+| `F(g·x) = e(χ(g)/12)F(x)` for `F = e(β/12)θ₁/η`, all of `G(Z)` | two routes (`χ` exact; multiplier numerical, 25 digits, on generators and random words); `α` by Euclid = `α` from `η²` numerically |
+| `⟨T₁, T₂⟩` = stabiliser of `F`; `F¹²` invariant | follows from the row above and Part IX's theorem |
+| `θ₁/η` with `e(β/12)` unique among 80 candidates | numerical search; 76 controls fail |
+| zero divisor of `F` = `{μ ∈ Z + τZ}` | `θ₁` zeros quoted; checked numerically |
 | substrate charpoly in A₂ invariants; zero modes on the mirror lines | exact (symbolic), lines checked on a grid |
 | Hat graph ⊂ substrate; Hat face fluxes 8φ, 10φ; period 1/2 | asserted on a level-3 patch; the period is exact given the face sizes |
 | substrate Chern numbers: FHS = TKNN = Kitaev on wide gaps | two routes, numerical integers |
@@ -1169,6 +1253,7 @@ python3 -m pyCICY.chair44_nested                 # the report
 python3 paper/make_chair44_nested_figures.py     # the two Chair44 figures, PDF and PNG
 python3 tests/test_sixsphere_gauge.py          # Part IX, about a minute
 python3 tests/test_cusp_hofstadter.py          # Part X, about 10 s
+python3 tests/test_sixsphere_theta.py          # Part XI, about 3 s
 python3 paper/make_sixsphere_hat_hofstadter.py   # Part X figure (needs ../spectre), about 15 min
 ```
 
@@ -1221,6 +1306,11 @@ G.class_divisibility()      # d in {1, 2, 3, 6} and d | p
 C.status_cusp_hofstadter()  # Part X: A2 bands, kite fluxes, Chern numbers
 C.gap_cherns(1/3)           # FHS + TKNN in every gap
 
+from pyCICY import sixsphere_theta as Th
+Th.status_theta()           # Part XI: F = e(beta/12) theta_1/eta has multiplier chi
+Th.multiplier_check()       # generator by generator
+Th.candidate_search()       # the 80-candidate control
+
 T.get("complex-six-sphere")().describe()
 ```
 
@@ -1228,6 +1318,14 @@ T.get("complex-six-sphere")().describe()
 
 ## What remains open
 
+- **Part XI, as theorems.** The multiplier identity is checked numerically. A
+  proof is a calculation with the transformation laws of `θ₁` and `η` on two
+  `SL(2, Z)` generators and two Heisenberg generators. The open questions go
+  further. Does each of the three other near-miss classes (`d = 1, 2, 3`) have
+  its own theta function, with the central index it observed? What is the
+  zero divisor of `F` on the period domain, and does it meet the boundary at
+  the cusp fibre? And does the odd spin structure that `θ₁` selects on the
+  fibre torus agree with the boundary condition of Part X's lowest Landau level?
 - **`h¹²`.** The one Hodge number neither the paper nor this implementation
   determines. The paper expects 1, and says what a computation would need: the
   direct images of `Ω¹` and `Ω²`, with the torsion of the relative forms along
