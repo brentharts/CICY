@@ -13,6 +13,12 @@ tori, and the Hat does not).
   [5] translates     every translate at once (FFT): where the near-periods are
   [6] undetermined   six or 24 rotations at undetermined addresses; the six
                      are a dihedral coset about a body diagonal
+  [6b] tubes         the undetermined set is four diagonal tubes (M <= 7)
+  [6c] interface     cell-level contact counts F, B, C of the level-n patch (n <= 6)
+                     against the coincidence count, which has no area term
+  [6d] approximants  tight-binding tori: the lift differs from the next torus on
+                     140*2^M - 232 sites; rank, counting functions, six choices,
+                     Bragg intensities
   [7] not a link     Kuhn's triangulation of Z^3 against the cube group; the
                      S4 cover of the (3, 4, inf) orbifold
   [8] controls       a perturbed child pose is rejected; a tighter bound than
@@ -173,6 +179,104 @@ def test_undetermined():
     check_true("each is a coset of a dihedral subgroup about a body diagonal", d["all_dihedral_cosets"])
 
 
+def test_tubes():
+    print("\n[6b] the undetermined set is four diagonal tubes")
+    tb = C.undetermined_is_diagonal_tubes(7)
+    check("levels checked", [r["M"] for r in tb], list(range(1, 8)))
+    check_true("union of the four tubes = undetermined set, M <= 7", all(r["equal"] for r in tb))
+    check("cells per tube at M = 5", tb[4]["cells"], [7 * 32 - 6] * 4)
+    check("overlap (cells counted four times, less once: 8 * 3)", {r["overlap"] for r in tb}, {24})
+    check_true("c(M) = 4(7*2^M - 6) - 24 = 28*2^M - 48", all(r["c_formula"] for r in tb))
+    check_true("E(M) = 140*2^M + 48; 5 per six-set, 23 per 24-set from M = 2",
+               all(r["excess_formula"] for r in tb))
+    check("at M = 1 the 8 undetermined addresses are 42-label sets: E", tb[0]["excess"], 8 * 41)
+
+
+def test_interface():
+    print("\n[6c] interface of the level-n patch against the coincidence count")
+    ic = C.interface_counts(6)
+    check("contact pairs C, n = 1..6", [r["C"] for r in ic], [16, 183, 1663, 14079, 115711, 937983])
+    check("cell faces between chairs F, n = 1..4", [r["F"] for r in ic[:4]], [48, 576, 5376, 46080])
+    check("boundary faces B, n = 1..4", [r["B"] for r in ic[:4]], [96, 384, 1536, 6144])
+    check_true("F = 12(8^n - 4^n) and B = 24*4^n for n <= 6", all(r["F_formula"] and r["B_formula"] for r in ic))
+    check_true("C = (29/8) 8^n - 3*4^n - 1 for n <= 6", all(r["C_formula"] for r in ic))
+    check_true("no overlap, and the patch is 7*8^n cells", all(r["overlap"] == 0 and r["filled"] for r in ic))
+    check_true("8 C_n - C_(n+1) = -(12*4^n + 7), n <= 5", all(r["defect_formula"] for r in ic[:-1]))
+    de = C.defect_exponents(8)
+    check("transfer-matrix roots (root: multiplicity)", de["roots"], {0: 5, 1: 32, 2: 4})
+    check_true("no root 4, so no area term in c(M)", de["no_area_root"])
+    r8 = de["rows"][-1]
+    check("line fraction / surface fraction = 7 c(M) / (24 * 4^M) at M = 8", r8["ratio"],
+          Fraction(7 * (28 * 2 ** 8 - 48), 24 * 4 ** 8))
+    check_true("... which times 2^M is within 1% of 49/6", abs(float(r8["ratio"]) * 2 ** 8 / (49 / 6) - 1) < 0.01)
+    # control: the interface count does have an area term (B = 24*4^n), c(M) does not
+    check_true("control: B / 4^n is constant but c(M) / 4^M falls",
+               len({r["B"] // 4 ** r["n"] for r in ic}) == 1
+               and C.c_of(8) / 4 ** 8 < C.c_of(4) / 4 ** 4 / 10)
+
+
+def test_approximants():
+    print("\n[6d] periodic approximants on the nested tori")
+    check("the six chair-stack labels", C.chair_stack_labels(), [0, 49, 77, 84, 112, 161])
+    # the label field is the real tiling: sigma^n of the root cells reproduces the level-n patch labels
+    labels = C._sub()[0]
+    rots = C.rotations()
+    G, t = C.level_poses(3)
+    idf = rots.index(C.IDENTITY)
+    ok = True
+    neg = (G.sum(axis=2) < 0)
+    Cc = C.np.array(C.CELLS)
+    cells = C.np.einsum('nij,kj->nki', G, Cc) + t[:, None, :] - neg[:, None, :].astype(int)
+    fidx = {C.frame_matrix(f).tobytes(): i for i, f in enumerate(rots)}
+    pos = {}
+    for i in range(len(G)):
+        f = fidx[G[i].tobytes()]
+        for k in range(7):
+            pos[tuple(int(x) for x in cells[i, k])] = 7 * f + k
+    for k, c in enumerate(C.CELLS):
+        g = C.label_field(3, 7 * idf + k)
+        for x in C.itertools.product(range(8), repeat=3):
+            ok = ok and pos[tuple(8 * c[i] + x[i] for i in range(3))] == g[x]
+    check_true("sigma^3 of the root cells reproduces the level-3 patch labels", ok)
+    owner = {tuple(int(x) for x in cells[i, k]): i for i in range(len(G)) for k in range(7)}
+    T = C._same_chair_tables()
+    bad = 0
+    for p, i in owner.items():
+        for ax in range(3):
+            q = list(p)
+            q[ax] += 1
+            q = tuple(q)
+            if q in owner and bool(T[ax][pos[p], pos[q]]) != (owner[q] == i):
+                bad += 1
+    check("same-chair test against the chair partition of the level-3 patch: mismatches", bad, 0)
+    ap = C.approximant_defect(7, 5, 3)
+    check("|S|, M = 1..7", [r["S"] for r in ap], [140 * 2 ** M - 232 for M in range(1, 8)])
+    check_true("|S| <= 8 c(M) for M <= 7", all(r["S_within_bound"] for r in ap))
+    check("rank D, M = 1..5", [r["rank"] for r in ap if "rank" in r], [12 * 2 ** M for M in range(1, 6)])
+    check("largest counting-function difference, M = 1..3", [r["max_dN"] for r in ap if "max_dN" in r], [4, 4, 9])
+    check_true("... within 2|S|", all(r["dN_within_bound"] for r in ap if "max_dN" in r))
+    check_true("the lift's spectrum is the union over the eight half-period twists",
+               all(r["lift_is_twisted_union"] for r in ap if "max_dN" in r))
+    sx = C.six_choices(6)
+    check("tube size at M = 6 (7*2^M - 6)", sx[-1]["tube"], 442)
+    check_true("six labels differ pairwise exactly on the (1,1,1) tube, distinct there",
+               all(r["pair_is_tube"] and r["distinct_on_tube"] for r in sx))
+    df = C.diffraction(7)
+    check("intensity at k = 0 is the density squared, 1/49 (M = 7, to 5 places)", round(df[-1]["grid"][0], 5), round(1 / 49, 5))
+    check("total intensity at M = 7, to 5 places (density 1/7)", round(df[-1]["total"], 5), round(1 / 7, 5))
+    check_true("amplitude change <= |S|/8^(M+1) at every level", all(r["amp_within_bound"] for r in df if "amp" in r))
+    gaps = [1 / 7 - df[-1]["grid"][m] for m in range(2, 6)]
+    check_true("the weight beyond the 2^M0 grid falls by a factor of 6 or more per level (M0 = 2..5)",
+               all(a / b > 6 for a, b in zip(gaps, gaps[1:])))
+    # controls: the factor 8 (one c(M) per block) is needed, and the untwisted spectrum alone is not the lift's
+    check_true("control: |S| exceeds c(M), so the bound needs the eight blocks (M >= 3)",
+               all(r["S"] > C.c_of(r["M"]) for r in ap if r["M"] >= 3))
+    g3 = C.label_field(3, C.chair_stack_labels()[0])
+    e0 = C.np.linalg.eigvalsh(C.approximant_hamiltonian(g3).toarray())
+    e1 = C.np.linalg.eigvalsh(C.approximant_hamiltonian(g3, twist=(1, 1, 1)).toarray())
+    check_true("control: the periodic and the (1,1,1)-twisted spectra differ", not C.np.allclose(e0, e1))
+
+
 def test_not_a_link():
     print("\n[7] two things that are not connections")
     kv = C.kuhn_vs_cube()
@@ -245,7 +349,8 @@ def test_ledger():
 
 if __name__ == "__main__":
     for t in (test_substitution, test_coincidence, test_closed_forms, test_descent, test_translates,
-              test_scan_counts, test_undetermined, test_not_a_link, test_controls, test_ledger):
+              test_scan_counts, test_undetermined, test_tubes, test_interface, test_approximants,
+              test_not_a_link, test_controls, test_ledger):
         t()
     print()
     if FAILURES:
