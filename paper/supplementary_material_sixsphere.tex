@@ -162,7 +162,10 @@ modular coincidence has not yet occurred (a finite recurrence certificate), and 
 the agreement on a patch of $\SSChPatchCells$ cells: $\SSChAgreeThree$, $\SSChAgreeFour$ and
 $\SSChAgreeFive$ at $M=3,4,5$. Scanned over all translates by the same FFT at matched
 size, the Hat has near-periods too but weaker ones (best agreement $0.975$ against
-$0.998$, and none at $0.99$ against fifty). The contrast with the Hat is one of kind and not an identity:
+$0.998$, and none at $0.99$ against fifty). The undetermined addresses are exactly four tubes along the body
+diagonals, a line defect one dimension below the area-law interface of the supertiles, and on the periodic approximants
+$\RR^3/2^M\ZZ^3$ the integrated density of states of a tight-binding model, and every Bragg amplitude at a dyadic wave
+vector, converge at the same geometric rate $4^{-M}$, with an explicit bound. The contrast with the Hat is one of kind and not an identity:
 the six-sphere contains no Chair44, and two tempting matches with it, the $24$ simplices
 round a vertex of the Kuhn triangulation of $\ZZ^3$ and the $(3,4,\infty)$ group against
 the rotation group of the cube, are shown to be coincidences.
@@ -1516,6 +1519,150 @@ undetermined where a stack can sit, and a stack can be rotated about its diagona
 six is still not related to the six mystic fibre classes of \cref{sec:mystic}, where it counts
 the oriented edges of the dual complex; we record that as a coincidence.
 
+\subsection{Two defects of one hierarchy}
+\label{sec:chair-defects}
+
+The mismatch $c(M)$ was measured on a torus. The same substitution has a second, geometric
+defect, the interface between supertiles, and the two have different exponents. Refine one
+chair $n$ times. The level-$n$ patch has $8^n$ chairs and fills the chair scaled by $2^n$, that is $7\cdot8^n$
+cells with no overlap (checked for every $n\le\SSChIfaceN{}$). Count, at the level of cells, the faces
+$F_n$ between cells of different chairs, the boundary faces $B_n$ of the patch, and the number
+$C_n$ of pairs of chairs in face contact.
+
+\begin{proposition}[the interface]
+\label{prop:chair-interface}
+For $n=1,\dots,\SSChIfaceN{}$,
+\[
+F_n=\SSChFaceCoef\,(8^n-4^n),\qquad B_n=\SSChBoundCoef\cdot4^n,\qquad
+C_n=\SSChContactVol\cdot8^n-\SSChContactArea\cdot4^n-\SSChContactConst,
+\]
+and the extensivity defect is $8C_n-C_{n+1}=-(\SSChDefectCoef\cdot4^n+\SSChDefectConst)$.
+\end{proposition}
+
+\begin{center}
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+$n$ & 1 & 2 & 3 & 4 & 5 & 6 \\
+\midrule
+chairs $8^n$ & \SSChIfaceRowChairs \\
+$F_n$ & \SSChIfaceRowF \\
+$B_n$ & \SSChIfaceRowB \\
+$C_n$ & \SSChIfaceRowC \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+\emph{Status.} Counted, not proved for all $n$. Given that the patch is the scaled chair, $F_n$ and
+$B_n$ are geometry: the scaled chair has volume $7\cdot8^n$ and surface $24\cdot4^n$ (the chair has the
+surface of its $2\times2\times2$ cube, with the notch replacing the corner), there are $21\cdot8^n-12\cdot4^n$
+adjacent pairs of cells in all, and nine inside each chair, which leaves $F_n$. The formula for $C_n$ is
+read off the counts at $n=1,2,3$ and holds at every level computed.
+
+Three exponents now sit side by side, in the linear size $L=2^n$ of a supertile. The bulk grows like
+$8^n=L^3$. The interface has a term of order $4^n=L^2$, an area, which is the generic
+boundary term of a count on a patch with free boundary. The coincidence count of
+\cref{prop:chair-rate} has no such term: the characteristic polynomial of its transfer matrix
+has only the roots $0$, $1$ and $2$, so $c(M)$ is of order $2^M=L$. A line, in keeping with
+\cref{prop:chair-tubes}: the tubes have a fixed cross-section of $7$ cells and length $L$. Against the fraction
+$24\cdot4^M/(7\cdot8^M)$ of a level-$M$ supertile that lies on its surface, the undetermined fraction
+$c(M)/8^M$ is smaller by a factor that tends to $\SSChLineToSurface\cdot2^{-M}$. A
+translate by $2^Mv$ therefore fails to agree not along the faces of the supertiles, which would cost a relative
+$2^{-M}$, but only along their diagonals, at a cost of $4^{-M}$.
+
+This is a comparison of exponents and no more. The interface count is a free-boundary count on
+a patch and the coincidence count is a count on a torus; they are different quantities, no
+theorem carries from one to the other, and there is no dynamics on the tiling for either to
+govern. What the comparison does show is that the self-similarity of Chair44 produces the area-law
+interface that any coarse-graining hierarchy does, and that the quantity which controls near-periodicity lies
+one dimension below it.
+
+\subsection{Periodic approximants: a tight-binding electron and the diffraction}
+\label{sec:chair-approx}
+
+A periodic approximant is the standard device for studying an aperiodic structure by finite means.
+The label field $\sigma^M(j)$ on the $2^M$-cube, read as a torus $\RR^3/2^M\ZZ^3$ of $8^M$ cells,
+is one for Chair44. Take one site per unit cell. A cell with label $(f,k)$ (a rotation $f$
+and a cell $k$ of the chair) at the point $p$ lies in the chair with translation $p-o_k(f)$, where
+$o_k(f)$ is the position of the native cell $k$ under $f$; so two neighbouring cells lie in the same chair
+exactly when their rotations agree and their native offsets differ by the lattice step. That test uses
+the labels and the step only, so it is defined on a torus. Let the hopping be $-1$ inside a chair
+and $-\lambda$ between chairs ($\lambda=\tfrac12$ here; the bounds below do not depend on the
+weights). The label field is the tiling: $\sigma^3$ of the seven cells of a root chair reproduces
+the labels of the level-$3$ patch, and the same-chair test reproduces the chair
+partition of the patch, both checked.
+
+On the torus of side $2^{M+1}$ there are two label fields: the true one, $\sigma^{M+1}(j)$, and the
+\emph{lift} of the level-$M$ field, repeated $2\times2\times2$. Let $S_M$ be the set of sites where they differ.
+
+\begin{proposition}[the approximants converge]
+\label{prop:chair-approx}
+Let $H_{M+1}$ be the Hamiltonian of the true field on the torus of side $2^{M+1}$ and $H_M^{\uparrow}$ that of the
+lift. Then
+\begin{enumerate}[label=(\alph*), nosep]
+\item $\lvert S_M\rvert\le8\,c(M)$, and in fact $\lvert S_M\rvert=\SSChSCoef\cdot2^M-\SSChSConst$ for $M\le\SSChApproxM{}$;
+\item $\operatorname{rank}(H_{M+1}-H_M^{\uparrow})\le2\lvert S_M\rvert$, so the eigenvalue counting functions of the two differ by at most
+  $2\lvert S_M\rvert$ at every energy, and their densities of states by at most $2c(M)/8^M\le\SSChIdsCoef\cdot4^{-M}$;
+\item the spectrum of $H_M^{\uparrow}$ is the union of the spectra of the level-$M$ torus over the eight half-period twists
+  (checked for $M\le\SSChDenseM{}$).
+\end{enumerate}
+In particular the integrated densities of states of the periodic approximants form a Cauchy sequence, uniformly in the energy,
+at the geometric rate $4^{-M}$.
+\end{proposition}
+
+\begin{proof}
+(a) The true field is the eight blocks $\sigma^M(\sigma(j)_b)$ and the lift is $\sigma^M(j)$ in every block. Two images of different labels
+agree at every coincident address, so each block differs from the lift on at most $c(M)$ addresses. (b) A bond weight depends on
+the labels of its two ends only, so $D=H_{M+1}-H_M^{\uparrow}$ vanishes on every bond with no end in $S_M$. With $P$ the projection onto
+$S_M$, $D=PD+(1-P)DP$, of rank at most $2\lvert S_M\rvert$. For Hermitian matrices whose difference has rank $r$, the eigenvalue
+counting functions differ by at most $r$ at every energy, by interlacing. Dividing by $8^{M+1}$ and using (a) gives
+the density bound. Passing from the torus to the infinite periodic operator averages over the Bloch phases, and the same bound holds
+phase by phase. (c) is a computation.
+\end{proof}
+
+\begin{center}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+$M$ & 1 & 2 & 3 & 4 & 5 \\
+\midrule
+$\lvert S_M\rvert$ & \SSChSRow \\
+$8\,c(M)$ & \SSChSBoundRow \\
+$\operatorname{rank}(H_{M+1}-H_M^{\uparrow})$ & \SSChRankRow \\
+largest count difference & \SSChDNRow & --- & --- \\
+as a fraction of the $8^{M+1}$ sites & \SSChDNFrac & --- & --- \\
+proved bound, $2\lvert S_M\rvert/8^{M+1}$ & \SSChDNBound & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+\emph{Status.} The inequalities in (a) and (b) are proved. The equality in (a) is counted, and (c) is computed. The bound is loose: the observed difference is far below it, and
+at $M\le2$ the bound exceeds one and says nothing. The observed rank is $\SSChRankCoef\cdot2^M$ for $M\le\SSChRankM{}$, well
+under $2\lvert S_M\rvert$; that pattern is a finite check and not a theorem. The counts for $M\le\SSChDenseM{}$ come from dense
+diagonalisation of tori of up to $\SSChDenseSites{}$ sites; the ranks, for $M\le\SSChRankM{}$, use only the support of $D$.
+
+\paragraph{The six choices.} Start from the six labels $j$ with $\sigma(j)_{000}=\sigma(j)_{111}=j$ (the chair stack of~\cite{HartshornRomanov}).
+They grow six label fields on the same $2^M$-cube. Any two differ on exactly the tube along the body diagonal $(1,1,1)$, which has
+$7\cdot2^M-6$ cells, and on every cell of it all six labels are different (for $M\le\SSChSixM{}$). The ambiguity that the choice of $j$ leaves
+in an approximant is therefore one tube, the same line defect, and by the argument of \cref{prop:chair-approx}(b) it moves the density of states by at most
+$2(7\cdot2^M-6)/8^M$.
+
+\paragraph{Diffraction.} Mark the cell of native index $0$ of each chair: a point set of density $1/7$. Let
+$\hat\rho_M(m)=8^{-M}\sum_x\rho(x)e^{-2\pi i\,m\cdot x/2^M}$. At a wave vector $k=2\pi m/2^M$ of the level-$M$ torus the lift has the same coefficient
+as the level-$M$ field, so $\lvert\hat\rho_{M+1}(k)-\hat\rho_M(k)\rvert\le\lvert S_M\rvert/8^{M+1}\le c(M)/8^M$, uniformly in $k$: every Bragg amplitude at a dyadic
+wave vector has a limit, with that error (proved). The observed change falls by a factor of about $\SSChAmpFall$ per level, faster than the
+bound's $4$, and is $\SSChAmpLast$ at $M=\SSChApproxM{}$ against the bound $\SSChAmpBoundLast$. The total intensity $\sum_m\lvert\hat\rho_M(m)\rvert^2$ is the density (Parseval); at $M=\SSChBraggM{}$ it is
+$\SSChBraggTotal$, against $1/7=0.14286$, of which the zero wave vector carries $\SSChBraggZero\approx1/49$. The part on wave vectors with denominator dividing $2^{M_0}$ is
+$\SSChBraggTwo$, $\SSChBraggThree$, $\SSChBraggFour$, $\SSChBraggFive$ for $M_0=2,3,4,5$, and the weight still missing from $1/7$ falls by a factor of about $\SSChBraggFall$ per level.
+That is what pure-point diffraction with Bragg masses summing to the density looks like, and it is measured here, not proved: pure-point diffraction of
+Chair44 is quoted from~\cite{HartshornRomanov}, through the theorem of \cite{LeeMoody,Schlottmann,LMS}.
+
+\paragraph{What this does not say.} The Hamiltonian is a model with arbitrary weights on a cubic lattice, not a description of any material, and $\lambda=\tfrac12$ was chosen
+and not fitted. Nothing is claimed about gaps, localisation or the nature of the spectrum of the limiting operator, only that its
+integrated density of states exists and is approached at a known rate. The six-sphere contains no Chair44, so none of this bears on it.
+
 \subsection{Two matches that are not connections}
 \label{sec:chair-nolink}
 
@@ -1693,7 +1840,11 @@ The Hat does not descend to $\TT$ because its inflation is irrational. Chair44, 
 inflation is the integer $2$, nearly descends to every torus $\RR^3/2^M\ZZ^3$ of a nested
 tower, with a defect bounded by $c(M)/8^M\sim28\cdot4^{-M}$ that is proved from a finite
 recurrence certificate and measured on a patch of $\SSChPatchCells$ cells
-(\cref{prop:chair-rate,prop:chair-descent}). That is a contrast of kind. The six-sphere
+(\cref{prop:chair-rate,prop:chair-descent}). That defect is a line: the undetermined addresses are four tubes along
+the body diagonals (\cref{prop:chair-tubes}), while the interface between supertiles carries an area term
+(\cref{prop:chair-interface}), and the transfer matrix of the coincidence count has no root that could give one. On the
+periodic approximants the same count bounds how far the density of states of a tight-binding model, and each Bragg
+amplitude at a dyadic wave vector, move from one level to the next (\cref{prop:chair-approx}). That is a contrast of kind. The six-sphere
 contains no Chair44, and two matches with it, the $24$ simplices round a vertex of the
 Kuhn triangulation of $\ZZ^3$ and the $(3,4,\infty)$ group against the cube's rotation
 group, are coincidences (\cref{sec:chair-nolink}). Two matches with cosmological singularities are of the same kind: the
