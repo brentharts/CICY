@@ -1484,13 +1484,16 @@ For every $M=1,\dots,\SSChTubeM$, the addresses of the $2^M$-cube at which the l
 yet determined are exactly the union of four \emph{tubes}, one along each body diagonal. A
 tube is the set of cells $(x,y,z)$ whose difference $(x-z,\,y-z)$ is that of one of the
 seven cells of the chair: the chair swept along its notch diagonal, with $7\cdot2^M-6$
-cells. The four tubes overlap in $\SSChTubeOverlap$ cells, so
+cells. The four tubes have exactly eight cells in common, the central $2\times2\times2$ block
+of the cube, and each of these lies in all four tubes, so the tubes cover the union
+$3\cdot8=\SSChTubeOverlap$ fewer times than the sum of their sizes counts it. Hence
 \[
   c(M)=4\,(7\cdot2^M-6)-\SSChTubeOverlap=\SSChCCoef\cdot2^M-\SSChCConst,
-  \qquad \SSChCCoef=4\times7,
+  \qquad \SSChCCoef=4\times7.
 \]
-and the label excess $E(M)=\SSChECoef\cdot2^M+\SSChEConst$ is five for each six-label
-address plus $23$ for each of the sixteen $24$-label addresses.
+The label excess is $E(M)=\SSChECoef\cdot2^M+\SSChEConst$ for every $M\ge1$. For
+$M\ge2$ it is five for each six-label address plus $23$ for each of the sixteen $24$-label
+addresses; at $M=1$ the eight undetermined addresses instead carry sets of $42$ labels each.
 \end{proposition}
 
 \noindent
