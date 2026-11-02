@@ -703,6 +703,88 @@ def hofstadter_only():
     print("updated", path, "with", len(new), "macros")
 
 
+def surface_facts():
+    """Numbers for the cusp fibre and curves on surfaces
+    (pyCICY.sixsphere_surface), macros \\SSSf...  Refuses to return anything if
+    a check fails."""
+    from pyCICY import sixsphere_surface as SF
+    r = SF.all_checks()
+    m, lk, lu, ht = r["markov"], r["link"], r["lucas"], r["hat"]
+    ok = (m["markov_quiver"] and m["constant_preserved"] and m["laurent_positive"]
+          and m["markov_triples_ok"] and lk["line"] and lk["hexagon"] == 6
+          and lu["ngon_power_sum"] and lu["blocks"] and lu["block_product"]
+          and all(lu["traces"].values()) and ht["trace_is_L4n"])
+    pr, lo, th = r["principal"], r["loop"], r["theta"]
+    ok = (ok and all(v for k, v in pr.items() if isinstance(v, bool))
+          and lo["F"] == 1 and lo["genus"] == 1 and lo["loops_graph"] == lo["loops_surface"] == 2
+          and lo["control_genus"] == 0 and th["routes_agree"] and th["equals"])
+    if not ok:
+        raise SystemExit("sixsphere_surface check failed: %r" % (r,))
+    from pyCICY import sixsphere_u as SU
+    hx, sq = SU.hexagon_match(), SU.punctured_square()
+    ta, tb = SU.torus_ansatz(depth=3, grid=3), SU.torus_ansatz(depth=4, grid=3)
+    rep = sq["report"]
+    if not (hx["match"] and rep["u_equations_exact"] and rep["unique"] and rep["C_zero_iff_compatible"]
+            and sq["plain_flips_tag_and_shifts"] and sq["notched_pattern"]
+            and ta["initial_unsolved"] and tb["initial_unsolved"]
+            and ta["fan_only_rank"] < ta["fan_only_unknowns"]
+            and tb["fan_only_rank"] < tb["fan_only_unknowns"]):
+        raise SystemExit("sixsphere_u check failed")
+    return {
+        "SfUHexVars": hx["variables"],
+        "SfUDVars": rep["variables"],
+        "SfUDClusters": rep["clusters"],
+        "SfUDMaxC": max(rep["C_values"]),
+        "SfUDChords": sq["chords"],
+        "SfUTorusDepthA": ta["depth"], "SfUTorusVarsA": ta["variables"],
+        "SfUTorusUnsolvedA": ta["off_fan_unsolved"],
+        "SfUTorusDepthB": tb["depth"], "SfUTorusVarsB": tb["variables"],
+        "SfUTorusUnsolvedB": tb["off_fan_unsolved"],
+        "SfUTorusRankB": tb["fan_only_rank"], "SfUTorusUnkB": tb["fan_only_unknowns"],
+        **_surface_base(r, m, lk, lu, ht, lo, th, pr),
+    }
+
+
+def _surface_base(r, m, lk, lu, ht, lo, th, pr):
+    return {
+        "SfArrows": m["arrows"],
+        "SfSeeds": m["seeds"],
+        "SfVariables": m["variables"],
+        "SfDepth": 4,
+        "SfTriples": ", ".join("(%d,%d,%d)" % t for t in m["markov_triples"][1:5]),
+        "SfLinkDepth": lk["depth"],
+        "SfLinkClusters": lk["clusters"],
+        "SfLinkThrough": lk["through_x0"],
+        "SfHexCones": lk["hexagon"],
+        "SfLucasN": lu["nmax"],
+        "SfHatX": ht["x"],
+        "SfLoops": lo["loops_graph"],
+        "SfGenus": lo["genus"],
+        "SfFaces": lo["F"],
+        "SfTrees": th["trees"],
+        "SfPExchange": pr["exchange_pairs"],
+        "SfCrossTen": r["crossing_counts"][0],
+        "SfCrossTwenty": r["crossing_counts"][1],
+    }
+
+
+def surface_only():
+    """Refresh only the surfaceology macros in the existing facts file."""
+    new = surface_facts()
+    path = os.path.join(OUT, "sixsphere_facts.tex")
+    keep = []
+    if os.path.exists(path):
+        for line in open(path).read().splitlines():
+            if not any("\\SS%s}" % k in line for k in new):
+                keep.append(line)
+    for k, v in sorted(new.items()):
+        keep.append("\\providecommand{\\SS%s}{}\\renewcommand{\\SS%s}{%s}"
+                    % (k, k, v))
+    with open(path, "w") as fh:
+        fh.write("\n".join(keep) + "\n")
+    print("updated", path, "with", len(new), "macros")
+
+
 def theta_only():
     """Refresh only the theta macros in the existing facts file."""
     new = theta_facts()
@@ -721,6 +803,8 @@ def theta_only():
 
 
 def main():
+    if "--surface-only" in sys.argv:
+        return surface_only()
     if "--theta-only" in sys.argv:
         return theta_only()
     if "--hofstadter-only" in sys.argv:
@@ -739,6 +823,7 @@ def main():
     facts.update(gauge_facts())
     facts.update(hofstadter_facts())
     facts.update(theta_facts())
+    facts.update(surface_facts())
     write_facts(facts)
     for fig in (figure_laves, lambda: figure_funnel(stab)):
         try:

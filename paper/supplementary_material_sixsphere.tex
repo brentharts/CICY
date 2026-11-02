@@ -125,6 +125,20 @@
 \newcommand{\SSThAlphaAgree}{?}\newcommand{\SSThAlphaOf}{?}\newcommand{\SSThCandidates}{?}
 \newcommand{\SSThSurvivors}{?}\newcommand{\SSThClassicalErr}{?}\newcommand{\SSThMaxDev}{?}
 \newcommand{\SSThCosets}{?}
+% Curves on surfaces (pyCICY.sixsphere_surface): written by
+% paper/make_sixsphere_facts.py --surface-only (or the full run).
+\newcommand{\SSSfArrows}{?}\newcommand{\SSSfSeeds}{?}\newcommand{\SSSfVariables}{?}
+\newcommand{\SSSfDepth}{?}\newcommand{\SSSfTriples}{?}\newcommand{\SSSfLinkDepth}{?}
+\newcommand{\SSSfLinkClusters}{?}\newcommand{\SSSfLinkThrough}{?}
+\newcommand{\SSSfHexCones}{?}\newcommand{\SSSfLucasN}{?}\newcommand{\SSSfHatX}{?}
+\newcommand{\SSSfLoops}{?}\newcommand{\SSSfGenus}{?}\newcommand{\SSSfFaces}{?}
+\newcommand{\SSSfTrees}{?}\newcommand{\SSSfPExchange}{?}\newcommand{\SSSfCrossTen}{?}
+\newcommand{\SSSfCrossTwenty}{?}
+\newcommand{\SSSfUHexVars}{?}\newcommand{\SSSfUDVars}{?}\newcommand{\SSSfUDClusters}{?}
+\newcommand{\SSSfUDMaxC}{?}\newcommand{\SSSfUDChords}{?}\newcommand{\SSSfUTorusDepthA}{?}
+\newcommand{\SSSfUTorusVarsA}{?}\newcommand{\SSSfUTorusUnsolvedA}{?}\newcommand{\SSSfUTorusDepthB}{?}
+\newcommand{\SSSfUTorusVarsB}{?}\newcommand{\SSSfUTorusUnsolvedB}{?}\newcommand{\SSSfUTorusRankB}{?}
+\newcommand{\SSSfUTorusUnkB}{?}
 \IfFileExists{figures/sixsphere_facts.tex}{\input{figures/sixsphere_facts.tex}}{}
 
 \newcommand{\ZZ}{\mathbb{Z}}
@@ -321,6 +335,12 @@ of \cref{thm:gauge-index} is the multiplier of $e(\beta/12)\theta_1/\eta$, so th
 \paragraph{Electrons on the substrate.} \Cref{sec:hofstadter} puts a tight-binding electron on the graph that the cusp fibre
 is rolled up from. Its bands are functions of the $A_2$ roots, a magnetic field is a connection that restricts to the Hat with no gauge
 chosen on the tiling, and the Chern numbers of the gaps are computed by two routes.
+
+\paragraph{Curves on surfaces.} \Cref{sec:surface} reads the dual complex of \cref{sec:dual} as an ideal triangulation of the
+once-punctured torus, the setting of the curve formalism of Arkani-Hamed et al.~\cite{AHFPT} and of the leading singularities of
+Carr\^olo and Figueiredo~\cite{CF}. As a fatgraph it is a two-loop genus-one vacuum diagram with no external state, so it carries no amplitude. Its quiver is the Markov quiver, the monodromy blocks of $T_1,T_2$ generate $\SL_2(\ZZ)$, and the Lucas
+recurrence of the $n$-gon leading singularity is the trace of the $n$-th power of a $2\times2$ matrix, whose values at the
+$(3,4,\infty)$ data are the orders $3$, $4$ and the unipotent. Two matches are shown to be contrasts, not links.
 
 
 % =====================================================================
@@ -2343,6 +2363,185 @@ CICY side its stability-theoretic content have no counterpart here.
 
 % =====================================================================
 
+\section{Curves on Surfaces: the Dual Complex as a Punctured Torus}
+\label{sec:surface}
+
+The curve formalism of Arkani-Hamed, Frost, Salvatori, Plamondon and Thomas~\cite{AHFPT} writes scattering data as counts of curves
+on a surface, and the leading singularities of Carr\^olo and Figueiredo~\cite{CF} are such counts on a fatgraph. The cluster algebras of
+surfaces of Fomin, Shapiro and Thurston~\cite{FST} give the algebra behind both. This section asks what the
+dual complex of $W$ is as a surface in that language, and what in the six-sphere's integer data meets the $n$-gon leading singularity.
+It is computed by \texttt{pyCICY.sixsphere\_surface}, which uses the \texttt{pyCICY.theories} module for the $n$-gon.
+
+\subsection{The dual complex is the Markov triangulation}
+
+\begin{proposition}
+\label{prop:surf-markov}
+Read as an ideal triangulation of the once-punctured torus, $\Delta(W)$ (\cref{prop:dualcx}) has the Fomin--Shapiro--Thurston quiver with
+three vertices $D_a,D_b,D_c$ and a double arrow between each pair, the Markov quiver
+\begin{equation}
+  B=\begin{pmatrix}0&2&-2\\-2&0&2\\2&-2&0\end{pmatrix},\qquad x_a\,x_a'=x_b^2+x_c^2 ,
+  \label{eq:markov-quiver}
+\end{equation}
+and cyclically for $b,c$. Mutation preserves $(x_a^2+x_b^2+x_c^2)/(x_ax_bx_c)$; from $(1,1,1)$ it produces the Markov triples
+\SSSfTriples, \dots, all with $x^2+y^2+z^2=3xyz$.
+\end{proposition}
+
+\begin{proof}[Computation]
+The cyclic order of sides round each triangle is read from the counter-clockwise vertices of the two $A_2$ triangles: $(D_a,D_b,D_c)$ for $P$ and
+$(D_c,D_a,D_b)$ for $Q$, the same cyclic order. Each triangle contributes the $3$-cycle $a\to b\to c\to a$, so each pair of arcs gets two arrows,
+$\SSSfArrows$ in all, which is \eqref{eq:markov-quiver}. The exchange relation is the mutation rule, and the invariant is checked on every one of the
+$\SSSfSeeds$ seeds within $\SSSfDepth$ mutations. As a control, reversing the orientation of one triangle makes the arrows cancel and the matrix
+is not Markov. Every one of the $\SSSfVariables$ cluster variables met is a Laurent polynomial with positive coefficients, which is a theorem
+for cluster algebras of surfaces~\cite{FST,MSW} and is used here as a check on the code and not as a result.
+\end{proof}
+
+The three double curves are therefore the three arcs of the Markov triangulation, and the middle blocks of $T_1,T_2$ (\cref{sec:lucas-trace}) generate
+$\SL_2(\ZZ)$, the mapping class group of the once-punctured torus. Whether this surface carries an amplitude is settled in \cref{sec:surf-loops}: it does not.
+
+\paragraph{A number that looks like a match.} Six oriented edges of $\Delta(W)$ (\cref{sec:dual}) and three arcs with two tags each (the tagged arcs of~\cite{FST}) are both
+$3\times2$. They are different involutions. Orientation reversal of a double curve is the central element $-I\in\SL_2(\ZZ)$, which fixes every arc, and
+the tag is a label that $-I$ also fixes. We argue this and do not compute it, and we record it as a count that two things share, not as an identification.
+
+\subsection{Two fans: a hexagon and a line}
+
+Both the Mumford fan of the cusp (cones over the triangles of the $A_2$ triangulation at height $1$) and the $g$-vector fan of the Markov
+cluster algebra are fans of unimodular cones. For the second this is automatic, since the $g$-vectors of a cluster form a $\ZZ$-basis, so it is not evidence of a link.
+
+\begin{proposition}
+\label{prop:surf-fans}
+Every ray of the Mumford fan lies in exactly $\SSSfHexCones$ maximal cones, a hexagon. In the Markov cluster complex the clusters through one variable form an
+infinite line: within $\SSSfLinkDepth$ mutations of a seed there are $\SSSfLinkClusters$ clusters, and $\SSSfLinkThrough=2\cdot\SSSfLinkDepth+1$ of them contain the
+variable $x_a$, as a line gives and a $6$-cycle cannot. The two fans are not isomorphic.
+\end{proposition}
+
+The count is a finite-depth computation consistent with the line; that the link is infinite is the known structure of the once-punctured torus (cutting along an arc leaves an annulus, whose triangulations are indexed by $\ZZ$).
+The six-sphere's fan is periodic and its link is finite, so the match with the surface fan stops at the incidence data of \cref{prop:surf-markov}.
+
+\subsection{Loop order: a vacuum diagram, not an amplitude}
+\label{sec:surf-loops}
+
+In the curve formalism a fatgraph with $V$ cubic vertices, $E$ edges and $F$ boundary cycles on a surface of genus $g$ has $L=E-V+1=2g+F-1$ loops, and
+external states are marked points on a boundary. The dual of $\Delta(W)$ has a vertex for each triangle and an edge for each arc, so it is the theta graph, with
+the cyclic order of arcs at $P$ and at $Q$ read from \cref{prop:dualcx}.
+
+\begin{proposition}
+\label{prop:surf-loops}
+The dual fatgraph of $\Delta(W)$ has $V=2$, $E=3$, $F=\SSSfFaces$ boundary cycle, genus $\SSSfGenus$ and $L=\SSSfLoops$ loops by both formulas, and no external legs. It is the
+genus-one embedding of the two-loop theta (sunrise) vacuum diagram. Its Symanzik polynomial is $U=\alpha_a\alpha_b+\alpha_b\alpha_c+\alpha_c\alpha_a$, from the matrix-tree theorem and from the
+$\SSSfTrees$ spanning trees, and its Newton polytope is a unimodular triangle.
+\end{proposition}
+
+\begin{proof}[Computation]
+The boundary cycles are the orbits of the face permutation of the rotation system $(a,b,c)$ at $P$, $(c,a,b)=(a,b,c)$ at $Q$: one orbit. Then $2-2g=V-E+F$ gives $g=\SSSfGenus$, and
+$E-V+1=2g+F-1=\SSSfLoops$. The control, the opposite cyclic order at $Q$, has $3$ faces and genus $0$ and is the planar theta graph. $U$ is computed by the two routes of
+\texttt{theories.softgraph}.
+\end{proof}
+
+The surface has no boundary and therefore no marked point on one: it carries no external state, so the once-punctured torus is a two-loop vacuum diagram and not a scattering
+amplitude. $U$ does not see the embedding, so the planar and the genus-one theta graph have the same $U$; the genus enters only through the faces. The symmetry of $U$ in
+$\alpha_a,\alpha_b,\alpha_c$ is the permutation of the three double curves.
+
+\subsection{F-polynomials and slopes on the torus}
+
+With principal coefficients the exchange relation of the extended Markov quiver is $x_kx_k'=\prod\tilde x_i^{[\tilde b_{ik}]_+}+\prod\tilde x_i^{[-\tilde b_{ik}]_+}$, the frozen variables being
+$y_0,y_1,y_2$ and the matrix $\tilde B$ mutating along with the cluster.
+
+\begin{proposition}
+\label{prop:surf-F}
+For all $\SSSfVariables$ cluster variables within $\SSSfDepth$ mutations of $\Delta(W)$:
+(i) each is homogeneous for $\deg x_i=e_i$, $\deg y_j=-b_j$, with $g$-vector its degree;
+(ii) $F=X|_{x=1}$ has constant term $1$, positive coefficients and a unique maximal monomial divisible by all others;
+(iii) $X=x^{g}F(\hat y)$ with $\hat y_j=y_j\prod_ix_i^{b_{ij}}$, a second route to the same variable;
+(iv) the $g$-vectors of every cluster form a $\ZZ$-basis;
+(v) assigning to each arc the slope $p/q$ of $D=pe_1+qe_2$ in $\Lam$, with $D_a,D_b,D_c=(1,0),(-1,1),(0,1)$ and mutation replacing $v_k$ by the other of $v_i\pm v_j$, is a bijection
+from these variables to slopes; arcs in a cluster have $|\det|=1$ and the $\SSSfPExchange$ exchange pairs have $|\det|=2$, so the arcs cross $|\det|-1$ times.
+\end{proposition}
+
+(i)--(iv) are known~\cite{FST,MSW}, and are here as checks of the code against two routes. (v) says that the cluster complex is the Farey complex, as the Markov numbers show. It also shows what is not
+finite on this surface. Every arc is crossed once by infinitely many arcs: for the arc $(1,0)$ these are the $(r,2)$ with $r$ odd, of which there are $\SSSfCrossTen$ with $|r|\le10$ and $\SSSfCrossTwenty$ with $|r|\le20$.
+A $u$-equation for an arc, $u_C+\prod_{C'}u_{C'}^{\#(C,C')}=1$, is therefore an infinite product on this surface, with infinitely many factors even at a fixed crossing number.
+
+\subsection{The u-variables from the F-polynomials, and the puncture}
+\label{sec:surf-u}
+
+The disk module defines $u_{ij}$ as a cross-ratio of $F$-polynomials. We do not use a formula. With principal coefficients put $y_i=t^{m_i}$ and let $t\to0$; the
+$u$-variables of binary geometry vanish there like $t^{\nu_\gamma(m)}$, where $\nu_\gamma(m)$ is the coordinate of $m$ on the ray $-g_\gamma$ of the $g$-fan cone containing $m$,
+and $0$ off the cone. Requiring $\nu_\gamma$ to be a combination of the valuations $\min_{\mathrm{mon}\in F_h}\langle\mathrm{mon},m\rangle$ of the $F$-polynomials and of the linear forms $\langle\mu,m\rangle$
+is an integer linear problem, whose solution is $u_\gamma=y^{\mu}\prod_hF_h^{E_{\gamma h}}$. The exponents of the $u$-equations
+$u_\gamma+\prod_{h}u_h^{C_{\gamma h}}=1$ are then found independently, by least squares on $\log(1-u_\gamma)$ at random rational points and rounding, and every equation is
+verified exactly at twelve fresh rational points.
+
+\begin{proposition}
+\label{prop:surf-u}
+In type $A_2$, $A_3$ and in type $D_4$ (the once-punctured square, whose oriented $4$-cycle is the fan triangulation, with $\SSSfUDVars$ cluster variables in $\SSSfUDClusters$ clusters)
+the solution is unique, integral and local: each $u_\gamma$ has at most four $F$-factors, with exponents $\pm1$. The $u$-equations hold exactly, $C$ is symmetric, and $C_{\gamma h}=0$ exactly when
+$\gamma,h$ lie in a common cluster; its values are $\{0,1\}$ in type $A$ and $\{0,1,2\}$ in type $D_4$. For the hexagon the $\SSSfUHexVars$ values equal those of the disk module
+after reversing the order of the three $y$'s. In $D_4$, sorting the $12$ non-initial variables by their $d$-vector (the row of $C$ on the initial variables) gives $4$ notched arcs $N_j$
+(zero at $j$, ones elsewhere) and $\SSSfUDChords$ chords. Writing $P_i$ for the plain arc to the puncture and $c_{a,b}$ for the chord with $d$-vector supported on $\{a,b\}$,
+\begin{equation}
+  u(P_i)=\frac{F(c_{i+2,i+3})}{F(N_{i+1})},\qquad u(N_j)=y_{j+1}\frac{F(c_{j+2,j+3})}{F(N_j)},\qquad i,j\in\ZZ/4 .
+  \label{eq:D4-u}
+\end{equation}
+\end{proposition}
+
+\begin{proof}[Computation]
+The regression, the exact check and the control are as described. As a control, solving with $+g$ instead of $-g$ leaves variables of $A_2$ without a solution. The names $P_i$, $N_j$ and $c_{a,b}$
+are read from the $d$-vectors by the crossing-number rule of~\cite{FST}, and are not checked geometrically here.
+\end{proof}
+
+So the arc to the puncture has, in $u$, its endpoint moved by one step and its tag flipped, as the cross-ratio picture of spiral endpoints would have it: a spiral at the puncture is a tagged arc, and no formula beyond the cluster algebra is needed in
+finite type.
+This holds for the punctured disk and says nothing yet about the torus.
+
+\paragraph{The torus.} The Markov quiver has no complete $g$-fan: the cones of the clusters cover only part of $\RR^3$. Two readings of the same ansatz fail. Demanding $\nu=0$ off the fan, as holds in finite type where there is no ``off'', the initial arcs
+have no solution at depth $\SSSfUTorusDepthA$ or $\SSSfUTorusDepthB$ (of $\SSSfUTorusVarsA$ and $\SSSfUTorusVarsB$ variables, $\SSSfUTorusUnsolvedA$ and $\SSSfUTorusUnsolvedB$ have no integral solution, which includes variables at the frontier of the truncation).
+Fitting on the fan alone, the system has rank $\SSSfUTorusRankB$ for $\SSSfUTorusUnkB$ unknowns at depth $\SSSfUTorusDepthB$, so the fit is not unique. So there is no canonical $u_\gamma$ of this form on the torus, and we do not define one.
+We suspect, and have not shown, that this is where the infinite products of \cref{prop:surf-F} enter, through the part of $\RR^3$ outside the fan. The $u$-equations on the torus are not checked. That is a statement about this ansatz, truncated at depth $\SSSfUTorusDepthB$; a $u$
+built from the spirals of the surface, which we do not have, might exist.
+
+\subsection{Lucas as traces of powers}
+\label{sec:lucas-trace}
+
+The leading singularity of the $n$-gon in the limit $X_{i,j}\to X$, $X_{i,p}\to Y$ is $(2-D)Y^n-\sum_kC_kY^kX^{n-k}$ with $C_k=[x^{n-2k}]L_n(x)$ the Lucas
+coefficients, a recurrence the source papers do not explain.
+
+\begin{proposition}
+\label{prop:surf-lucas}
+Let $a_\pm$ be the roots of $a^2-Xa+XY$. Then $\sum_kC_kY^kX^{n-k}=a_+^n+a_-^n=\operatorname{tr}\begin{pmatrix}X&-XY\\1&0\end{pmatrix}^n$, so the
+leading singularity is $(2-D)Y^n-(a_+^n+a_-^n)$. In terms of $x=\sqrt{X/Y}$, the matrix $M/\sqrt{XY}$ has determinant $1$ and trace $x$,
+and $\operatorname{tr}(M/\sqrt{XY})^n=L_n(x)$. For the middle blocks of the monodromy,
+\begin{equation}
+  A=\begin{pmatrix}-1&1\\-1&0\end{pmatrix},\quad B=\begin{pmatrix}0&-1\\1&0\end{pmatrix},\quad AB=\begin{pmatrix}1&1\\0&1\end{pmatrix},\qquad
+  \operatorname{tr}A^n=L_n(-1),\ \operatorname{tr}B^n=L_n(0),\ \operatorname{tr}(AB)^n=L_n(2),
+  \label{eq:lucas-blocks}
+\end{equation}
+of periods $3$, $4$ and constant $2$, on the loci $X=Y$, $X=0$ and $X=4Y$ of the kinematics, the last being where the two roots coincide.
+\end{proposition}
+
+\begin{proof}
+The power sums $p_n=a_+^n+a_-^n$ satisfy $p_n=Xp_{n-1}-XYp_{n-2}$ with $p_0=2$, $p_1=X$ (Cayley--Hamilton for the companion matrix), which is the Lucas
+recurrence after the scaling $x=\sqrt{X/Y}$, $p_n=(XY)^{n/2}L_n(x)$; expanding $L_n$ gives the coefficients $C_k$. The identity with the
+module's \texttt{ngon\_leading\_singularity} is checked symbolically for $n=2,\dots,\SSSfLucasN$, and the traces in \eqref{eq:lucas-blocks} for $n\le\SSSfLucasN$.
+The middle blocks are read from $T_1,T_2$ (\cref{sec:flag}).
+\end{proof}
+
+This answers the open question of the Lucas recurrence as algebra: the numbers are the traces of the powers of one $2\times2$ matrix. It does not say why the
+$n$-gon leading singularity is governed by that matrix, and it is not a physical link between the six-sphere and the amplitude. The values $x=-1,0,2$ are three of the five integer
+values with $|x|\le2$, the traces of the elliptic and parabolic elements of $\SL_2(\ZZ)$.
+
+\paragraph{The Hat is the same identity at $x=\SSSfHatX$.} The Hat's substitution matrix has characteristic polynomial $(\lambda-1)(\lambda+1)(\lambda^2-7\lambda+1)$, so
+$\operatorname{tr}M^n=L_{4n}+1+(-1)^n$ for $n\le8$ and its Perron root $\varphi^4$ is the hyperbolic case $x=\SSSfHatX=L_4$. The six-sphere monodromy is elliptic and parabolic, the
+Hat's inflation is hyperbolic, and both are the one Cayley--Hamilton identity. This is the quadratic-unit match of \cref{sec:cosmo-nolink} again, and it is not a connection.
+
+\subsection{What this does and does not say}
+
+The cusp fibre's dual complex is exactly the Markov triangulation, its monodromy blocks generate the mapping class group of the surface, and the Lucas recurrence
+of the $n$-gon is the trace of powers of a $2\times2$ matrix, with the $(3,4,\infty)$ data at $x=-1,0,2$. The surface is a two-loop genus-one vacuum diagram with no external state (\cref{prop:surf-loops}), and its $F$-polynomials and slopes are computed (\cref{prop:surf-F}). The $u$-variables are obtained from the $F$-polynomials in finite type, including the punctured disk with its tagged arcs (\cref{prop:surf-u}), and not on the torus. Not shown: the $u$-equations on the torus, that the
+fan of the six-sphere is a fan of the cluster algebra (it is not, \cref{prop:surf-fans}), or that tagged arcs correspond to oriented edges. The Symanzik polynomials of the
+toroidal quotient of the Laves graph were not computed.
+
+% =====================================================================
+
 \section{Conclusion}
 \label{sec:conclusion}
 
@@ -2376,6 +2575,13 @@ Kuhn triangulation of $\ZZ^3$ and the $(3,4,\infty)$ group against the cube's ro
 group, are coincidences (\cref{sec:chair-nolink}). Two matches with cosmological singularities are of the same kind: the
 Spectre's inflation and perimeter growth are closed orbits of the Mixmaster map, as every quadratic unit is, and the
 pancake's fibre clock misses the six of $\mathbb Z/6$ (\cref{sec:cosmo-nolink}).
+
+Read as an ideal triangulation of the once-punctured torus, $\Delta(W)$ has the Markov quiver, and the monodromy blocks generate
+the mapping class group of that torus (\cref{prop:surf-markov}). The dual fatgraph is the genus-one two-loop theta vacuum diagram with no external state, so there is no amplitude
+(\cref{prop:surf-loops}). In finite type, including the punctured disk, the $u$-variables follow from the $F$-polynomials with the $u$-equations exact and the tagged
+arcs flipping their tag (\cref{prop:surf-u}); on the torus the same ansatz has no canonical solution. The Lucas recurrence of the $n$-gon leading singularity is the trace of powers of a $2\times2$ matrix, whose values at
+the $(3,4,\infty)$ data are $x=-1,0,2$, while the Hat's inflation is the same identity at $x=\SSSfHatX$ (\cref{prop:surf-lucas}). The fan of the cusp is a hexagon at
+every ray and the cluster complex a line, so the two fans differ (\cref{prop:surf-fans}).
 
 Read as a gauge theory without principal bundles, the fibre carries a symplectic lattice with
 a marked vector, and the group of its automorphisms is the integral Jacobi group; the
@@ -2428,6 +2634,8 @@ verification suite \texttt{tests/test\_sixsphere\_search.py}, Lean facts in
 tilings of \url{https://github.com/brentharts/spectre}. \Cref{sec:chair44} is computed
 by \texttt{pyCICY.chair44\_nested} (test suite \texttt{tests/test\_chair44\_nested.py});
 its numbers are written by \texttt{paper/make\_sixsphere\_facts.py \-\--chair44-only}.
+\Cref{sec:surface} is computed by \texttt{pyCICY.sixsphere\_surface} (test suite \texttt{tests/test\_sixsphere\_surface.py});
+its numbers are written by \texttt{paper/make\_sixsphere\_facts.py \-\--surface-only}; the $u$-variables of \cref{sec:surf-u} are computed by \texttt{pyCICY.sixsphere\_u} (test suite \texttt{tests/test\_sixsphere\_u.py}).
 \Cref{sec:cosmo-nolink} is computed by \texttt{pyCICY.sixsphere\_cosmology} (test suite
 \texttt{tests/test\_sixsphere\_cosmology.py}); its numbers are written by
 \texttt{paper/make\_sixsphere\_facts.py \-\--cosmo-only}.
@@ -2600,6 +2808,22 @@ D.~Mumford,
 F.~Benini, R.~Eager, K.~Hori and Y.~Tachikawa,
 \emph{Elliptic genera of 2d $\mathcal N=2$ gauge theories},
 Commun.\ Math.\ Phys.\ (2014), \url{https://doi.org/10.1007/s00220-014-2210-y}, arXiv:1308.4896.
+
+\bibitem{AHFPT}
+N.~Arkani-Hamed, H.~Frost, G.~Salvatori, P.-G.~Plamondon and H.~Thomas,
+\emph{All loop scattering as a counting problem}, JHEP \textbf{08} (2025) 194, arXiv:2309.15913.
+
+\bibitem{CF}
+S.~Carr\^olo and C.~Figueiredo,
+\emph{How gluon leading singularities discover curves on surfaces}, JHEP \textbf{07} (2026) 101, arXiv:2512.17019.
+
+\bibitem{FST}
+S.~Fomin, M.~Shapiro and D.~Thurston,
+\emph{Cluster algebras and triangulated surfaces. Part I: Cluster complexes}, Acta Math.\ \textbf{201} (2008), 83--146.
+
+\bibitem{MSW}
+G.~Musiker, R.~Schiffler and L.~Williams,
+\emph{Positivity for cluster algebras from surfaces}, Adv.\ Math.\ \textbf{227} (2011), 2241--2308.
 
 \end{thebibliography}
 
