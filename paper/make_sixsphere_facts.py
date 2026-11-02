@@ -25,6 +25,10 @@ from pyCICY import sixsphere_search as X
 from pyCICY import sixsphere_links as LK
 from pyCICY import chair44_nested as CH
 from pyCICY import sixsphere_cosmology as CO
+from pyCICY import sixsphere_gauge as GA
+from pyCICY import cusp_hofstadter as HO
+from pyCICY import sixsphere_theta as TH
+from pyCICY import sixsphere_search as SRCH
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "figures")
 os.makedirs(OUT, exist_ok=True)
@@ -333,6 +337,16 @@ def chair_facts():
         return "%s\\times10^{%d}" % (m, int(e))
     f["ChAmpLast"] = _sci(am[-1])
     f["ChAmpBoundLast"] = _sci([r["amp_bound"] for r in df if "amp" in r][-1])
+    fm = st["mismatch"]
+    assert all(r["support_in_tubes"] and r["six_in_dihedral"] and r["six_all_values"] and r["cocycle"]
+               and not r["periodic"] and r["junction_values"] == 24 and r["half_period_scale"] for r in fm)
+    lastm = fm[-1]
+    f["ChMisMs"] = ", ".join(str(r["M"]) for r in fm)
+    f["ChMisFirst"], f["ChMisLast"] = fm[0]["M"], lastm["M"]
+    f["ChMisNonId"] = "%.0f" % (100 * lastm["mismatch_cells"] / lastm["tube_cells"])
+    f["ChMisHalf"] = "%.3f" % lastm["half_period_disagree"]
+    f["ChMisBound"] = "%.3f" % lastm["bound"]
+    f["ChMisBoundPrev"] = "%.3f" % lastm["bound_prev"]
     kv = st["kuhn"]
     f["ChKuhnPreserve"], f["ChKuhnGroup"] = kv["cube_preserving"], kv["cube_group"]
     f["ChKuhnRot"] = kv["rotations_preserving"]
@@ -372,6 +386,141 @@ def cosmo_facts():
     f = {"Co" + k: v for k, v in st["facts"].items()}
     f["CoChecks"] = len(st["checks"])
     return f
+
+
+def gauge_facts():
+    """Numbers for the fibre structure and its holonomy (pyCICY.sixsphere_gauge),
+    macros \\SSGa...  Refuses to return anything if status_gauge fails."""
+    import contextlib
+    import io
+    with contextlib.redirect_stdout(io.StringIO()):
+        good = GA.status_gauge()
+    if not good:
+        raise SystemExit("sixsphere_gauge.status_gauge failed -- nothing written")
+    it = GA.invariant_tensors()
+    hi = GA.holonomy_index()
+    lc = GA.levi_lift_control()
+    za = GA.zariski_lie_algebra()
+    sd = GA.stabiliser_dimension()
+    cd = GA.class_divisibility(3)
+    cls = SRCH.classify(SRCH.funnel(3)["survivors"])
+    central = sorted(GA.central_index(*c["rep"], max_elements=60000)["gcd"]
+                     for c in cls)
+    f = {
+        "GaChecks": 10,
+        "GaIndex": hi["index"],
+        "GaChiOne": hi["chi(T1)"], "GaChiTwo": hi["chi(T2)"],
+        "GaChiZ": hi["chi(z)"],
+        "GaChiLeviOne": lc["chi"][0], "GaChiLeviTwo": lc["chi"][1],
+        "GaLeviRank": lc["rank N"],
+        "GaWordHOne": GA.WORDS["h(1,0,6)"], "GaWordHTwo": GA.WORDS["h(0,1,6)"],
+        "GaWordHMinus": GA.WORDS["h(-1,0,6)"],
+        "GaWordLenOne": len(GA.WORDS["h(1,0,6)"]),
+        "GaWordLenTwo": len(GA.WORDS["h(0,1,6)"]),
+        "GaWordLenMinus": len(GA.WORDS["h(-1,0,6)"]),
+        "GaTensorDims": ", ".join(str(it["dims"][k])
+                                  for k in ("V", "V*", "VV", "V*V*", "End")),
+        "GaZariskiDim": za["dim generated"], "GaStabDim": za["dim stabiliser"],
+        "GaOrbitDim": sd["orbit_dim"],
+        "GaSurvivors": cd["survivors"],
+        "GaPerClass": cd["count_by_d"][1],
+        "GaDValues": ", ".join(str(d) for d in cd["d_values"]),
+        "GaCentralIndex": ", ".join(str(g) for g in central),
+    }
+    if central != [12, 12, 12, 12]:
+        raise SystemExit("central index of the four classes is %s, not 12 each"
+                         % central)
+    return f
+
+
+def _signed(xs):
+    return ", ".join(("$%d$" % x) for x in xs)
+
+
+def hofstadter_facts():
+    """Numbers for the electron on the cusp substrate (pyCICY.cusp_hofstadter),
+    macros \\SSHo...  Refuses to return anything if a check fails."""
+    import contextlib
+    import io
+    from fractions import Fraction as Fr
+    with contextlib.redirect_stdout(io.StringIO()):
+        good = HO.status_cusp_hofstadter()
+    if not good:
+        raise SystemExit("cusp_hofstadter.status failed -- nothing written")
+    third = HO.gap_cherns(Fr(1, 3), nk=12, nkgap=12)
+    quarter = HO.gap_cherns(Fr(1, 4), nk=12, nkgap=12)
+    sixth = HO.gap_cherns(Fr(1, 6), nk=12, nkgap=12)
+    pos, b = HO.finite_patch(24.0)
+    k3 = [round(HO.kitaev_chern(HO.finite_hamiltonian(pos, b, Fr(1, 3)), pos,
+                                sum(g["window"]) / 2, radius=12.0))
+          for g in third]
+    wide = [g for g in quarter if g["window"][1] - g["window"][0] > 0.3]
+    H4 = HO.finite_hamiltonian(pos, b, Fr(1, 4))
+    k4 = [round(HO.kitaev_chern(H4, pos, sum(g["window"]) / 2, radius=12.0))
+          for g in wide]
+    f3 = [g["chern_int"] for g in third]
+    f4 = [g["chern_int"] for g in wide]
+    if k3 != f3 or k4 != f4:
+        raise SystemExit("Kitaev and FHS disagree: %s %s / %s %s" % (k3, f3, k4, f4))
+    allgaps = third + quarter + sixth
+    if not all(g["tknn_integer"] for g in allgaps):
+        raise SystemExit("TKNN relation fails")
+    per = HO.flux_periods()
+    return {
+        "HoChecks": 8,
+        "HoGapsThird": len(third), "HoChernThird": _signed(f3),
+        "HoGapsQuarter": len(quarter), "HoGapsQuarterWide": len(wide),
+        "HoGapsQuarterNarrow": len(quarter) - len(wide),
+        "HoChernQuarterWide": _signed(f4),
+        "HoGapsSixth": len(sixth),
+        "HoChernQuarter": _signed([g["chern_int"] for g in quarter]),
+        "HoChernSixth": _signed([g["chern_int"] for g in sixth]),
+        "HoGapsTotal": len(allgaps),
+        "HoPatchSites": len(pos), "HoPatchBonds": len(b),
+        "HoPeriodSub": per["substrate"]["period"],
+        "HoPeriodHat": per["hat"]["period"],
+    }
+
+
+def _tex_sci(x):
+    """A float as a LaTeX power of ten, upper-rounded: 1.5e-26 -> 10^{-25}."""
+    import math
+    return "10^{%d}" % math.ceil(math.log10(x)) if x > 0 else "0"
+
+
+def theta_facts():
+    """Numbers for the holonomy character as a theta multiplier
+    (pyCICY.sixsphere_theta), macros \\SSTh...  Refuses to return anything if a
+    check fails."""
+    import contextlib
+    import io
+    with contextlib.redirect_stdout(io.StringIO()):
+        good = TH.status_theta()
+    if not good:
+        raise SystemExit("sixsphere_theta.status_theta failed -- nothing written")
+    mc = TH.multiplier_check()
+    def _dev(g):
+        d = TH.multiplier(g)[0] - TH.chi(g)
+        return abs(d - 12 * TH.mp.nint(d / 12))
+    dev = max(_dev(g) for g in TH.GENERATORS.values())
+    at = TH.alpha_two_ways()
+    cs = TH.candidate_search()
+    pr = TH.proof_by_generators()
+    cl = TH.classical_laws_check()
+    zd = TH.zero_divisor()
+    sh = TH.stabiliser_is_holonomy()
+    if not (all(v["ok"] for v in pr.values()) and mc["words_ok"] == mc["words"]):
+        raise SystemExit("theta multiplier check failed")
+    return {
+        "ThChecks": 11,
+        "ThDigits": int(TH.mp.mp.dps),
+        "ThWords": mc["words"],
+        "ThAlphaAgree": at["agree"], "ThAlphaOf": at["of"],
+        "ThCandidates": cs["candidates"], "ThSurvivors": len(cs["survivors"]),
+        "ThClassicalErr": _tex_sci(cl["max_rel_err"]),
+        "ThMaxDev": _tex_sci(float(dev)),
+        "ThCosets": len(sh["cosets"]),
+    }
 
 
 def write_facts(facts):
@@ -520,7 +669,64 @@ def cosmo_only():
     print("updated", path, "with", len(new), "macros")
 
 
+def gauge_only():
+    """Refresh only the gauge/holonomy macros in the existing facts file."""
+    new = gauge_facts()
+    path = os.path.join(OUT, "sixsphere_facts.tex")
+    keep = []
+    if os.path.exists(path):
+        for line in open(path).read().splitlines():
+            if not any("\\SS%s}" % k in line for k in new):
+                keep.append(line)
+    for k, v in sorted(new.items()):
+        keep.append("\\providecommand{\\SS%s}{}\\renewcommand{\\SS%s}{%s}"
+                    % (k, k, v))
+    with open(path, "w") as fh:
+        fh.write("\n".join(keep) + "\n")
+    print("updated", path, "with", len(new), "macros")
+
+
+def hofstadter_only():
+    """Refresh only the Hofstadter macros in the existing facts file."""
+    new = hofstadter_facts()
+    path = os.path.join(OUT, "sixsphere_facts.tex")
+    keep = []
+    if os.path.exists(path):
+        for line in open(path).read().splitlines():
+            if not any("\\SS%s}" % k in line for k in new):
+                keep.append(line)
+    for k, v in sorted(new.items()):
+        keep.append("\\providecommand{\\SS%s}{}\\renewcommand{\\SS%s}{%s}"
+                    % (k, k, v))
+    with open(path, "w") as fh:
+        fh.write("\n".join(keep) + "\n")
+    print("updated", path, "with", len(new), "macros")
+
+
+def theta_only():
+    """Refresh only the theta macros in the existing facts file."""
+    new = theta_facts()
+    path = os.path.join(OUT, "sixsphere_facts.tex")
+    keep = []
+    if os.path.exists(path):
+        for line in open(path).read().splitlines():
+            if not any("\\SS%s}" % k in line for k in new):
+                keep.append(line)
+    for k, v in sorted(new.items()):
+        keep.append("\\providecommand{\\SS%s}{}\\renewcommand{\\SS%s}{%s}"
+                    % (k, k, v))
+    with open(path, "w") as fh:
+        fh.write("\n".join(keep) + "\n")
+    print("updated", path, "with", len(new), "macros")
+
+
 def main():
+    if "--theta-only" in sys.argv:
+        return theta_only()
+    if "--hofstadter-only" in sys.argv:
+        return hofstadter_only()
+    if "--gauge-only" in sys.argv:
+        return gauge_only()
     if "--cosmo-only" in sys.argv:
         return cosmo_only()
     if "--links-only" in sys.argv:
@@ -530,6 +736,9 @@ def main():
     facts, stab, _ = survey()
     facts.update(chair_facts())
     facts.update(cosmo_facts())
+    facts.update(gauge_facts())
+    facts.update(hofstadter_facts())
+    facts.update(theta_facts())
     write_facts(facts)
     for fig in (figure_laves, lambda: figure_funnel(stab)):
         try:
