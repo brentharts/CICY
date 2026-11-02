@@ -19,6 +19,10 @@ tori, and the Hat does not).
   [6d] approximants  tight-binding tori: the lift differs from the next torus on
                      140*2^M - 232 sites; rank, counting functions, six choices,
                      Bragg intensities
+  [6e] mismatch      the O-valued frame mismatch under translation by 2^M e is
+                     the identity off the tubes, dihedral (all six values) on
+                     the six-label tube cells, all of O at the 16 corner and
+                     central cells, a coboundary but not a function on the torus
   [7] not a link     Kuhn's triangulation of Z^3 against the cube group; the
                      S4 cover of the (3, 4, inf) orbifold
   [8] controls       a perturbed child pose is rejected; a tighter bound than
@@ -277,6 +281,46 @@ def test_approximants():
     check_true("control: the periodic and the (1,1,1)-twisted spectra differ", not C.np.allclose(e0, e1))
 
 
+def test_mismatch():
+    print("\n[6e] the frame mismatch under translation by 2^M e (level-6 patch)")
+    fm = C.frame_mismatch()
+    for r in fm:
+        M = r["M"]
+        check_true("M=%d: rotation mismatch only where labels differ, labels only differ in the tubes" % M,
+                   r["support_in_tubes"] and r["rho_zero_on_labels_equal"])
+        check_true("M=%d: identity at every determined address" % M, r["determined_identity"])
+        check_true("M=%d: on six-label cells rho fixes the tube's diagonal" % M, r["six_in_dihedral"])
+        check("M=%d: values per six-label address (all of them)" % M, r["values_per_six_address"], {6})
+        check("M=%d: values at the corner and central addresses" % M, r["junction_values"], 24)
+        check("M=%d: group they generate" % M, r["junction_group"], 24)
+        check_true("M=%d: cocycle identity rho_(e+e') = rho_e'(x + e) rho_e(x)" % M, r["cocycle"])
+        check_true("M=%d: not a function on the torus (several values at one address)" % M, not r["periodic"])
+        check_true("M=%d: half-period mismatch has the level M-1 size" % M, r["half_period_scale"])
+    # the six values at an address are not an abelian group: two of them fail to commute
+    _, mul, inv, ident, pres = C._rot_tables()
+    for k in range(4):
+        grp = [a for a in range(24) if pres[a, k]]
+        check("stabiliser of diagonal %d has order 6" % k, len(grp), 6)
+        check_true("... and is not abelian",
+                   any(mul[a, b] != mul[b, a] for a in grp for b in grp))
+    # the support test can fail: damage one label away from the tubes
+    import numpy as np
+    G = C.grid(6).copy()
+    n = 8
+    union = np.logical_or.reduce(C._tube_masks(3))
+    off = np.argwhere(~union)[0]
+    x = tuple(int(c) + n for c in off)          # a cell of the translate's block
+    base = int(G[x])
+    if base < 0:
+        x = tuple(int(c) for c in off)
+        base = int(G[x])
+    G[x] = (base + 7) % 168
+    dm = C.disagreement_map(G, (n, 0, 0))
+    idx = np.argwhere(dm)
+    outside = [t for t in idx if not union[tuple(int(c) % n for c in t)]]
+    check_true("a label changed away from the tubes is caught by the support test", len(outside) > 0)
+
+
 def test_not_a_link():
     print("\n[7] two things that are not connections")
     kv = C.kuhn_vs_cube()
@@ -349,7 +393,7 @@ def test_ledger():
 
 if __name__ == "__main__":
     for t in (test_substitution, test_coincidence, test_closed_forms, test_descent, test_translates,
-              test_scan_counts, test_undetermined, test_tubes, test_interface, test_approximants,
+              test_scan_counts, test_undetermined, test_tubes, test_interface, test_approximants, test_mismatch,
               test_not_a_link, test_controls, test_ledger):
         t()
     print()
