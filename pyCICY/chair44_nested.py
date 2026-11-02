@@ -649,6 +649,271 @@ def orbifold_cover():
 
 
 # ---------------------------------------------------------------------------
+# 5. two defects of one hierarchy: the interface (area) and the coincidence (line)
+# ---------------------------------------------------------------------------
+_CHILD_M = None
+
+
+def _child_arrays():
+    global _CHILD_M
+    if _CHILD_M is None:
+        Hm = np.array([frame_matrix(h) for h, u in CHILDREN], dtype=np.int64)
+        Hu = np.array([u for h, u in CHILDREN], dtype=np.int64)
+        _CHILD_M = (Hm, Hu, np.array(CELLS, dtype=np.int64))
+    return _CHILD_M
+
+
+def level_poses(n):
+    """The 8^n poses (G, t) of the level-n patch, as integer arrays of shape (8^n, 3, 3), (8^n, 3).
+
+    The same refinement as :func:`refine_pose`, applied to every pose at once; the cell of a
+    native cell c under (G, t) is  G c + t - (1 where the row of G has a negative sign)."""
+    Hm, Hu, _ = _child_arrays()
+    G, t = np.eye(3, dtype=np.int64)[None], np.zeros((1, 3), dtype=np.int64)
+    for _ in range(n):
+        Gn = np.einsum('nij,bjk->nbik', G, Hm)
+        tn = 2 * t[:, None, :] + np.einsum('nij,bj->nbi', G, Hu)
+        G, t = Gn.reshape(-1, 3, 3), tn.reshape(-1, 3)
+    return G, t
+
+
+def interface_counts(nmax=6):
+    """Cell-level contact counts of the level-n patch (8^n chairs, one seed), n = 1..nmax.
+
+    Per level n:  chairs, cells (= 7*8^n, no overlap), the faces F between cells of different
+    chairs, the boundary faces B of the patch, and the number C of pairs of chairs in face
+    contact.  Exact (n <= nmax, by counting the cells themselves):
+
+        F = 12 (8^n - 4^n)         B = 24 * 4^n        C = (29/8) 8^n - 3 * 4^n - 1
+
+    F and B follow from the patch being the 2^n-times scaled chair (volume 7*8^n, surface 24*4^n,
+    9 adjacent cell pairs inside each chair); C is read off the counts.  The extensivity defect
+    8 C_n - C_(n+1) = -(12 * 4^n + 7) is exact on the same rows.
+    """
+    _, _, CELL = _child_arrays()
+    rows = []
+    for n in range(1, nmax + 1):
+        G, t = level_poses(n)
+        N = len(G)
+        neg = (G.sum(axis=2) < 0).astype(np.int64)
+        cells = (np.einsum('nij,kj->nki', G, CELL) + t[:, None, :] - neg[:, None, :]).reshape(-1, 3)
+        owner = np.repeat(np.arange(N, dtype=np.int64), 7)
+        cells = cells - cells.min(0)
+        dim = cells.max(0) + 1
+        grid = -np.ones(dim, dtype=np.int32)
+        grid[cells[:, 0], cells[:, 1], cells[:, 2]] = owner
+        occupied = int((grid >= 0).sum())
+        adj, codes = 0, []
+        for ax in range(3):
+            a = np.take(grid, range(dim[ax] - 1), axis=ax)
+            b = np.take(grid, range(1, dim[ax]), axis=ax)
+            both = (a >= 0) & (b >= 0)
+            adj += int(both.sum())
+            diff = both & (a != b)
+            x, y = a[diff].astype(np.int64), b[diff].astype(np.int64)
+            codes.append(np.minimum(x, y) * N + np.maximum(x, y))
+        codes = np.concatenate(codes)
+        F, C, B = len(codes), len(np.unique(codes)), 6 * occupied - 2 * adj
+        rows.append(dict(n=n, chairs=N, cells=occupied, overlap=len(cells) - occupied, F=F, C=C, B=B,
+                         F_formula=F == 12 * (8 ** n - 4 ** n), B_formula=B == 24 * 4 ** n,
+                         C_formula=8 * C == 29 * 8 ** n - 24 * 4 ** n - 8, filled=occupied == 7 * 8 ** n))
+    for r, s in zip(rows, rows[1:]):
+        r["defect"] = 8 * r["C"] - s["C"]
+        r["defect_formula"] = r["defect"] == -(12 * 4 ** r["n"] + 7)
+    return rows
+
+
+def defect_exponents(Mmax=8):
+    """The scale exponents of one 2-fold hierarchy in three dimensions, side by side.
+
+    The level-n patch has linear size L = 2^n.  Its bulk term grows like L^3 (8^n).  Its
+    interface terms (F, B, C above) have a term of order L^2 (4^n), the area.  The coincidence
+    count c(M) of the same substitution has no such term: the characteristic polynomial of its
+    transfer matrix has only the roots 0, 1, 2, so c(M) = 28 * 2^M - 48 is of order L, a line,
+    and the extensivity defect of the interface count is of order L^2.  Returns the roots, the
+    exponents log_2 (growth) and the table of ratios c(M)/8^M against the surface fraction
+    24 * 4^M / (7 * 8^M) of the supertile.
+    """
+    roots = transfer_charpoly()[0]
+    tab = coincidence_table(Mmax)
+    rows = []
+    for r in tab:
+        if r["M"] < 1:
+            continue
+        line = Fraction(r["non_coincident"], 8 ** r["M"])
+        surface = Fraction(24 * 4 ** r["M"], 7 * 8 ** r["M"])
+        rows.append(dict(M=r["M"], line=line, surface=surface, ratio=line / surface))
+    return dict(roots=roots, bulk=3, interface=2, line=1,
+                no_area_root=4 not in roots and max(roots) == 2, rows=rows)
+
+
+# ---------------------------------------------------------------------------
+# 6. periodic approximants on the nested tori: spectra and diffraction
+# ---------------------------------------------------------------------------
+def label_field(M, j):
+    """The labels of the M-fold refinement of one label j: an array of shape (2^M,)*3 of label
+    indices, the M-fold image sigma^M(j) laid out by address (first digit coarsest).  Label
+    index = 7 * (rotation index) + (native cell index), as in :func:`substitution`."""
+    sig = _sub()[2]
+    g = np.array([[[j]]], dtype=np.int32)
+    for _ in range(M):
+        n = g.shape[0]
+        new = np.empty((2 * n,) * 3, dtype=np.int32)
+        for b, a in enumerate(BITS):
+            new[a[0]::2, a[1]::2, a[2]::2] = sig[:, b][g]
+        g = new
+    return g
+
+
+def chair_stack_labels():
+    """The six labels j with sigma(j)_000 = sigma(j)_111 = j (the chair stack of the joint paper)."""
+    sig = _sub()[1]
+    return [j for j in range(len(sig)) if sig[j][0] == j and sig[j][7] == j]
+
+
+_SAME = None
+
+
+def _same_chair_tables():
+    """T[axis][l1, l2] is True when a cell labelled l1 and its neighbour at +e_axis labelled l2
+    lie in the same chair.  A cell with label (frame f, native cell k) at p belongs to the chair
+    with translation p - cell_of(f, 0, c_k); two cells share a chair iff the frames agree and the
+    native offsets differ by e.  The test uses labels and e only, so it is well defined on a torus."""
+    global _SAME
+    if _SAME is None:
+        labels = _sub()[0]
+        rots = rotations()
+        fid = np.array([rots.index(f) for f, _ in labels])
+        kid = np.array([k for _, k in labels])
+        O = np.array([[cell_of(f, (0, 0, 0), c) for c in CELLS] for f in rots])
+        d = O[fid[None, :], kid[None, :]] - O[fid[:, None], kid[:, None]]
+        _SAME = [(fid[:, None] == fid[None, :]) & (d == np.array(e)).all(axis=2)
+                 for e in ((1, 0, 0), (0, 1, 0), (0, 0, 1))]
+    return _SAME
+
+
+def approximant_hamiltonian(g, lam=0.5, twist=(0, 0, 0)):
+    """Tight-binding Hamiltonian on the torus of the label field g: one site per unit cell, hopping
+    -1 along a bond inside a chair and -lam along a bond between two chairs; twist[a] = 1 puts a
+    half-period (sign) twist on axis a.  Sparse, real symmetric."""
+    import scipy.sparse as sp
+    T = _same_chair_tables()
+    n = g.shape[0]
+    idx = np.arange(n ** 3).reshape(n, n, n)
+    r, c, v = [], [], []
+    for ax in range(3):
+        w = np.where(T[ax][g, np.roll(g, -1, axis=ax)], 1.0, lam)
+        if twist[ax]:
+            sl = [slice(None)] * 3
+            sl[ax] = n - 1
+            w[tuple(sl)] *= -1
+        r.append(idx.ravel())
+        c.append(np.roll(idx, -1, axis=ax).ravel())
+        v.append(w.ravel())
+    A = sp.coo_matrix((np.concatenate(v), (np.concatenate(r), np.concatenate(c))), shape=(n ** 3,) * 2).tocsr()
+    return -(A + A.T)
+
+
+def approximant_defect(Mmax=7, Mrank=5, Mdense=3, j=None, lam=0.5):
+    """How far the level-(M+1) approximant is from the lift of the level-M one.
+
+    For each M, the label field of the torus of side 2^(M+1) is compared with the field of the torus
+    of side 2^M repeated 2 x 2 x 2 (the lift).  The sites where they differ form a set S with
+
+        |S| <= 8 c(M)       (proved: each of the eight blocks differs from the lift on at most c(M)
+                             addresses, by the descent inequality),
+        |S| = 140 * 2^M - 232  (counted, M <= Mmax).
+
+    The two tight-binding Hamiltonians differ by D, supported on bonds with an end in S, so
+    rank D <= 2 |S|, and for Hermitian matrices whose difference has rank r the eigenvalue counting
+    functions differ by at most r:  |N_{M+1}(E) - N_lift(E)| <= 2 |S| (a proved bound), so the
+    densities of states obey  |dN| <= 2 |S| / 8^(M+1) <= 2 c(M) / 8^M.  Also computed:
+    rank D (M <= Mrank, from the support of D; observed 12 * 2^M), the largest eigenvalue-count
+    difference over all energies (M <= Mdense, dense diagonalisation), and that the spectrum of
+    the lift is the union of the spectra of the level-M torus over the eight half-period twists.
+    """
+    j = chair_stack_labels()[0] if j is None else j
+    rows = []
+    for M in range(1, Mmax + 1):
+        gM, gN = label_field(M, j), label_field(M + 1, j)
+        lift = np.tile(gM, (2, 2, 2))
+        S = int((lift != gN).sum())
+        row = dict(M=M, S=S, S_bound=8 * c_of(M), S_formula=S == 140 * 2 ** M - 232,
+                   S_within_bound=S <= 8 * c_of(M), ids_bound=Fraction(2 * S, 8 ** (M + 1)))
+        if M <= Mrank:
+            D = (approximant_hamiltonian(gN, lam) - approximant_hamiltonian(lift, lam)).tocoo()
+            keep = D.data != 0
+            supp = np.unique(np.concatenate([D.row[keep], D.col[keep]]))
+            sub = D.tocsr()[supp][:, supp].toarray()
+            row["rank"] = int(np.linalg.matrix_rank(sub, tol=1e-9))
+            row["rank_formula"] = row["rank"] == 12 * 2 ** M
+            row["rank_within_bound"] = row["rank"] <= 2 * S
+        if M <= Mdense:
+            ea = np.linalg.eigvalsh(approximant_hamiltonian(gN, lam).toarray())
+            el = np.linalg.eigvalsh(approximant_hamiltonian(lift, lam).toarray())
+            tw = np.sort(np.concatenate([
+                np.linalg.eigvalsh(approximant_hamiltonian(gM, lam, t).toarray())
+                for t in itertools.product((0, 1), repeat=3)]))
+            E = np.sort(np.concatenate([ea, el]))
+            dN = np.abs(np.searchsorted(ea, E + 1e-9, side="right") - np.searchsorted(el, E + 1e-9, side="right"))
+            row["max_dN"] = int(dN.max())
+            row["dN_within_bound"] = int(dN.max()) <= 2 * S
+            row["lift_is_twisted_union"] = bool(np.allclose(el, tw, atol=1e-8))
+            row["sites"] = 8 ** (M + 1)
+        rows.append(row)
+    return rows
+
+
+def six_choices(Mmax=6):
+    """The six chair-stack labels grow six label fields on the 2^M cube.  Any two differ on
+    exactly the tube along the body diagonal (1,1,1) (7 * 2^M - 6 cells), and on every cell of it
+    all six labels are different."""
+    js = chair_stack_labels()
+    D = {(x - z, y - z) for (x, y, z) in CELLS}
+    rows = []
+    for M in range(1, Mmax + 1):
+        n = 2 ** M
+        X, Y, Z = np.indices((n, n, n))
+        tube = np.zeros((n, n, n), dtype=bool)
+        for a, b in D:
+            tube |= ((X - Z) == a) & ((Y - Z) == b)
+        gs = [label_field(M, j) for j in js]
+        stack = np.stack(gs)
+        pair_equal = all(((gs[a] != gs[b]) == tube).all() for a in range(6) for b in range(a + 1, 6))
+        all_distinct = all(len(set(stack[:, x, y, z])) == 6 for x, y, z in np.argwhere(tube))
+        rows.append(dict(M=M, labels=len(js), tube=int(tube.sum()), pair_is_tube=bool(pair_equal),
+                         distinct_on_tube=bool(all_distinct), tube_formula=int(tube.sum()) == 7 * n - 6))
+    return rows
+
+
+def diffraction(Mmax=7, j=None):
+    """Bragg intensities of the marker set of the approximants: the cells of native index 0, one
+    per chair, density 1/7.
+
+    Per M, with rho-hat(m) = (1/8^M) sum_x rho(x) exp(-2 pi i m.x / 2^M):
+      total      sum |rho-hat|^2  = density (Parseval)
+      grid[M0]   the part on wave vectors of denominator dividing 2^M0
+      amp        max over the level-M wave vectors of |rho-hat_{M+1} - rho-hat_M|, which is at most
+                 |S| / 8^(M+1) <= c(M) / 8^M (the lift has the same coefficients at those vectors).
+    """
+    j = chair_stack_labels()[0] if j is None else j
+    rows, prev = [], None
+    for M in range(1, Mmax + 1):
+        g = label_field(M, j)
+        F = np.fft.fftn(((g % 7) == 0).astype(float)) / g.size
+        I = np.abs(F) ** 2
+        row = dict(M=M, density=float(((g % 7) == 0).mean()), total=float(I.sum()),
+                   grid=[float(I[::2 ** (M - M0), ::2 ** (M - M0), ::2 ** (M - M0)].sum()) for M0 in range(0, M + 1)])
+        if prev is not None:
+            row["amp"] = float(np.abs(F[::2, ::2, ::2] - prev).max())
+            row["amp_bound"] = (140 * 2 ** (M - 1) - 232) / 8 ** M
+            row["amp_within_bound"] = row["amp"] <= row["amp_bound"] + 1e-15
+        prev = F
+        rows.append(row)
+    return rows
+
+
+# ---------------------------------------------------------------------------
 # status and ledger
 # ---------------------------------------------------------------------------
 def status(N=6, scan_N=5):
@@ -662,6 +927,11 @@ def status(N=6, scan_N=5):
     kv = kuhn_vs_cube()
     oc = orbifold_cover()
     tb = undetermined_is_diagonal_tubes()
+    ic = interface_counts()
+    de = defect_exponents()
+    ap = approximant_defect()
+    sx = six_choices()
+    df = diffraction()
     first = next(r["M"] for r in co if r["coincident"] > 0)
     tcp = transfer_charpoly()[0]
     th = ts["by_threshold"]
@@ -691,6 +961,23 @@ def status(N=6, scan_N=5):
             dih["all_dihedral_cosets"],
         "undetermined addresses are exactly four diagonal tubes of 7*2^M - 6 cells, M <= %d" % tb[-1]["M"]:
             all(r["equal"] and r["tube_formula"] and r["c_formula"] and r["excess_formula"] for r in tb),
+        "interface of the level-n patch: F = 12(8^n - 4^n), B = 24*4^n, C = (29/8)8^n - 3*4^n - 1, n <= %d"
+        % ic[-1]["n"]:
+            all(r["filled"] and r["overlap"] == 0 and r["F_formula"] and r["B_formula"] and r["C_formula"]
+                for r in ic) and all(r["defect_formula"] for r in ic[:-1]),
+        "the coincidence count has no area term: transfer roots {0, 1, 2}, so c(M) is a line, not a surface":
+            de["no_area_root"],
+        "approximants: the lift differs from the next torus on |S| = 140*2^M - 232 <= 8c(M) sites, M <= %d"
+        % ap[-1]["M"]:
+            all(r["S_formula"] and r["S_within_bound"] for r in ap),
+        "approximants: rank D = 12*2^M <= 2|S| and the counting functions differ by <= 2|S|":
+            all(r["rank_formula"] and r["rank_within_bound"] for r in ap if "rank" in r)
+            and all(r["dN_within_bound"] and r["lift_is_twisted_union"] for r in ap if "max_dN" in r),
+        "the six chair-stack labels differ pairwise on exactly the (1,1,1) tube, all six distinct there":
+            all(r["pair_is_tube"] and r["distinct_on_tube"] and r["tube_formula"] for r in sx),
+        "diffraction of the markers: total intensity = density, amplitude change <= |S|/8^(M+1)":
+            all(abs(r["total"] - r["density"]) < 1e-12 for r in df)
+            and all(r["amp_within_bound"] for r in df if "amp" in r),
         "Kuhn complex of Z^3: 1, 7, 12, 6 simplices, chi = 0": kv["simplices"] == [1, 7, 12, 6]
             and kv["euler"] == 0,
         "the cube group does not preserve it: 12 of 48, 6 of 24 rotations":
@@ -704,7 +991,8 @@ def status(N=6, scan_N=5):
             oc["genus"] == 0 and oc["cusps"] == 12,
     }
     return dict(checks=checks, all_pass=all(checks.values()), nested=na, scan=ts,
-                table=co, closed_forms=cf, profile=prof, tubes=tb, kuhn=kv)
+                table=co, closed_forms=cf, profile=prof, tubes=tb, interface=ic, exponents=de,
+                approximants=ap, six=sx, diffraction=df, kuhn=kv)
 
 
 def ledger():
@@ -731,6 +1019,15 @@ def ledger():
          "exact (finite automaton), M = 12 for the counts"),
         ("undetermined addresses = four diagonal tubes, 7*2^M - 6 cells each, M <= 7",
          "exact (finite check against the automaton); inclusion for all M is the chair stack, quoted"),
+        ("interface of the level-n patch: F = 12(8^n - 4^n), B = 24*4^n, C = (29/8)8^n - 3*4^n - 1, n <= 6",
+         "exact (cell counts to level 6); C reproduces the fork's pose counts and extends them to levels 5 and 6"),
+        ("c(M) has no area term (transfer roots 0, 1, 2): a line defect under an area-law interface",
+         "exact (follows from the certified closed form); a statement of exponents, not a dynamical law"),
+        ("tight-binding approximants: density of states of the level-(M+1) torus within 2c(M)/8^M of the lift of level M",
+         "proved (rank perturbation + descent inequality); the rank is observed to be 12*2^M, M <= 5, not proved"),
+        ("the six chair-stack labels differ pairwise on exactly the (1,1,1) tube", "exact, M <= 6; not proved for all M"),
+        ("Bragg amplitudes at dyadic wave vectors converge, error <= c(M)/8^M; intensity on the 2^M0 grid tends to 1/7",
+         "amplitude bound proved; pure-point diffraction itself is quoted (Lee-Moody / Schlottmann), the grid sums are measured"),
         ("the six candidates and the six mystic classes", "coincidence, no mechanism found"),
         ("Kuhn complex of Z^3: 1, 7, 12, 6; 24 simplices round a vertex", "exact"),
         ("the cube group does not preserve it; the groups that do are not GL(3, Z)-conjugate",
