@@ -253,6 +253,86 @@ def chair_facts():
     tb = st["tubes"]
     assert all(r["equal"] and r["tube_formula"] and r["c_formula"] and r["excess_formula"] for r in tb)
     f["ChTubeM"], f["ChTubeOverlap"] = tb[-1]["M"], tb[-1]["overlap"]
+    # --- two defects of one hierarchy: the interface (area) and the coincidence (line) ----------
+    ic = st["interface"]
+    assert all(r["filled"] and r["overlap"] == 0 and r["F_formula"] and r["B_formula"] and r["C_formula"] for r in ic)
+    assert all(r["defect_formula"] for r in ic[:-1])
+    f["ChIfaceN"] = ic[-1]["n"]
+    f["ChIfaceRowChairs"] = " & ".join(_thin(r["chairs"]) for r in ic)
+    f["ChIfaceRowF"] = " & ".join(_thin(r["F"]) for r in ic)
+    f["ChIfaceRowB"] = " & ".join(_thin(r["B"]) for r in ic)
+    f["ChIfaceRowC"] = " & ".join(_thin(r["C"]) for r in ic)
+    f["ChFaceCoef"] = ic[0]["F"] // (8 - 4)                        # F = a (8^n - 4^n)
+    f["ChBoundCoef"] = ic[0]["B"] // 4                              # B = b 4^n
+    assert all(r["F"] == f["ChFaceCoef"] * (8 ** r["n"] - 4 ** r["n"]) and r["B"] == f["ChBoundCoef"] * 4 ** r["n"]
+               for r in ic)
+    # C = a 8^n + b 4^n + c, solved on n = 1, 2, 3 and then asserted on all rows
+    import fractions
+    A = [[fractions.Fraction(8 ** n), fractions.Fraction(4 ** n), fractions.Fraction(1)] for n in (1, 2, 3)]
+    y = [fractions.Fraction(ic[n - 1]["C"]) for n in (1, 2, 3)]
+    for i in range(3):                                              # Gauss-Jordan, exact
+        p = next(r for r in range(i, 3) if A[r][i] != 0)
+        A[i], A[p], y[i], y[p] = A[p], A[i], y[p], y[i]
+        piv = A[i][i]
+        A[i], y[i] = [x / piv for x in A[i]], y[i] / piv
+        for r in range(3):
+            if r != i:
+                m = A[r][i]
+                A[r], y[r] = [a - m * b for a, b in zip(A[r], A[i])], y[r] - m * y[i]
+    ca, cb, cc = y
+    assert all(r["C"] == ca * 8 ** r["n"] + cb * 4 ** r["n"] + cc for r in ic)
+    f["ChContactVol"] = "\\frac{%d}{%d}" % (ca.numerator, ca.denominator)
+    f["ChContactArea"], f["ChContactConst"] = int(-cb), int(-cc)
+    f["ChDefectCoef"] = -(ic[0]["defect"] + 7) // 4                 # 8 C_n - C_{n+1} = -(a 4^n + 7)
+    f["ChDefectConst"] = 7
+    assert all(r["defect"] == -(f["ChDefectCoef"] * 4 ** r["n"] + f["ChDefectConst"]) for r in ic[:-1])
+    de = st["exponents"]
+    assert de["no_area_root"] and sorted(de["roots"]) == [0, 1, 2]
+    lim = fractions.Fraction(7 * 28, 24)                            # (c/8^M) / (surface fraction) * 2^M -> 49/6
+    f["ChLineToSurface"] = "\\frac{%d}{%d}" % (lim.numerator, lim.denominator)
+    assert abs(float(de["rows"][-1]["ratio"]) * 2 ** de["rows"][-1]["M"] / float(lim) - 1) < 0.01
+    # --- periodic approximants: tight binding and diffraction on the nested tori ----------------
+    ap, sx, df = st["approximants"], st["six"], st["diffraction"]
+    assert all(r["S_formula"] and r["S_within_bound"] for r in ap)
+    f["ChApproxM"] = ap[-1]["M"]
+    f["ChSCoef"], f["ChSConst"] = 140, 232
+    f["ChIdsCoef"] = 2 * 28                                         # 2 c(M)/8^M <= 56 * 4^-M
+    f["ChRankCoef"] = 12
+    rk = [r for r in ap if "rank" in r]
+    assert all(r["rank_formula"] and r["rank_within_bound"] for r in rk)
+    f["ChRankM"] = rk[-1]["M"]
+    dn = [r for r in ap if "max_dN" in r]
+    assert all(r["dN_within_bound"] and r["lift_is_twisted_union"] for r in dn)
+    f["ChDenseM"] = dn[-1]["M"]
+    f["ChDNRow"] = " & ".join(str(r["max_dN"]) for r in dn)
+    f["ChDenseSites"] = _thin(dn[-1]["sites"])
+    f["ChDNFrac"] = " & ".join("%.4f" % (r["max_dN"] / r["sites"]) for r in dn)
+    f["ChDNBound"] = " & ".join("%.2f" % float(r["ids_bound"]) for r in dn)
+    f["ChRankRow"] = " & ".join(str(r["rank"]) for r in rk)
+    f["ChSRow"] = " & ".join(_thin(r["S"]) for r in rk)
+    f["ChSBoundRow"] = " & ".join(_thin(r["S_bound"]) for r in rk)
+    assert all(r["pair_is_tube"] and r["distinct_on_tube"] and r["tube_formula"] for r in sx)
+    f["ChSixM"] = sx[-1]["M"]
+    assert all(abs(r["total"] - r["density"]) < 1e-12 for r in df) and all(r["amp_within_bound"] for r in df if "amp" in r)
+    last = df[-1]
+    f["ChBraggM"] = last["M"]
+    f["ChBraggTotal"] = "%.5f" % last["total"]
+    f["ChBraggZero"] = "%.5f" % last["grid"][0]
+    for M0, w in ((2, "Two"), (3, "Three"), (4, "Four"), (5, "Five")):
+        f["ChBragg" + w] = "%.4f" % last["grid"][M0]
+    gaps = [last["total"] - last["grid"][m] for m in range(2, 6)]
+    fall = sorted(a / b for a, b in zip(gaps, gaps[1:]))
+    f["ChBraggFall"] = int(round(fall[len(fall) // 2]))             # per level; the paper says "about"
+    assert f["ChBraggFall"] == 8
+    am = [r["amp"] for r in df if "amp" in r]
+    afall = sorted(a / b for a, b in zip(am[3:], am[4:]))
+    f["ChAmpFall"] = int(round(afall[len(afall) // 2]))
+    assert f["ChAmpFall"] == 8
+    def _sci(x):
+        m, e = ("%.1e" % x).split("e")
+        return "%s\\times10^{%d}" % (m, int(e))
+    f["ChAmpLast"] = _sci(am[-1])
+    f["ChAmpBoundLast"] = _sci([r["amp_bound"] for r in df if "amp" in r][-1])
     kv = st["kuhn"]
     f["ChKuhnPreserve"], f["ChKuhnGroup"] = kv["cube_preserving"], kv["cube_group"]
     f["ChKuhnRot"] = kv["rotations_preserving"]
