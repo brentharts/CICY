@@ -150,17 +150,22 @@
 \Crefname{conjecture}{Conjecture}{Conjectures}
 
 
-
-\title{
-The Aperiodic Einstein Monotile on the Cusp Torus of Alpöge's Complex Six-Sphere
-}
-\author{Brent S. Hartshorn \orcidlink{0009-0004-2853-655X} \small
-\url{https://github.com/brentharts/CICY}}
+\title{Electrons, Magnetic Fields, and Gauge Holonomy on Toroidal Fibrations of Aperiodic Substrates}
+\author{Brent S. Hartshorn \orcidlink{0009-0004-2853-655X}}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
+Alpöge's recent construction of a complex structure on the six-sphere ($S^{6}$) provides a compact complex threefold fibred by tori. We demonstrate that the combinatorial substrate of its cusp fibre precisely matches the Laves substrate of the aperiodic "Hat" monotile at its distinguished proportions. Although full aperiodic tilings do not descend to the torus due to irrational inflation, folding substitution patches reveals that mystic tiles anchor onto exactly six distinct fibre classes corresponding to the oriented double curves of the dual complex. Contrasting this irrational behavior with the integer-inflation three-dimensional Tsiokos's "Chair44" tile, we establish exact geometric defect rates, line defects, and tight-binding spectral convergence across nested torus towers. These results bridge discrete aperiodic geometry with the rigid topological, arithmetic, and lattice constraints governing higher-dimensional manifold constructions. 
+
+\end{abstract}
+
+% =====================================================================
+
+\section{Introduction}
+\label{sec:intro}
+
 The cusp fibre $W$ of Alpöge's complex structure on the six-sphere is the
 $[3.4.6.4]$ Laves tiling rolled up on a torus $\TT = \RR^2/\Lam$,
 $\Lam = B_0\ZZ^2$, and at the proportions of the Hat that tiling is exactly the
@@ -209,12 +214,6 @@ invariance group of one explicit function on the period laws. A tight-binding el
 functions of the roots of $A_2$ with nodal lines on the Weyl mirrors, a magnetic field that restricts to the Hat as the
 restriction of a connection (with flux period $1$ for the substrate and $\tfrac12$ for the Hat), and Chern numbers
 that two independent routes reproduce.
-\end{abstract}
-
-% =====================================================================
-
-\section{Introduction}
-\label{sec:intro}
 
 In 1948 Hopf asked whether the six-sphere admits a complex
 structure~\cite{Hopf48}. In August 2026 Alpöge posted a construction
@@ -1381,7 +1380,7 @@ is identified with a theta multiplier in \cref{sec:theta}, as a statement about 
 
 % =====================================================================
 
-\section{Electrons on the Cusp Fibre, and the Hat as a Subgraph of It}
+\section{Electrons on the Cusp Fibre, and the Hat as a Subgraph}
 \label{sec:hofstadter}
 
 \Cref{thm:laves} says that the strata of the cusp fibre have the incidence structure of the
@@ -2444,59 +2443,6 @@ invariants of \cref{obs:nearmiss} are
 through \texttt{make\_sixsphere\_facts.py}.
 \end{sloppypar}
 
-\subsection*{Limitations} 
-Everything in \cref{sec:triangle,sec:forced} is
-restricted to the flag class; \cref{prop:flagforced} shows that data outside it does not
-meet the stated conditions, but that is a paper argument, not formalised, and it leaves
-the middle-block index $n=1$ as an observation.
-\Cref{obs:sign,obs:stable} are finite searches. \Cref{thm:laves} is a
-statement about substrates. The fibre counts of \cref{sec:rollup} and the patches of
-\cref{tab:classes} are computed on finite substitution patches (the four-step patch is a
-radius-cut disc). \Cref{thm:six} is a computer-assisted proof: it is exact for the automaton
-built from the code of the substitution, and is only as good as that encoding, which
-was checked against whole patches to $n=7$. The Hat's six classes are proved by no more
-than a computation to $n=10$. The neighbourhood counts of
-\cref{sec:mystic} rest on one to nine interior mystics per class.
-The Lean certificates that state saturation and $H_1(X)=0$ without a Smith routine
-(\texttt{CERT\_FACTS} in \texttt{pyCICY.sixsphere\_lean}, $25$ facts) hold exactly in the
-Python half of the suite and are accepted by the Lean kernel (version 4.33.1,
-\texttt{paper/check\_sixsphere\_lean.py}) on the allow-listed axioms, $13$ of them
-choice-free; the kernel rejects a tampered certificate. They are a group of their own, and
-the counts of machine-checked facts quoted in this paper are for the $\SSLeanFacts$ main
-facts. \Cref{sec:links}: the Kodaira
-configuration and the lattice embeddings are consistency statements for the
-local monodromy, not statements that the six-sphere's fibration is that
-elliptic surface, and the rational embedding is a necessary condition only.
-Every analytic question --- whether the
-near-miss classes support a complex structure (\cref{obs:nearmiss} is all the
-lattice data says), whether $X$ is biholomorphic
-to its conjugate, and the value of $h^{1,2}$, which the Hodge numbers and the
-Fr\"olicher spectral sequence leave at any integer from $0$ up --- is declined, as is the
-diffeomorphism $X \cong S^6$ itself. \Cref{sec:chair44}: \cref{prop:chair-rate,prop:chair-descent} are proved; \cref{obs:chair-periods}
-is one patch, \cref{obs:chair-six} is a finite automaton at $M=\SSChUndetM$, and \cref{prop:chair-tubes} is a finite check. \Cref{prop:chair-mismatch}: the inclusion in a dihedral group is the coset fact of \cref{obs:chair-six}; that it is the tube's own diagonal, that all six (respectively all $24$) values occur, and that several values occur at one address are counts on the level-$6$ patch for $M=\SSChMisMs$, not proved for every $M$; the cocycle identity is a count, the identity itself being trivial. In \cref{prop:chair-interface} the formulas for $F_n$ and $B_n$ follow from the scaled-chair geometry and the
-formula for $C_n$ is fitted on three levels and counted to level $\SSChIfaceN{}$. In \cref{prop:chair-approx} the inequalities are proved, while the equality for $\lvert S_M\rvert$, the
-rank $\SSChRankCoef\cdot2^M$ and the six-label tube are finite checks, and the Bragg intensities are measured, with pure-point diffraction itself quoted. The OpenAI preprints
-\cite{OAI155,OAIO3,OAIHS} are cited for their stated results, and we have not checked their proofs. Chair44's
-aperiodicity and einstein property are Tsiokos's claimed proof, the pure point
-and limit-periodic structure is a cited theorem
-\cite{LeeMoody,Schlottmann,LMS}, and that every tiling lies in the substitution hull is
-Romanov's theorem~\cite{HartshornRomanov}, conditional on registration and a unique parent
-tiling; none is re-proved here. \cref{prop:chair-tubes} is exact for $M\le\SSChTubeM$ and its
-inclusion of the tubes in the undetermined set is quoted from~\cite{HartshornRomanov}. The Hat's $0.796$ is on a different footing;
-\cref{obs:hat-fft} compares the two on the same footing at one size (level $6$). No complex fourfold with a Chair44 cusp fibre is constructed.
-\Cref{sec:gauge}: \cref{prop:gauge-structure,thm:gauge-index,prop:gauge-zariski} are exact linear algebra and finite
-computation with the explicit words given; the presentation of $\SL_2(\ZZ)$ is quoted; the central index of the three
-near-miss classes and the divisibility statements of \cref{obs:gauge-classes} are finite searches over the funnel survivors. Gomes's proposal \cite{Gomes} is used as a recipe, and is cited from the
-notes of a fork of OpenAI's preprints repository and not from a reading of the paper. No analytic statement is made.
-\Cref{sec:theta}: \cref{thm:theta} is exact given the five classical laws of $\theta_1$ and $\eta$, which are quoted (Mumford) and checked against the series; the
-measurements are at $\SSThDigits$ digits; the Jacobi-form phrasing is quoted, and \cref{rem:theta-fermi} cites only the one-loop formulas of
-\cite{BEHT} and is a coincidence of formulas, not a claim. The statements are about the laws on the period domain, not about functions on $X$.
-\Cref{sec:hofstadter}: \cref{prop:ho-bands,prop:ho-period} are proved (the band edges at the interior of the Brillouin zone are
-read from a grid), the Chern numbers of \cref{tab:ho-chern} are numerical to $10^{-6}$ and integral, and the Kitaev agreement is
-on one patch. The Hat-side numbers of \cref{obs:ho-subgraph} and of the last subsection are quoted from the repository's
-generated level-$3$ patch and have not been rerun here, since the script needs an external tiling generator; they are one finite patch.
-\Cref{sec:cosmo-nolink}: the closed orbits and the orbifold are exact; the pancake's winding coefficient $2/a_0$ is quoted from a numerical solution and the Euler-angle period is not checked; the proposed dictionary from substitution levels to the pancake's time is a choice made to ask the question, and neither match is claimed to be a connection.
-
 
 \begin{thebibliography}{99}
 
@@ -2587,7 +2533,7 @@ B.~Hartshorn and T.~Romanov (2026),
 \emph{The Internal Space and Boundary Growth of the Spectre and Tsiokos's Chair44 Tilings},
 joint paper, in preparation; its Section ``Every tiling lies in the hull'' is Romanov's theorem
 (draft of 24 October 2026), and its Section ``Uniform frequencies hold in boxes, not along lines''
-contains the chair stacks.
+contains the chair stacks. \url{https://doi.org/10.21203/rs.3.rs-11516041/v1}
 
 \bibitem{OAI155}
 OpenAI (2026),
