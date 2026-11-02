@@ -310,6 +310,73 @@ def undetermined_profile(M=12):
     return {k: v for k, v in h.items() if k > 1}
 
 
+#: the four body diagonals of the cube, one sign vector each (up to overall sign)
+DIAGONALS = ((1, 1, 1), (1, 1, -1), (1, -1, 1), (-1, 1, 1))
+
+
+def undetermined_is_diagonal_tubes(Mmax=7):
+    """The undetermined addresses of the 2^M cube are exactly four diagonal tubes (M = 1..Mmax).
+
+    The label at an address of the 2^M cube is *undetermined* when the subset automaton still
+    holds more than one label there.  A *tube* along the body diagonal (1,1,1) is the set of
+    cells (x, y, z) whose difference (x - z, y - z) is that of one of the seven cells of the
+    chair: the chair swept along its notch diagonal, 7*2^M - 6 cells.  The other three tubes
+    are its images under the reflections x -> 2^M - 1 - x of the cube.  Per M this returns
+
+      equal           the union of the four tubes is exactly the undetermined set
+      tube_formula    every tube has 7*2^M - 6 cells
+      overlap         sum over cells of (number of tubes containing it) - 1 = 4*tube - union
+                      (the four tubes share the 8 central cells, each in all four: 8 * 3 = 24)
+      c_formula       c(M) = 4*(7*2^M - 6) - overlap = 28*2^M - 48
+      excess_formula  E(M) = 140*2^M + 48; and from M = 2 also E = 5 (six-label addresses)
+                      + 23 (24-label addresses), with exactly sixteen of the latter and
+                      no other set size (at M = 1 the eight addresses carry 42 labels)
+
+    This is a finite check, exact for M <= Mmax; that the tubes lie in the undetermined set for
+    every M is the chair stack of the joint paper, and the converse is not proved here.
+    """
+    order, trans = subset_automaton()
+    T = np.array(trans, dtype=np.int32)
+    size = np.array([len(A) for A in order])
+    D = {(x - z, y - z) for (x, y, z) in CELLS}
+    g = np.zeros((1, 1, 1), dtype=np.int32)
+    rows = []
+    for M in range(1, Mmax + 1):
+        h = 2 ** (M - 1)
+        new = np.empty((2 * h,) * 3, dtype=np.int32)
+        for b, a in enumerate(BITS):
+            new[a[0]::2, a[1]::2, a[2]::2] = T[:, b][g]
+        g = new
+        n = 2 ** M
+        sz = size[g]
+        und = sz > 1
+        X, Y, Z = np.indices((n, n, n))
+        tubes = []
+        for d in DIAGONALS:
+            x = X if d[0] > 0 else n - 1 - X
+            y = Y if d[1] > 0 else n - 1 - Y
+            z = Z if d[2] > 0 else n - 1 - Z
+            m = np.zeros((n, n, n), dtype=bool)
+            for a, b in D:
+                m |= ((x - z) == a) & ((y - z) == b)
+            tubes.append(m)
+        union = np.logical_or.reduce(tubes)
+        tube_cells = [int(t.sum()) for t in tubes]
+        overlap = sum(tube_cells) - int(union.sum())
+        c, excess = int(und.sum()), int((sz - 1).sum())
+        sets = Counter(int(k) for k in sz[und])
+        excess_ok = excess == 140 * n + 48
+        if M >= 2:
+            excess_ok = excess_ok and set(sets) == {6, 24} and sets[24] == 16 \
+                and excess == 5 * sets[6] + 23 * sets[24]
+        rows.append(dict(
+            M=M, equal=bool((union == und).all()), cells=tube_cells, overlap=overlap,
+            tube_formula=all(t == 7 * n - 6 for t in tube_cells),
+            c_formula=c == 4 * (7 * n - 6) - overlap == 28 * n - 48,
+            excess_formula=bool(excess_ok), c=c, excess=excess))
+    return rows
+
+
 def six_is_a_dihedral_coset():
     """Every 6-label set is six rotations forming a coset of an order-6 subgroup of S4 = O,
     and that subgroup is dihedral (three half-turns, two third-turns) about a body diagonal."""
@@ -594,6 +661,7 @@ def status(N=6, scan_N=5):
     dih = six_is_a_dihedral_coset()
     kv = kuhn_vs_cube()
     oc = orbifold_cover()
+    tb = undetermined_is_diagonal_tubes()
     first = next(r["M"] for r in co if r["coincident"] > 0)
     tcp = transfer_charpoly()[0]
     th = ts["by_threshold"]
@@ -621,6 +689,8 @@ def status(N=6, scan_N=5):
             set(prof) == {6, 24} and prof[6] > 1000 * prof[24],
         "each 6-set is a coset of a dihedral subgroup about a body diagonal":
             dih["all_dihedral_cosets"],
+        "undetermined addresses are exactly four diagonal tubes of 7*2^M - 6 cells, M <= %d" % tb[-1]["M"]:
+            all(r["equal"] and r["tube_formula"] and r["c_formula"] and r["excess_formula"] for r in tb),
         "Kuhn complex of Z^3: 1, 7, 12, 6 simplices, chi = 0": kv["simplices"] == [1, 7, 12, 6]
             and kv["euler"] == 0,
         "the cube group does not preserve it: 12 of 48, 6 of 24 rotations":
@@ -634,7 +704,7 @@ def status(N=6, scan_N=5):
             oc["genus"] == 0 and oc["cusps"] == 12,
     }
     return dict(checks=checks, all_pass=all(checks.values()), nested=na, scan=ts,
-                table=co, closed_forms=cf, profile=prof, kuhn=kv)
+                table=co, closed_forms=cf, profile=prof, tubes=tb, kuhn=kv)
 
 
 def ledger():
@@ -659,6 +729,8 @@ def ledger():
          "exact"),
         ("undetermined addresses carry 6 or 24 rotations; 6-sets are dihedral cosets",
          "exact (finite automaton), M = 12 for the counts"),
+        ("undetermined addresses = four diagonal tubes, 7*2^M - 6 cells each, M <= 7",
+         "exact (finite check against the automaton); inclusion for all M is the chair stack, quoted"),
         ("the six candidates and the six mystic classes", "coincidence, no mechanism found"),
         ("Kuhn complex of Z^3: 1, 7, 12, 6; 24 simplices round a vertex", "exact"),
         ("the cube group does not preserve it; the groups that do are not GL(3, Z)-conjugate",
