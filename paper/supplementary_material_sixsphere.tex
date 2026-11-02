@@ -93,6 +93,8 @@
 \newcommand{\SSChTermsNeeded}{?}\newcommand{\SSChTwentyFour}{?}
 \newcommand{\SSChUndet}{?}\newcommand{\SSChUndetM}{?}
 \newcommand{\SSChTubeM}{?}\newcommand{\SSChTubeOverlap}{?}
+% Frame mismatch (pyCICY.chair44_nested.frame_mismatch): chair44 macros.
+\newcommand{\SSChMisMs}{?}\newcommand{\SSChMisFirst}{?}\newcommand{\SSChMisLast}{?}\newcommand{\SSChMisNonId}{?}\newcommand{\SSChMisHalf}{?}\newcommand{\SSChMisBound}{?}\newcommand{\SSChMisBoundPrev}{?}
 % Two further matches (pyCICY.sixsphere_cosmology): written by
 % paper/make_sixsphere_facts.py --cosmo-only (or the full run).
 \newcommand{\SSCoAzeroSix}{?}\newcommand{\SSCoChecks}{?}\newcommand{\SSCoDim}{?}
@@ -100,6 +102,29 @@
 \newcommand{\SSCoLevelsPerTurn}{?}\newcommand{\SSCoMultNum}{?}\newcommand{\SSCoNuEras}{?}
 \newcommand{\SSCoNuMultNum}{?}\newcommand{\SSCoNuPeriod}{?}\newcommand{\SSCoOneOffStarts}{?}
 \newcommand{\SSCoOrbifoldChi}{?}\newcommand{\SSCoPeriod}{?}\newcommand{\SSCoStabOrders}{?}
+% Fibre structure and holonomy (pyCICY.sixsphere_gauge): written by
+% paper/make_sixsphere_facts.py --gauge-only (or the full run).
+\newcommand{\SSGaChecks}{?}\newcommand{\SSGaIndex}{?}\newcommand{\SSGaChiOne}{?}
+\newcommand{\SSGaChiTwo}{?}\newcommand{\SSGaChiZ}{?}\newcommand{\SSGaChiLeviOne}{?}
+\newcommand{\SSGaChiLeviTwo}{?}\newcommand{\SSGaLeviRank}{?}\newcommand{\SSGaWordHOne}{?}
+\newcommand{\SSGaWordHTwo}{?}\newcommand{\SSGaWordHMinus}{?}\newcommand{\SSGaWordLenOne}{?}
+\newcommand{\SSGaWordLenTwo}{?}\newcommand{\SSGaWordLenMinus}{?}\newcommand{\SSGaTensorDims}{?}
+\newcommand{\SSGaZariskiDim}{?}\newcommand{\SSGaStabDim}{?}\newcommand{\SSGaOrbitDim}{?}
+\newcommand{\SSGaSurvivors}{?}\newcommand{\SSGaPerClass}{?}\newcommand{\SSGaDValues}{?}
+\newcommand{\SSGaCentralIndex}{?}
+% Electrons on the cusp substrate (pyCICY.cusp_hofstadter): written by
+% paper/make_sixsphere_facts.py --hofstadter-only (or the full run).
+\newcommand{\SSHoChecks}{?}\newcommand{\SSHoGapsThird}{?}\newcommand{\SSHoChernThird}{?}
+\newcommand{\SSHoGapsQuarter}{?}\newcommand{\SSHoGapsQuarterWide}{?}\newcommand{\SSHoGapsQuarterNarrow}{?}
+\newcommand{\SSHoChernQuarterWide}{?}\newcommand{\SSHoChernQuarter}{?}\newcommand{\SSHoGapsSixth}{?}
+\newcommand{\SSHoChernSixth}{?}\newcommand{\SSHoGapsTotal}{?}\newcommand{\SSHoPatchSites}{?}
+\newcommand{\SSHoPatchBonds}{?}\newcommand{\SSHoPeriodSub}{?}\newcommand{\SSHoPeriodHat}{?}
+% Theta multiplier (pyCICY.sixsphere_theta): written by
+% paper/make_sixsphere_facts.py --theta-only (or the full run).
+\newcommand{\SSThChecks}{?}\newcommand{\SSThDigits}{?}\newcommand{\SSThWords}{?}
+\newcommand{\SSThAlphaAgree}{?}\newcommand{\SSThAlphaOf}{?}\newcommand{\SSThCandidates}{?}
+\newcommand{\SSThSurvivors}{?}\newcommand{\SSThClassicalErr}{?}\newcommand{\SSThMaxDev}{?}
+\newcommand{\SSThCosets}{?}
 \IfFileExists{figures/sixsphere_facts.tex}{\input{figures/sixsphere_facts.tex}}{}
 
 \newcommand{\ZZ}{\mathbb{Z}}
@@ -164,7 +189,9 @@ the agreement on a patch of $\SSChPatchCells$ cells: $\SSChAgreeThree$, $\SSChAg
 $\SSChAgreeFive$ at $M=3,4,5$. Scanned over all translates by the same FFT at matched
 size, the Hat has near-periods too but weaker ones (best agreement $0.975$ against
 $0.998$, and none at $0.99$ against fifty). The undetermined addresses are exactly four tubes along the body
-diagonals, a line defect one dimension below the area-law interface of the supertiles, and on the periodic approximants
+diagonals, a line defect one dimension below the area-law interface of the supertiles. The frame mismatch under the
+translation, valued in the rotation group $O$ of the cube, is supported on them with dihedral values (and all of $O$ at the sixteen end and junction cells), but
+it is not a function on the torus, so it carries no flat connection and no class in $H^1(T_M;O)$. On the periodic approximants
 $\RR^3/2^M\ZZ^3$ the integrated density of states of a tight-binding model, and every Bragg amplitude at a dyadic wave
 vector, converge at the same geometric rate $4^{-M}$, with an explicit bound. The contrast with the Hat is one of kind and not an identity:
 the six-sphere contains no Chair44, and two tempting matches with it, the $24$ simplices
@@ -174,6 +201,14 @@ The paper also records why the lattice data
 behind the construction is forced, that its monodromy is achiral and its
 lattice not self-dual over $\ZZ$, and three exact contacts with standard
 objects (a polytope volume, a Kodaira configuration, and central charges).
+Read as a gauge theory without principal bundles, the torus fibre carries the structure of a symplectic lattice with
+a marked vector; its automorphism group is the integral Jacobi group $\SL_2(\ZZ)\ltimes\mathrm{Heis}$, and the
+holonomy is the kernel of a character onto $\ZZ/12$, so it has index $\SSGaIndex$ and is Zariski dense in
+the real Jacobi group; that character is the multiplier of $e(\beta/12)\,\theta_1(\tau,\mu)/\eta(\tau)$, so the holonomy is the
+invariance group of one explicit function on the period laws. A tight-binding electron on the cusp fibre's substrate has Bloch bands that are
+functions of the roots of $A_2$ with nodal lines on the Weyl mirrors, a magnetic field that restricts to the Hat as the
+restriction of a connection (with flux period $1$ for the substrate and $\tfrac12$ for the Hat), and Chern numbers
+that two independent routes reproduce.
 \end{abstract}
 
 % =====================================================================
@@ -275,6 +310,18 @@ patch of $\SSChPatchCells$ cells (agreement $\SSChAgreeThree$, $\SSChAgreeFour$,
 $\SSChAgreeFive$ at $M=3,4,5$, against the Hat's best $0.796$ on a different footing), and
 settles two tempting matches with the six-sphere as coincidences. It is a contrast of kind:
 the six-sphere contains no Chair44.
+
+\paragraph{A gauge group from the fibre.} \Cref{sec:gauge} runs Gomes's recipe \cite{Gomes} on the lattice itself: the
+structure every torus fibre carries is a symplectic lattice with a marked vector, its automorphisms are the integral
+Jacobi group, and the holonomy is the kernel of a character onto $\ZZ/12$ (\cref{thm:gauge-index}). The four near-miss
+classes of \cref{sec:forced} then become the four divisibilities of the marked vector.
+
+\paragraph{A theta function whose multiplier is the holonomy.} \Cref{sec:theta} proves from the classical transformation laws that the character
+of \cref{thm:gauge-index} is the multiplier of $e(\beta/12)\theta_1/\eta$, so the monodromy group is the exact invariance group of that function.
+
+\paragraph{Electrons on the substrate.} \Cref{sec:hofstadter} puts a tight-binding electron on the graph that the cusp fibre
+is rolled up from. Its bands are functions of the $A_2$ roots, a magnetic field is a connection that restricts to the Hat with no gauge
+chosen on the tiling, and the Chern numbers of the gaps are computed by two routes.
 
 
 % =====================================================================
@@ -1143,6 +1190,428 @@ cannot be what decides viability. The equivalences of binary forms were worked b
 
 % =====================================================================
 
+\section{The Fibre Structure and its Holonomy: a Gauge Group Derived from the Fibre}
+\label{sec:gauge}
+
+Gomes \cite{Gomes} proposes gauge theory without principal bundles: start from a vector
+bundle whose fibres carry a structure, take the gauge group to be the automorphism group of
+that structure, and recover the structure group of the usual presentation as a holonomy. We
+use this as a recipe, not as a philosophy. The threefold $X$ is a family of complex
+$2$-tori over $\mathbb P^1$ whose integral first homology $V=\ZZ^4$ is a flat local system
+with monodromy $T_1,T_2$ at the two orbifold points and $T_0=(T_1T_2)^{-1}$ at the cusp.
+That is a bundle of the required kind, with a discrete fibre, and the recipe asks three
+finite questions: which structure does every fibre carry, what is its automorphism group,
+and how much of that group does the holonomy reach? Each has an exact answer, computed in
+\texttt{pyCICY.sixsphere\_gauge} (\SSGaChecks{} checks, \texttt{tests/test\_sixsphere\_gauge.py}).
+We write $H=\langle T_1,T_2\rangle$ and work in the basis $(\gamma,u,w,\delta)$ of
+\cref{eq:flag}.
+
+\subsection{The structure}
+
+\begin{proposition}[the fibre structure is a symplectic lattice with a marked vector]
+\label{prop:gauge-structure}
+The tensors of degree at most two that both $T_1$ and $T_2$ fix are, over $\QQ$: in $V$ the
+vector $\gamma$; in $V^*$ the covector $\hat\delta$ (the coordinate on $V/W$); in $V\otimes V$
+the symmetric $\gamma\otimes\gamma$ and the alternating bivector $\eta$ dual to $Q_0$; in
+$V^*\otimes V^*$ the alternating form $Q_0$ and $\hat\delta\otimes\hat\delta$; in
+$\operatorname{End}V$ the identity and $\gamma\otimes\hat\delta$. The dimensions of the five
+invariant spaces are $\SSGaTensorDims$. Moreover $\hat\delta=Q_0(\gamma,\cdot)$.
+So the whole list is generated by the pair $(Q_0,\gamma)$.
+\end{proposition}
+
+\begin{proof}
+Each space is the kernel of the stacked equations $(T_j-1)x=0$ on a tensor space, solved
+exactly over $\QQ$. The form $Q_0$ is the one of \cite[Lemma~2.8]{Alpoge}, and it is
+unique up to scale in $V^*\otimes V^*$ among alternating forms. The identity
+$\hat\delta=Q_0(\gamma,\cdot)$ is read off from the first row of $Q_0$.
+\end{proof}
+
+The structure is thus a lattice with a symplectic form and a vector, $\gamma$ being
+unimodularly paired with the top coordinate: $Q_0(\gamma,\delta)=1$. Nothing else of
+degree two is canonical, which is what it means for the fibre to be \emph{only} that.
+
+\subsection{The gauge group the structure derives}
+
+Write $L(M)=\operatorname{diag}(1,M,1)$ for $M\in\SL_2(\ZZ)$, and $h(c_1,c_2;s)=h(c,s)$ for
+\[
+  h(c,s)=\begin{pmatrix}1&-6c_2&6c_1&s\\0&1&0&c_1\\0&0&1&c_2\\0&0&0&1\end{pmatrix},
+  \qquad c\in\ZZ^2,\ s\in\ZZ .
+\]
+
+\begin{proposition}[the automorphism group is the integral Jacobi group]
+\label{prop:gauge-group}
+The group $\{g\in\GL_4(\ZZ):g\gamma=\gamma,\ g^{t}Q_0g=Q_0\}$ is
+\[
+  \mathcal J=\{L(M)\,h(c,s)\}\;\cong\;\SL_2(\ZZ)\ltimes\mathrm{Heis},\qquad
+  h(c,s)h(c',s')=h\bigl(c+c',\,s+s'+6\,\omega(c,c')\bigr),
+\]
+with $\omega(c,c')=c_1c'_2-c_2c'_1$ and $L(M)h(c,s)L(M)^{-1}=h(Mc,s)$. Its centre
+contains $z=h(0,0;1)\colon\delta\mapsto\delta+\gamma$. Both $T_1$ and $T_2$ lie in
+$\mathcal J$:
+\[
+  T_1=L(M_1)\,h(-1,0;2),\quad T_2=L(M_2)\,h(0,-1;-3),\qquad
+  M_1=\begin{pmatrix}-1&1\\-1&0\end{pmatrix},\ 
+  M_2=\begin{pmatrix}0&-1\\1&0\end{pmatrix}.
+\]
+\end{proposition}
+
+\begin{proof}
+An automorphism fixing $\gamma$ and preserving $Q_0$ preserves $\gamma^\perp=\langle\gamma,u,w\rangle$,
+acts on $\gamma^\perp/\gamma$ symplectically, hence by some $M\in\SL_2(\ZZ)$, and moves
+$\delta$ by some $(s,c)$; solving $g^tQ_0g=Q_0$ symbolically for the remaining entries gives
+the displayed family, including the \emph{forced} top row $(-6c_2,6c_1)$. The law and the conjugation formula are matrix
+identities, checked symbolically.
+\end{proof}
+
+The flag class of \cref{sec:flag} has the same shape but leaves the row $r$ free; the
+structure \emph{forces} it. This is the gauge group that a principal-bundle presentation
+would postulate, and here it comes out of the fibre.
+
+\subsection{The holonomy has index \texorpdfstring{$\SSGaIndex$}{12}}
+
+Let $\alpha\colon\SL_2(\ZZ)\to\ZZ/12$ be the abelianisation, with $S\mapsto 9$ and $T\mapsto 1$ (the presentation
+$\langle S,T\mid S^4,(ST)^3S^{-2}\rangle$ is quoted, and the two relations are checked on
+the values). Then $\alpha(M_2)=9$ and, as $M_1=TS^{-1}$, $\alpha(M_1)=4$. On the Heisenberg part let
+\[
+  f\bigl(h(c,s)\bigr)=s-6\,q(c)\pmod{12},\qquad q(c)=\begin{cases}0&c\equiv0\pmod2,\\1&\text{otherwise,}\end{cases}
+\]
+the odd quadratic refinement of $\omega \bmod 2$.
+
+\begin{theorem}[the holonomy is the kernel of a character]
+\label{thm:gauge-index}
+The map $\chi\bigl(L(M)h\bigr)=\alpha(M)+f(h)$ is a homomorphism $\mathcal J\to\ZZ/12$,
+onto, with $\chi(T_1)=\SSGaChiOne$, $\chi(T_2)=\SSGaChiTwo$ and $\chi(z)=\SSGaChiZ$, and
+\[
+  H=\langle T_1,T_2\rangle=\ker\chi ,\qquad[\mathcal J:H]=\SSGaIndex .
+\]
+In particular the central translation $z^k\colon\delta\mapsto\delta+k\gamma$ lies in $H$ if
+and only if $12\mid k$.
+\end{theorem}
+
+\begin{proof}
+\emph{$\chi$ is a homomorphism.} $f$ is a homomorphism on $\mathrm{Heis}$ because
+$6\,\omega(c,c')\equiv 6\,[q(c+c')-q(c)-q(c')]\pmod{12}$, a statement about $c,c'$ mod $2$
+(sixteen cases, all checked). It is conjugation-invariant, $f(h(Mc,s))=f(h(c,s))$, because
+$q$ is invariant under $\GL_2(\mathbb F_2)$ (it equals $1$ on all three non-zero classes).
+Then $\chi$ is a homomorphism on the semidirect product.
+\emph{$H\subseteq\ker\chi$.} $\chi(T_1)=4+8$ and $\chi(T_2)=9+3$ (from $s=2$, $c$ odd, and $s=-3$, $c$ odd), both $0$ mod $12$.
+\emph{$\ker\chi\subseteq H$.} $H$ maps onto $\SL_2(\ZZ)$, since $M_2=S$ and $M_1M_2=T$. Explicit words
+in $a=T_1$, $A=T_1^{-1}$, $b=T_2$, $B=T_2^{-1}$ give $h(1,0;6)=\texttt{\SSGaWordHOne}$
+(length $\SSGaWordLenOne$), $h(0,1;6)=\texttt{\SSGaWordHTwo}$ (length $\SSGaWordLenTwo$) and
+$h(-1,0;6)=\texttt{\SSGaWordHMinus}$ (length $\SSGaWordLenMinus$), where the letters $a$ and $A$ stand for $T_1$ and $T_1^{-1}$, and so on; the product of the first and the last is $z^{12}$.
+The elements $h$ of the Heisenberg group with $f(h)=0$ are generated by $h(1,0;6)$,
+$h(0,1;6)$ and $z^{12}$ (an $h(c,s)$ with $f=0$ is $h(1,0;6)^{c_1}h(0,1;6)^{c_2}$ times a power of $z$, and $f$ kills the first two while $f(z^t)=t$), so $\ker\chi\cap\mathrm{Heis}\subseteq H$. Given $g\in\ker\chi$ choose $h'\in H$ with the same $\SL_2$ part; then $h'^{-1}g$ lies in $\ker\chi\cap\mathrm{Heis}\subseteq H$.
+\end{proof}
+
+In Gomes's terms the structure group that a principal-bundle presentation would postulate is
+$\mathcal J$, and the holonomy reaches it only up to $\ZZ/12$: what is missed is exactly
+the central translations $\delta\mapsto\delta+k\gamma$ with $12\nmid k$. The number twelve
+is the order of the abelianisation of $\SL_2(\ZZ)$; it equals $m_1m_2=3\cdot4$ of \cref{eq:p}, which we note without
+claiming a relation.
+
+\begin{remark}[the untwisted lifts fail the cusp]
+\label{rem:gauge-levi}
+The obvious lifts of $M_1$ and $M_2$ to $\mathcal J$, namely $L(M_1)$ and $L(M_2)$, have orders $3$ and $4$ but
+$\chi=\SSGaChiLeviOne$ and $\SSGaChiLeviTwo$; they generate a copy of $\SL_2(\ZZ)$ which is a
+complement of $\mathrm{Heis}$, and the cusp of their product is unipotent of rank
+$\SSGaLeviRank$, not $2$. The Heisenberg parts of $T_1$ and $T_2$ are precisely what
+cancels the character $\alpha$.
+\end{remark}
+
+\begin{remark}[the character is a theta multiplier]
+\label{rem:gauge-eta}
+The multiplier system of $\eta^2$ is a character of $\SL_2(\ZZ)$ of order $12$, so it
+generates the character group $\operatorname{Hom}(\SL_2(\ZZ),\ZZ/12)$. The odd refinement $q$ of $\omega\bmod2$ has the shape of an
+odd theta characteristic. \Cref{sec:theta} computes this: $\chi$ is exactly the multiplier of $e(\beta/12)\theta_1/\eta$ on the
+Jacobi group, and the holonomy is its invariance group (\cref{thm:theta}).
+\end{remark}
+
+\subsection{Zariski density, and the real group on the period domain}
+
+\begin{proposition}[the closure of the holonomy is the real Jacobi group]
+\label{prop:gauge-zariski}
+The Lie algebra generated, under conjugation by $H$, by the logarithms of two unipotent
+elements of $H$ (the cusp $T_0$ and the commutator $[T_2^2,T_1]$) has dimension
+$\SSGaZariskiDim$, and so does the Lie algebra $\mathfrak{sl}_2\ltimes\mathfrak{heis}_3$ of the real
+stabiliser of $(Q_0,\gamma)$ (dimension \SSGaStabDim). So the identity
+component of the real Zariski closure of $H$ is the full real Jacobi group.
+\end{proposition}
+
+Feeding one-parameter subgroups of the real group through the routine that derives the
+period laws from a matrix (\texttt{laws\_from\_lattice}) gives the classical Jacobi action on
+$(\tau,\mu,\beta)$: $\mu\mapsto\mu+t$, $\mu\mapsto\mu-t\tau$, $\beta\mapsto\beta+t$, and
+$\SL_2(\RR)$ by M\"obius maps. Each keeps the $6\mu$ shape and preserves
+$D=\operatorname{Im}\beta-6(\operatorname{Im}\mu)^2/\operatorname{Im}\tau$. A point has an
+orbit of real dimension $\SSGaOrbitDim$ and a circle for stabiliser (computed at
+$(i,0,-i)$), so the level sets of $D$ are $G(\RR)/\mathrm{SO}(2)$. The compact group that
+the structure-first reading derives at a point is therefore $U(1)$. These are computations on the
+laws; they say nothing about whether the period functions exist.
+
+\subsection{The four near misses are the four divisibilities of \texorpdfstring{$\gamma$}{gamma}}
+
+\Cref{prop:classes} separates the \SSClassesWord{} classes by the values of $|p|$ modulo $12$ that
+their twists reach. The structure gives a second invariant, and a cleaner one. Let $Q$ be the unique primitive invariant alternating form of a class
+(Pfaffian $6$ in the basis $(\gamma,u,w,\delta)$; the sign of the Pfaffian depends on the orientation of the basis and is not a $\GL_4(\ZZ)$-invariant)
+and let $d$ be the divisibility of the functional $Q(\gamma,\cdot)$. Since $Q$ is unique and $\gamma$ is canonical up to sign, $d$ is a
+conjugacy invariant.
+
+\begin{observation}[divisibility and $|p|$]
+\label{obs:gauge-classes}
+Over the $\SSGaSurvivors$ funnel survivors at box $3$ (a smaller box than the funnel of \cref{sec:forced}, for speed) the values of $d$ are $\SSGaDValues$, with
+$\SSGaPerClass$ survivors each. On every survivor $d$ divides every reachable $p$, the greatest common divisor of the reachable $p$
+is $d$, and the least non-zero $|p|$ is $d$. The paper's class is $d=1$, where $\gamma$ is paired
+unimodularly by the structure. The central translations $h(0,0;s)$ found in the holonomy of the four classes
+have greatest common $s$ equal to $\SSGaCentralIndex$ respectively, as in \cref{thm:gauge-index} (a word search over
+$60\,000$ elements, so observed and not proved for the three near misses).
+\end{observation}
+
+The mechanism: $3\mid d$ forces $3\mid\ell_1$ and $2\mid d$ forces $\ell_2$ even, so
+$3\mid p$, respectively $2\mid p$, by \cref{eq:p}. That is seen on the survivors, not proved in general. It explains why the three near misses bottom out at $|p|=\SSNearMissMins$ and it
+agrees with the genus statement of \cref{obs:nearmiss}: $d=1,3$ against $d=2,6$.
+
+\subsection{What this does and does not say}
+
+The results of this section are statements about the lattice and the real group
+that its structure fixes. They do not say that Gomes's philosophical claims are right or
+wrong, only that his recipe can be run here and what it returns:
+the derived group is $\mathcal J$, the holonomy is a subgroup of index $\SSGaIndex$,
+real-Zariski dense, and its missing part is central. Nothing is claimed about the period functions
+(so whether the near-miss classes carry complex manifolds stays declined), and the character
+is identified with a theta multiplier in \cref{sec:theta}, as a statement about the laws and not about the threefold.
+
+% =====================================================================
+
+\section{Electrons on the Cusp Fibre, and the Hat as a Subgraph of It}
+\label{sec:hofstadter}
+
+\Cref{thm:laves} says that the strata of the cusp fibre have the incidence structure of the
+$[3.4.6.4]$ Laves tiling rolled up on the cusp torus $\RR^2/B_0\ZZ^2$. A tiling is also a
+graph, and a graph can carry an electron. We put one orbital on every site and a hopping $1$
+on every bond, and ask what the A$_2$ structure behind the cusp fan does to the spectrum, how
+a magnetic field enters without choosing a gauge on a tiling, and what the Hat, which sits
+inside this graph, inherits. This is a model of an electron on a graph; the six-sphere knows
+nothing of electrons (\texttt{pyCICY.cusp\_hofstadter}, \SSHoChecks{} checks, \texttt{tests/test\_cusp\_hofstadter.py}).
+
+\subsection{The bands, in A$_2$ invariants}
+
+Per fundamental domain there are six sites, a hexagon centre $C$ (a component of the cusp fibre), three
+edge midpoints $E$ (the double curves) and two hexagon vertices $V$ (the triple points), joined
+by twelve bonds, six $C$--$E$ and six $E$--$V$, and there are six kites. In lattice
+coordinates the sites are torsion points of the hexagonal torus: $C=0$, the $E$ are the three
+$2$-torsion points and the $V$ are $(\tfrac13,\tfrac13)$ and $(\tfrac23,\tfrac23)$.
+
+\begin{proposition}[the Bloch polynomial is a function of the A$_2$ roots]
+\label{prop:ho-bands}
+With $x=e^{ik_1}$, $y=e^{ik_2}$,
+\[
+  \det\bigl(E-H(k)\bigr)=E^6-(12+s)\,E^4-3(s-6)\,E^2-\lvert\Delta\rvert^2,
+\]
+where $s=x+x^{-1}+y+y^{-1}+xy^{-1}+yx^{-1}$ is the sum over the six roots of $A_2$ and
+$\Delta=(1-x)(1-y)(1-x/y)$ is the $A_2$ Weyl denominator. Hence $E=0$ is an eigenvalue exactly on the three mirror
+lines $k_1=0$, $k_2=0$, $k_1=k_2$ of the Weyl group acting on the Brillouin torus: nodal
+\emph{lines}, not Dirac points. At $k=0$ the polynomial is $E^4(E^2-18)$, and the whole spectrum lies in
+$[-3\sqrt2,3\sqrt2]$, the end points being attained at $k=0$.
+\end{proposition}
+
+\begin{proof}
+The Hamiltonian is bipartite, $E$ against $C+V$, so the polynomial is a cubic in $E^2$ whose
+constant term is $-\lvert\det B\rvert^2$ for the $3\times3$ block $B$ from the $E$ sites to the others;
+$\det B$ is $x^{-1}\Delta$, a unit times the Weyl denominator, and the other two coefficients are
+expanded symbolically. The constant term vanishes exactly when $\Delta=0$, that is when $x=1$, $y=1$ or $x=y$. At $k=0$ the
+row sums of $BB^t$ are all $18$ ($=4+2\cdot5+2\cdot2$: the degree, two hexagon cliques and two
+triangle cliques). Entrywise, $\lvert H(k)\rvert=H(0)$, so the spectral radius of $H(k)$ is at most that of $H(0)$,
+which is $\sqrt{18}$.
+\end{proof}
+
+The six bands, read from a $24\times24$ grid of $k$ (and not proved), are
+$[-3\sqrt2,-\sqrt3]$, $[-2,0]$, $[-\sqrt3,0]$, $[0,\sqrt3]$, $[0,2]$ and $[\sqrt3,3\sqrt2]$. They overlap, so the zero-field spectrum has no
+gap. That the triangulation behind the cusp fan (\cref{sec:laves}) reappears here as the root
+system of $A_2$ in the spectrum is a consequence of the Laves structure, and we draw no further moral.
+
+\subsection{A field as a connection, with no gauge chosen on the tiling}
+
+A uniform field with flux $\phi$ through each kite is a connection on the substrate, written
+in a Landau gauge and checked kite by kite. On the cusp torus it is a line bundle exactly when the flux per
+domain, $6\phi$, is an integer, which is its Chern number. (The torus here is the one on which the substrate is rolled up in \cref{sec:rollup}, not the
+fibre $W$ itself.) The point is what happens on a subgraph. Restricting the Peierls phases of the substrate to a
+subgraph is restricting a connection, and nothing else is needed. This is the
+order of construction of \cref{sec:gauge}: an aperiodic tiling has no torus, hence no principal bundle to start from, and
+nothing is lost without one.
+
+\begin{observation}[the Hat is a subgraph]
+\label{obs:ho-subgraph}
+At $a:b=\sqrt3:1$ every Hat is eight whole kites and every mystic ten
+(\cref{sec:rollup}), and every edge of the $14$-edge form of the Hat is a single kite edge ($C$--$E$ of
+length $\sqrt3$, $E$--$V$ of length $1$). So the vertex graph of a Hat tiling is the substrate with the bonds
+inside tiles deleted, and its tight-binding model in a field is the restriction of the substrate's. On the generated level-$3$ patch
+of the repository (\texttt{paper/make\_sixsphere\_hat\_hofstadter.py}) there are $443$ tiles,
+$2948$ vertices and $3390$ edges, with degrees in $\{2,3,4\}$ and $V-E+F=1$.
+\end{observation}
+
+\begin{proposition}[the periods in the flux]
+\label{prop:ho-period}
+The spectrum of a tight-binding model with Peierls phases on a planar graph depends, up to
+unitary equivalence, only on the fluxes through its bounded faces modulo $1$. The faces of the substrate are kites, so
+its gauge period in $\phi$ is $1$. The bounded faces of a Hat graph are Hats and mystics, carrying fluxes $8\phi$ and $10\phi$, so its period is
+$1/\gcd(8,10)=\SSHoPeriodHat$: at $\phi=\tfrac12$ the Hat model is gauge-equivalent to zero field,
+while the substrate carries $\pi$ flux through every kite. The Spectre is not a union of kites (\cref{sec:proportions}) and has no
+such statement.
+\end{proposition}
+
+\begin{proof}
+On a plane graph the cycle space is generated by the bounded faces, so two connections with equal face fluxes mod $1$ differ by
+a gauge transformation. Shifting $\phi$ by $t$ shifts the face fluxes by $8t$ and $10t$; both are integers
+iff $t\in\tfrac12\ZZ$ (their difference is $2t$).
+\end{proof}
+
+\subsection{Chern numbers by two routes}
+
+For $\phi=p/q$ the magnetic Bloch bundle of a $q\times1$ supercell has a Chern number in every gap, computed by the
+projector formula of Fukui, Hatsugai and Suzuki (FHS), from overlaps of eigenvectors and with no gauge
+fixed. Each gap satisfies the St\v{r}eda/TKNN relation $\rho=\sigma\cdot6\phi+s$ with $s$
+an integer ($\rho$ the number of states per domain below the gap, $\sigma$ the Chern number), in all $\SSHoGapsTotal$ gaps at $\phi=\tfrac13,\tfrac14,\tfrac16$.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{@{}lcl@{}}
+\toprule
+$\phi$ & gaps & Chern numbers $\sigma$, from the lowest gap up \\
+\midrule
+$1/3$ & \SSHoGapsThird & \SSHoChernThird \\
+$1/4$ & \SSHoGapsQuarter & \SSHoChernQuarter \\
+$1/6$ & \SSHoGapsSixth & \SSHoChernSixth \\
+\bottomrule
+\end{tabular}
+\caption{FHS Chern numbers of the substrate's magnetic bands, on a $12\times12$ grid (all integers to
+$10^{-6}$), with one overall orientation convention.}
+\label{tab:ho-chern}
+\end{table}
+
+Independently, Kitaev's real-space formula
+$\nu=12\pi i\sum_{j\in A,k\in B,l\in C}(P_{jk}P_{kl}P_{lj}-P_{jl}P_{lk}P_{kj})$, with $P$ the projector
+below the Fermi energy and $A,B,C$ the three $120^\circ$ sectors about a point, needs neither a torus nor a Bloch bundle,
+only an open patch. On a patch of \SSHoPatchSites{} sites and \SSHoPatchBonds{} bonds it returns the same integers as FHS in both gaps at
+$\phi=\tfrac13$ and in the \SSHoGapsQuarterWide{} wide gaps at $\phi=\tfrac14$ (\SSHoChernQuarterWide).
+It does not reproduce the \SSHoGapsQuarterNarrow{} narrow gaps at $\phi=\tfrac14$
+($E\approx\pm0.94$), which are too narrow for the patch. This second route is the one that applies to a tiling.
+
+\subsection{The Hat in a field}
+
+On the level-$3$ Hat patch of \cref{obs:ho-subgraph}, the same real-space marker resolves
+\emph{no} Hofstadter gap with a non-zero Chern number: over a grid of $41$ values of the flux
+and $141$ of the Fermi energy it forms no integer plateau, its largest value being $0.93$ at isolated points inside bands, while the substrate under it has clean
+$\pm1$ gaps over wide ranges of flux. Deleting the bonds inside tiles, which here removes about half
+of them (the patch keeps $46\%$), closes them. This is a measurement on one finite patch, quoted from the repository; small-flux Landau gaps would need patches larger than the
+magnetic length and are not excluded.
+
+\subsection{What this says}
+
+The bands, the periods and the Chern numbers of the substrate are exact, or reach the same
+integer by two independent routes, and what the Hat inherits by restriction follows from
+\cref{obs:ho-subgraph}. Nothing here is a property of the six-sphere: the electron is a model on the graph of
+a tiling that the cusp fibre happens to be rolled up from, and the Hat's gaps are as measured on a patch.
+
+% =====================================================================
+
+\section{The Holonomy Character as a Theta Multiplier}
+\label{sec:theta}
+
+\Cref{rem:gauge-eta} observed that $\chi=\alpha+f$ has the shape of a theta multiplier. It is one, and this can be
+proved from the classical transformation laws. On the period domain, with the coordinates
+$(\tau,\mu,\beta)$ of the period matrix $Z=\left(\begin{smallmatrix}6\mu&\tau\\\beta&\mu\end{smallmatrix}\right)$, put
+\[
+  F(\tau,\mu,\beta)=e\!\left(\tfrac{\beta}{12}\right)\frac{\theta_1(\tau,\mu)}{\eta(\tau)},\qquad e(x)=e^{2\pi ix},
+\]
+with $\theta_1(\tau,z)$ the odd Jacobi theta function whose nome is $e(\tau/2)$. The quotient $\theta_1/\eta$ is a
+Jacobi form of weight $0$ and index $\tfrac12$ \cite{EichlerZagier}; the factor $e(-c\mu^2/2(c\tau+d))$ that the index produces under
+$\tau\mapsto(a\tau+b)/(c\tau+d)$ is what $\beta$ absorbs, since $\beta$ transforms with $-6c\mu^2/(c\tau+d)$
+(for $L(S)$: $\beta\mapsto\beta-6\mu^2/\tau$). Each element of $\mathcal J$ acts on $(\tau,\mu,\beta)$ by the law that
+its integer matrix alone forces (\texttt{pyCICY.sixsphere\_theta}, \SSThChecks{} checks, \texttt{tests/test\_sixsphere\_theta.py}).
+
+\begin{theorem}[the holonomy--multiplier theorem]
+\label{thm:theta}
+For every $g\in\mathcal J$,
+\[
+  F(g\cdot x)=e\!\left(\tfrac{\chi(g)}{12}\right)F(x),
+\]
+with no automorphy factor. Consequently the stabiliser of $F$ in $\mathcal J$ is $\ker\chi=\langle T_1,T_2\rangle$.
+\end{theorem}
+
+\begin{proof}
+It suffices to treat five generators, since $\chi$ is a homomorphism (\cref{thm:gauge-index}), the action is a group action,
+and $S$, $T$ and the three Heisenberg generators generate $\mathcal J$. The classical laws are, for $\theta_1$ and $\eta$ \cite{Mumford}:
+\begin{align*}
+  \theta_1(-1/\tau,\mu/\tau)&=-i\sqrt{-i\tau}\;e(\mu^2/2\tau)\,\theta_1(\tau,\mu), & \eta(-1/\tau)&=\sqrt{-i\tau}\,\eta(\tau),\\
+  \theta_1(\tau+1,\mu)&=e(1/8)\,\theta_1(\tau,\mu), & \eta(\tau+1)&=e(1/24)\,\eta(\tau),\\
+  \theta_1(\tau,\mu+1)&=-\theta_1(\tau,\mu), & \theta_1(\tau,\mu-\tau)&=-e(\mu-\tau/2)\,\theta_1(\tau,\mu).
+\end{align*}
+Adding to each the shift of $\beta$ in the law of the generator gives the table below. Every sum is a constant (no $\tau$, $\mu$ or $\beta$ is left), the
+$\sqrt{-i\tau}$ of $\theta_1$ and $\eta$ cancel, and $12$ times the constant is $\chi$ of the generator mod $12$.
+\end{proof}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{@{}lllllc@{}}
+\toprule
+generator & law on $(\tau,\mu,\beta)$ & $\theta_1/\eta$ gains & $e(\beta/12)$ gains & sum & $\chi$ \\
+\midrule
+$L(S)$ & $(-1/\tau,\ \mu/\tau,\ \beta-6\mu^2/\tau)$ & $-i\,e(\mu^2/2\tau)$ & $e(-\mu^2/2\tau)$ & $-i=e(\tfrac9{12})$ & $9$ \\
+$L(T)$ & $(\tau+1,\ \mu,\ \beta)$ & $e(\tfrac18-\tfrac1{24})$ & $1$ & $e(\tfrac1{12})$ & $1$ \\
+$h(1,0;0)$ & $(\tau,\ \mu+1,\ \beta)$ & $-1$ & $1$ & $e(\tfrac6{12})$ & $6$ \\
+$h(0,1;0)$ & $(\tau,\ \mu-\tau,\ \beta-12\mu+6\tau)$ & $-e(\mu-\tfrac\tau2)$ & $e(-\mu+\tfrac\tau2)$ & $e(\tfrac6{12})$ & $6$ \\
+$z$ & $(\tau,\ \mu,\ \beta+1)$ & $1$ & $e(\tfrac1{12})$ & $e(\tfrac1{12})$ & $1$ \\
+\bottomrule
+\end{tabular}
+\caption{The proof of \cref{thm:theta}, generator by generator. The exponents were simplified symbolically.
+Without the shift of $\beta$ the first and fourth rows are not constant.}
+\label{tab:theta}
+\end{table}
+
+The theorem was also measured, independently of the proof. At \SSThDigits{} digits (with $\theta_1$ summed from its own series, because a library routine
+with nome $e(\tau/2)$ picks a branch of $q^{1/4}$ that gives the wrong multiplier for $T$), the multiplier of each of the five generators
+and of $T_1$, $T_2$ is $e(\chi/12)$ with modulus $1$ and deviation below $\SSThMaxDev$, and the same holds on \SSThWords{} random words in
+them. The character $\alpha$ obtained from a Euclid decomposition of $M$ into $S$ and $T$ agrees with the one read off the $\eta^2$ multiplier
+$\eta(M\tau)^2/((c\tau+d)\eta(\tau)^2)$ numerically, a route that never decomposes $M$, on \SSThAlphaAgree{} of \SSThAlphaOf{} random words of $\SL_2(\ZZ)$. The
+classical laws quoted above hold against the series with relative error below $\SSThClassicalErr$.
+
+\subsection{What it gives}
+
+\begin{itemize}[leftmargin=*]
+\item \emph{A second proof of index $12$, without search.} The stabiliser of $F$ is $\ker\chi$, and $e(\chi/12)$ takes $12$ values:
+the powers $z^k$, $k=0,\dots,11$, reach all \SSThCosets{} of them. So $F^{12}$ is invariant under all of $\mathcal J$.
+\item \emph{The holonomy is the invariance group of one explicit function.} In the terms of \cref{sec:gauge}, the structure that $H$ preserves beyond $(Q_0,\gamma)$
+is $F$, up to the twelfth roots of unity.
+\item \emph{The two halves of $\chi$ are the two factors of $F$.} $\alpha$ is the multiplier of $\theta_1/\eta$ on $\SL_2(\ZZ)$, which is that of $\eta^2$
+because $\theta_1(\tau,\mu)/\eta(\tau)=2\pi\mu\,\eta(\tau)^2+O(\mu^3)$. $f$ is the multiplier of the Heisenberg translations,
+the odd characteristic of $\theta_1$. That is why $q$ had to be the \emph{odd} refinement in \cref{sec:gauge}.
+\end{itemize}
+
+\subsection{The controls, and the zeros}
+
+The candidates $e(k\beta)\,\theta_j(\tau,\pm\mu)\,\eta(\tau)^r$ with $k=\pm\tfrac1{12}$, $j=1,\dots,4$ and $r\in\{-1,1,-3,2,-2\}$ number
+\SSThCandidates. Exactly \SSThSurvivors{} are fixed by $T_1$ and $T_2$: $k=\tfrac1{12}$, $j=1$, $r=-1$, with either sign of $\mu$ ($\theta_1$ is odd). The even thetas carry the wrong
+characteristic, and $e(\beta/6)\,\theta_1/\eta$, whose $\beta$-coefficient is doubled, is not fixed by $T_1$.
+
+$F$ vanishes exactly where $\theta_1$ does, on $\mu\in\ZZ+\tau\ZZ$, and (checked at the base point) it is non-zero at the other three half
+periods. What this divisor is on the period domain, and whether it meets the degeneration, is open.
+
+\begin{remark}[a physics reading, not used]
+\label{rem:theta-fermi}
+In the elliptic genus of a two-dimensional $\mathcal N=(0,2)$ theory, a Fermi multiplet of flavour charge $1$ contributes
+$i\,\theta_1(\tau,z)/\eta(\tau)$, with $z$ the flavour fugacity, and a chiral multiplet its reciprocal \cite[eqs.~(2.13), (2.14)]{BEHT}. So the
+factor $\theta_1(\tau,\mu)/\eta(\tau)$ of $F$ has the shape of a single Fermi multiplet's. That is all this remark says. The six-sphere
+has no such theory attached to it, $\mu$ is a period coordinate and not a fugacity, and we do not interpret $e(\beta/12)$; the reading is a coincidence of
+formulas until a theory is exhibited.
+\end{remark}
+
+\subsection{What this does and does not say}
+
+\Cref{thm:theta} is a statement about a function on the period domain of the \emph{laws} $(\tau,\mu,\beta)$. Whether those functions exist on
+the threefold is the analytic question that the paper declines, so $F$ is a function on the model, not on $X$. The theorem is exact once the five classical laws are
+granted, and they are quoted; the Jacobi-form phrasing is from the literature \cite{EichlerZagier} and was not rederived.
+
+% =====================================================================
+
 \section{Orientation Reversal and Lattice Duality}
 \label{sec:mirror}
 
@@ -1675,6 +2144,50 @@ tiling with no coupling to flow. Nothing in \cite{OAIO3} is used here and nothin
 and not fitted. Nothing is claimed about gaps, localisation or the nature of the spectrum of the limiting operator, only that its
 integrated density of states exists and is approached at a known rate. The six-sphere contains no Chair44, so none of this bears on it.
 
+\subsection{The frame mismatch: a dihedral line defect}
+\label{sec:chair-mismatch}
+
+The descent defect of \cref{prop:chair-descent} counts cells whose labels differ from those of the translate. A label is a pair
+(rotation, native cell), and the rotation $\operatorname{rot}(x)$ lies in the rotation group $O\cong S_4$ of the cube, the frame of
+the chair that contains the cell. So translation by $2^Me$ carries a second, group-valued piece of information, the
+\emph{frame mismatch}
+\[
+  \rho_e(x)=\operatorname{rot}(x+2^Me)\,\operatorname{rot}(x)^{-1}\in O .
+\]
+Because the label field is single valued on $\RR^3$, $\rho_e$ is the coboundary of the frame field, and satisfies the cocycle identity
+$\rho_{e+e'}(x)=\rho_{e'}(x+2^Me)\,\rho_e(x)$. What it would take for this to be a connection on the torus $\RR^3/2^M\ZZ^3$ is that it be a
+function on the torus, one value per address; then it would be a flat $O$-bundle, with a class in $H^1(T_M;O)$ obstructing the descent. The
+expectation that it is, and that it lives on the tubes, can be tested on the level-$N$ patch ($N=6$) for $M=\SSChMisFirst,\dots,\SSChMisLast$.
+
+\begin{proposition}[the frame mismatch is a dihedral line defect]
+\label{prop:chair-mismatch}
+For $M=\SSChMisMs$ and each of the three axes $e$, on the level-$6$ patch:
+\begin{enumerate}[label=(\alph*),leftmargin=*]
+\item $\rho_e=1$ at every address where the label is determined, and wherever the labels of $x$ and $x+2^Me$ agree. So $\rho_e\ne1$ only on the four tubes
+of \cref{prop:chair-tubes}.
+\item At every six-label address of a tube along the body diagonal $\delta$, $\rho_e$ lies in the dihedral group of order $6$ that fixes $\delta$
+(three half-turns and two third-turns, a copy of $S_3$, not abelian), and \emph{all six} of its elements occur there.
+\item At the sixteen $24$-label addresses, the eight corners of the cube (where the tubes end) and the eight central cells (where all four meet),
+all $24$ rotations occur: $\rho_e$ generates $O$.
+\item $\rho_e$ is not a function on the torus: several values occur at one address. It defines no flat $O$-connection on $T_M$ and no
+class in $H^1(T_M;O)$.
+\item The cocycle identity holds on every cell where the three translates are present, and translation by $2^{M-1}e$ disagrees on a fraction
+that lies between $c(M)/8^M$ and $c(M-1)/8^{M-1}$ (at $M=\SSChMisLast$: $\SSChMisHalf$, between $\SSChMisBound$ and $\SSChMisBoundPrev$), so the support belongs to the scale $2^M$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) At a determined address the label is the same in every level-$M$ block, so labels, hence rotations, agree. (b): at a six-label address both labels lie in the same six-set, whose rotations form a coset of an order-six dihedral group about a body
+diagonal (\cref{obs:chair-six}), so the quotient $ab^{-1}$ of two of them lies in a dihedral group of order six. That the diagonal is the tube's own, that all six
+values occur, and (c), (d), (e) are counted on the patch, which is a genuine tiling patch, so every value found is a value that occurs.
+\end{proof}
+
+So the expected structure is half there. The mismatch is supported on the four tubes and takes values in a non-abelian group, the stabiliser of the tube's diagonal,
+growing to all of $O$ at the sixteen end and junction cells. But it is not a flat connection of the torus. Over a point of $T_M$
+the tiling offers one frame at a determined address, a torsor for the dihedral group (six frames) at a tube address, and a torsor for $O$ at sixteen
+addresses, and the mismatch moves among all of them from one block to the next. On $\RR^3$ it is trivial cohomologically, being a coboundary; on
+the torus it is not defined. The honest summary is a line defect with dihedral values, not an obstruction class.
+
 \subsection{Two matches that are not connections}
 \label{sec:chair-nolink}
 
@@ -1854,7 +2367,9 @@ tower, with a defect bounded by $c(M)/8^M\sim28\cdot4^{-M}$ that is proved from 
 recurrence certificate and measured on a patch of $\SSChPatchCells$ cells
 (\cref{prop:chair-rate,prop:chair-descent}). That defect is a line: the undetermined addresses are four tubes along
 the body diagonals (\cref{prop:chair-tubes}), while the interface between supertiles carries an area term
-(\cref{prop:chair-interface}), and the transfer matrix of the coincidence count has no root that could give one. On the
+(\cref{prop:chair-interface}), and the transfer matrix of the coincidence count has no root that could give one. The group-valued frame mismatch
+under the translation lives on that line with dihedral values, and all of the rotation group at its ends and centre, but is not a function on the torus
+(\cref{prop:chair-mismatch}). On the
 periodic approximants the same count bounds how far the density of states of a tight-binding model, and each Bragg
 amplitude at a dyadic wave vector, move from one level to the next (\cref{prop:chair-approx}). That is a contrast of kind. The six-sphere
 contains no Chair44, and two matches with it, the $24$ simplices round a vertex of the
@@ -1862,6 +2377,21 @@ Kuhn triangulation of $\ZZ^3$ and the $(3,4,\infty)$ group against the cube's ro
 group, are coincidences (\cref{sec:chair-nolink}). Two matches with cosmological singularities are of the same kind: the
 Spectre's inflation and perimeter growth are closed orbits of the Mixmaster map, as every quadratic unit is, and the
 pancake's fibre clock misses the six of $\mathbb Z/6$ (\cref{sec:cosmo-nolink}).
+
+Read as a gauge theory without principal bundles, the fibre carries a symplectic lattice with
+a marked vector, and the group of its automorphisms is the integral Jacobi group; the
+holonomy $\langle T_1,T_2\rangle$ is the kernel of a character onto $\ZZ/12$ (\cref{thm:gauge-index}), so it misses
+exactly the central translations $\delta\mapsto\delta+k\gamma$ with $12\nmid k$, is Zariski dense in the real
+group (\cref{prop:gauge-zariski}), and the four near-miss classes are the four divisibilities of
+$\gamma$ (\cref{obs:gauge-classes}).
+
+The character is the multiplier of $e(\beta/12)\theta_1(\tau,\mu)/\eta(\tau)$ (\cref{thm:theta}), so the holonomy
+is the exact invariance group of that function on the laws.
+
+A tight-binding electron on the cusp fibre's substrate has exact bands in the invariants of
+$A_2$ (\cref{prop:ho-bands}), a magnetic field that restricts to the Hat as a connection with flux period $\tfrac12$ against $1$
+(\cref{prop:ho-period}), and Chern numbers reproduced by a Bloch-bundle computation and by a real-space formula
+(\cref{tab:ho-chern}); the Hat's own gaps are a measurement on one patch.
 
 The lattice data was forced: within the flag class the triangle group by proof, the
 matrices up to conjugacy in every range searched, with finiteness of the search
@@ -1943,7 +2473,7 @@ lattice data says), whether $X$ is biholomorphic
 to its conjugate, and the value of $h^{1,2}$, which the Hodge numbers and the
 Fr\"olicher spectral sequence leave at any integer from $0$ up --- is declined, as is the
 diffeomorphism $X \cong S^6$ itself. \Cref{sec:chair44}: \cref{prop:chair-rate,prop:chair-descent} are proved; \cref{obs:chair-periods}
-is one patch, \cref{obs:chair-six} is a finite automaton at $M=\SSChUndetM$, and \cref{prop:chair-tubes} is a finite check. In \cref{prop:chair-interface} the formulas for $F_n$ and $B_n$ follow from the scaled-chair geometry and the
+is one patch, \cref{obs:chair-six} is a finite automaton at $M=\SSChUndetM$, and \cref{prop:chair-tubes} is a finite check. \Cref{prop:chair-mismatch}: the inclusion in a dihedral group is the coset fact of \cref{obs:chair-six}; that it is the tube's own diagonal, that all six (respectively all $24$) values occur, and that several values occur at one address are counts on the level-$6$ patch for $M=\SSChMisMs$, not proved for every $M$; the cocycle identity is a count, the identity itself being trivial. In \cref{prop:chair-interface} the formulas for $F_n$ and $B_n$ follow from the scaled-chair geometry and the
 formula for $C_n$ is fitted on three levels and counted to level $\SSChIfaceN{}$. In \cref{prop:chair-approx} the inequalities are proved, while the equality for $\lvert S_M\rvert$, the
 rank $\SSChRankCoef\cdot2^M$ and the six-label tube are finite checks, and the Bragg intensities are measured, with pure-point diffraction itself quoted. The OpenAI preprints
 \cite{OAI155,OAIO3,OAIHS} are cited for their stated results, and we have not checked their proofs. Chair44's
@@ -1954,6 +2484,17 @@ Romanov's theorem~\cite{HartshornRomanov}, conditional on registration and a uni
 tiling; none is re-proved here. \cref{prop:chair-tubes} is exact for $M\le\SSChTubeM$ and its
 inclusion of the tubes in the undetermined set is quoted from~\cite{HartshornRomanov}. The Hat's $0.796$ is on a different footing;
 \cref{obs:hat-fft} compares the two on the same footing at one size (level $6$). No complex fourfold with a Chair44 cusp fibre is constructed.
+\Cref{sec:gauge}: \cref{prop:gauge-structure,thm:gauge-index,prop:gauge-zariski} are exact linear algebra and finite
+computation with the explicit words given; the presentation of $\SL_2(\ZZ)$ is quoted; the central index of the three
+near-miss classes and the divisibility statements of \cref{obs:gauge-classes} are finite searches over the funnel survivors. Gomes's proposal \cite{Gomes} is used as a recipe, and is cited from the
+notes of a fork of OpenAI's preprints repository and not from a reading of the paper. No analytic statement is made.
+\Cref{sec:theta}: \cref{thm:theta} is exact given the five classical laws of $\theta_1$ and $\eta$, which are quoted (Mumford) and checked against the series; the
+measurements are at $\SSThDigits$ digits; the Jacobi-form phrasing is quoted, and \cref{rem:theta-fermi} cites only the one-loop formulas of
+\cite{BEHT} and is a coincidence of formulas, not a claim. The statements are about the laws on the period domain, not about functions on $X$.
+\Cref{sec:hofstadter}: \cref{prop:ho-bands,prop:ho-period} are proved (the band edges at the interior of the Brillouin zone are
+read from a grid), the Chern numbers of \cref{tab:ho-chern} are numerical to $10^{-6}$ and integral, and the Kitaev agreement is
+on one patch. The Hat-side numbers of \cref{obs:ho-subgraph} and of the last subsection are quoted from the repository's
+generated level-$3$ patch and have not been rerun here, since the script needs an external tiling generator; they are one finite patch.
 \Cref{sec:cosmo-nolink}: the closed orbits and the orbifold are exact; the pancake's winding coefficient $2/a_0$ is quoted from a numerical solution and the Euler-angle period is not checked; the proposed dictionary from substitution levels to the pancake's time is a choice made to ask the question, and neither match is claimed to be a connection.
 
 
@@ -2095,6 +2636,24 @@ Adv.\ Phys.\ \textbf{19} (1970), 525--573.
 P.-P.~Dechant, A.~N.~Lasenby and M.~P.~Hobson,
 \emph{An anisotropic, non-singular early universe model leading to a realistic cosmology},
 \href{https://arxiv.org/abs/0809.4335}{arXiv:0809.4335}.
+
+\bibitem{Gomes}
+H.~Gomes,
+\emph{Gauge theory without principal fiber bundles},
+Philosophy of Science \textbf{92} (2025), 511--527.
+
+\bibitem{EichlerZagier}
+M.~Eichler and D.~Zagier,
+\emph{The Theory of Jacobi Forms}, Progress in Mathematics \textbf{55}, Birkh\"auser, Boston (1985).
+
+\bibitem{Mumford}
+D.~Mumford,
+\emph{Tata Lectures on Theta I}, Progress in Mathematics \textbf{28}, Birkh\"auser, Boston (1983).
+
+\bibitem{BEHT}
+F.~Benini, R.~Eager, K.~Hori and Y.~Tachikawa,
+\emph{Elliptic genera of 2d $\mathcal N=2$ gauge theories},
+Commun.\ Math.\ Phys.\ (2014), \url{https://doi.org/10.1007/s00220-014-2210-y}, arXiv:1308.4896.
 
 \end{thebibliography}
 
