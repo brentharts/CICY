@@ -239,14 +239,14 @@ statement in Lean~4~\cite{Alexeev}. The construction contradicts a published
 corollary of Campana, Demailly and Peternell~\cite{CDP20}, and Alpöge locates
 where the two accounts part. At the time of writing the result is not
 refereed.
-
 Nearly all of the proof is analysis and topology. It stands, however, on two
 $4\times4$ integer matrices $T_1,T_2$ of orders $3$ and $4$ whose product is
 unipotent, and much of what is proved is decided by linear algebra over $\ZZ$.
 We work only with that finite layer, exactly, and ask what it is connected to.
 The answer we pursue is the aperiodic monotile.
 
-\paragraph{The substrate.} The cusp fibre $W$ is a degree-six del Pezzo surface
+\emph{The substrate.} 
+The cusp fibre $W$ is a degree-six del Pezzo surface
 glued to itself, and its strata have the incidence structure of the $A_2$
 triangulation of the plane modulo $\Lam$. The substrate of the Hat, the kite
 graph of Smith, Myers, Kaplan and Goodman-Strauss~\cite{SmithHat}, is at the
@@ -257,7 +257,8 @@ The cusp fibre is the substrate \emph{rolled up}.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.7\textwidth]{ss_dictionary.pdf}
-\caption{The dictionary at the Hat point (\cref{thm:laves}). (a) The cells of
+\caption{\footnotesize
+The dictionary at the Hat point (\cref{thm:laves}). (a) The cells of
 the $A_2$ triangulation: vertices (circles), edge midpoints (squares), triangle
 centroids (triangles). (b) The Laves substrate on the same sites; its bonds are
 the cover relations vertex $<$ edge $<$ triangle. The shaded hexagon has one
@@ -265,7 +266,9 @@ centre, six edge midpoints and six vertices.}
 \label{fig:dictionary}
 \end{figure}
 
-\paragraph{Folding a tiling.} A periodic tiling can be rolled up and an
+
+\emph{Folding a tiling.} 
+A periodic tiling can be rolled up and an
 aperiodic one cannot, so the substrate descends and the tiling does not. That
 concerns whole tilings. A finite patch of a Hat tiling is a union of tiles, each
 a union of whole kites, and the quotient $\pi:\RR^2\to\TT$ sends it to a finite
@@ -277,7 +280,8 @@ certificate of non-descent.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.88\textwidth]{ss_hat_rollup.pdf}
-\caption{A Hat tiling rolled up on the cusp torus (\cref{sec:rollup}).
+\caption{\footnotesize
+A Hat tiling rolled up on the cusp torus (\cref{sec:rollup}).
 (a) A substitution patch on the Laves lattice, mystic tiles marked.
 (b) The torus, each bond orbit weighted by how often that bond is a tile
 boundary. (c) The twelve boundary fractions $f(o)$, all strictly between $0$
@@ -285,7 +289,9 @@ and $1$.}
 \label{fig:rollup}
 \end{figure}
 
-\paragraph{Mystic fibres.} We follow the mystic, the ten-kite tile, through the
+
+
+\emph{Mystic fibres.} We follow the mystic, the ten-kite tile, through the
 fold. Two mystics are in the same \emph{fibre class} if they differ by an
 element of $\Lam$. In the three-step patch (443 tiles, 51 mystic) the mystics
 form exactly six fibre classes, the same six occur at four steps, and five of
@@ -302,7 +308,8 @@ class is observed, not proved.
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.92\textwidth]{ss_mystic_fibres_n3.pdf}
-\caption{Mystic tiles after three substitution steps (443 tiles, 51 mystic).
+\caption{\footnotesize
+Mystic tiles after three substitution steps (443 tiles, 51 mystic).
 (a) One mystic, flat: its ten kites coloured by the torus kite they fold onto,
 multiplicities $(2,2,1,2,2,1)$; dashed blue lines are translates of the
 fundamental domain. (b), (c) The torus from two viewpoints that together show
@@ -344,7 +351,7 @@ $(3,4,\infty)$ data are the orders $3$, $4$ and the unipotent. Two matches are s
 
 
 % =====================================================================
-\section{The cusp fibre is the monotile's substrate}
+\section{The Cusp Fibre as the Monotile Substrate}
 \label{sec:laves}
 
 \subsection{The substrate at the Hat point}
@@ -376,7 +383,8 @@ $a=\sqrt3$, $b=1$ the kite has area $\underbrace{2}_{\text{two triangles}}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.55\textwidth]{ss_hat_kites.pdf}
-\caption{The Hat at $a:b=\sqrt3:1$ as eight whole kites of the $[3.4.6.4]$ Laves
+\caption{\footnotesize
+The Hat at $a:b=\sqrt3:1$ as eight whole kites of the $[3.4.6.4]$ Laves
 lattice. Circles are hexagon centres (valence 6), squares edge midpoints
 (valence 4), triangles hexagon vertices (valence 3). The thirteen-sided outline
 has area $8\sqrt3$ in units where $b=1$.}
@@ -420,12 +428,12 @@ the patch is agreement everywhere.
 they become. The shaded parallelogram is one fundamental domain of
 $B_0\ZZ^2$, holding one hexagon centre, three edge midpoints and two hexagon
 vertices (one component, three double curves, two triple points). (b) The same
-patch at the Spectre's proportions: the outer corners stay paired and apart, and
-the graph is the Hasse diagram of nothing.}
+patch at the Spectre's proportions: the outer corners stay paired and apart, 
+and \emph{the graph is the Hasse diagram of nothing}.}
 \label{fig:laves}
 \end{figure}
 
-\subsection{The dictionary}
+\subsection{The Lattice-Fibre Correspondence: Mapping the Tiling to the Cusp Fibre}
 
 Since $|\det B_0|=1$, translation by $B_0\ZZ^2$ is exactly translation of the
 Laves tiling by its period lattice, so the cusp fibre is that tiling rolled up
@@ -489,7 +497,7 @@ passes through both triple points.}
 \label{fig:dp6}
 \end{figure}
 
-\subsection{What descends, and what does not}
+\subsection{Periodic versus Aperiodic Descent Obstructions}
 
 \Cref{thm:laves} is an identity of substrates, not of tilings. The Laves tiling
 is periodic and its quotient by $B_0\ZZ^2$ is a compact object, the cusp fibre.
@@ -503,7 +511,7 @@ asks what survives when the tiling is folded onto the torus anyway.
 
 % =====================================================================
 
-\section{The dual complex of the cusp fibre}
+\section{The $A_{2}$ Triangulation and its Dual Torus}
 \label{sec:dual}
 
 The dual complex of a normal-crossing fibre has a vertex for each component, an
@@ -565,7 +573,7 @@ oriented edges; this number returns in \cref{sec:mystic}.
 
 % =====================================================================
 
-\section{Rolling up a Hat tiling}
+\section{Embedding the Hat Tiling onto the Cusp Torus}
 \label{sec:rollup}
 
 \paragraph{The patch.} Tilings are generated by the substitution system of
@@ -683,7 +691,7 @@ ten-kite polykite on the same lattice.
 
 % =====================================================================
 
-\section{Monotile Mystic fibres}
+\section{Orientation and Anchor Orbits of the Ten-Kite Mystic}
 \label{sec:mystic}
 
 \paragraph{Set-up.} Let $E_1=(3,\sqrt3)$, $E_2=(0,2\sqrt3)$, $\Lam=\ZZ E_1+\ZZ E_2$
@@ -1128,7 +1136,7 @@ which suggests it follows from the coinvariant condition in the flag class;
 that too is unproved.
 \end{observation}
 
-\subsection{The classes}
+\subsection{Class Invariants and Differentiation: The Four Conjugacy Classes}
 
 \begin{proposition}
 \label{prop:classes}
@@ -1366,7 +1374,7 @@ $(i,0,-i)$), so the level sets of $D$ are $G(\RR)/\mathrm{SO}(2)$. The compact g
 the structure-first reading derives at a point is therefore $U(1)$. These are computations on the
 laws; they say nothing about whether the period functions exist.
 
-\subsection{The four near misses are the four divisibilities of \texorpdfstring{$\gamma$}{gamma}}
+\subsection{Divisibility of \texorpdfstring{$\gamma$}{gamma} and the Four Near-Miss Classes}
 
 \Cref{prop:classes} separates the \SSClassesWord{} classes by the values of $|p|$ modulo $12$ that
 their twists reach. The structure gives a second invariant, and a cleaner one. Let $Q$ be the unique primitive invariant alternating form of a class
@@ -1388,11 +1396,11 @@ The mechanism: $3\mid d$ forces $3\mid\ell_1$ and $2\mid d$ forces $\ell_2$ even
 $3\mid p$, respectively $2\mid p$, by \cref{eq:p}. That is seen on the survivors, not proved in general. It explains why the three near misses bottom out at $|p|=\SSNearMissMins$ and it
 agrees with the genus statement of \cref{obs:nearmiss}: $d=1,3$ against $d=2,6$.
 
-\subsection{What this does and does not say}
+\subsection{Gomes's Bundle-Free Construction: Algebraic Structure from Manifold Existence}
 
 The results of this section are statements about the lattice and the real group
 that its structure fixes. They do not say that Gomes's philosophical claims are right or
-wrong, only that his recipe can be run here and what it returns:
+wrong \cite{Gomes}, only that his recipe can be run here and what it returns:
 the derived group is $\mathcal J$, the holonomy is a subgroup of index $\SSGaIndex$,
 real-Zariski dense, and its missing part is central. Nothing is claimed about the period functions
 (so whether the near-miss classes carry complex manifolds stays declined), and the character
@@ -1411,7 +1419,7 @@ a magnetic field enters without choosing a gauge on a tiling, and what the Hat, 
 inside this graph, inherits. This is a model of an electron on a graph; the six-sphere knows
 nothing of electrons (\texttt{pyCICY.cusp\_hofstadter}, \SSHoChecks{} checks, \texttt{tests/test\_cusp\_hofstadter.py}).
 
-\subsection{The bands, in A$_2$ invariants}
+\subsection{Weyl Symmetries: Tight-Binding Band Structures and A$_2$ Roots}
 
 Per fundamental domain there are six sites, a hexagon centre $C$ (a component of the cusp fibre), three
 edge midpoints $E$ (the double curves) and two hexagon vertices $V$ (the triple points), joined
@@ -1483,7 +1491,7 @@ a gauge transformation. Shifting $\phi$ by $t$ shifts the face fluxes by $8t$ an
 iff $t\in\tfrac12\ZZ$ (their difference is $2t$).
 \end{proof}
 
-\subsection{Chern numbers by two routes}
+\subsection{Dual-Method Calculation of Magnetic Chern Numbers}
 
 For $\phi=p/q$ the magnetic Bloch bundle of a $q\times1$ supercell has a Chern number in every gap, computed by the
 projector formula of Fukui, Hatsugai and Suzuki (FHS), from overlaps of eigenvectors and with no gauge
@@ -1514,7 +1522,7 @@ $\phi=\tfrac13$ and in the \SSHoGapsQuarterWide{} wide gaps at $\phi=\tfrac14$ (
 It does not reproduce the \SSHoGapsQuarterNarrow{} narrow gaps at $\phi=\tfrac14$
 ($E\approx\pm0.94$), which are too narrow for the patch. This second route is the one that applies to a tiling.
 
-\subsection{The Hat in a field}
+\subsection{Magnetic Field Responses of the Hat Subgraph}
 
 On the level-$3$ Hat patch of \cref{obs:ho-subgraph}, the same real-space marker resolves
 \emph{no} Hofstadter gap with a non-zero Chern number: over a grid of $41$ values of the flux
@@ -1523,7 +1531,7 @@ $\pm1$ gaps over wide ranges of flux. Deleting the bonds inside tiles, which her
 of them (the patch keeps $46\%$), closes them. This is a measurement on one finite patch, quoted from the repository; small-flux Landau gaps would need patches larger than the
 magnetic length and are not excluded.
 
-\subsection{What this says}
+\subsection{Physical Implications of the Substrate Model}
 
 The bands, the periods and the Chern numbers of the substrate are exact, or reach the same
 integer by two independent routes, and what the Hat inherits by restriction follows from
@@ -1593,7 +1601,7 @@ them. The character $\alpha$ obtained from a Euclid decomposition of $M$ into $S
 $\eta(M\tau)^2/((c\tau+d)\eta(\tau)^2)$ numerically, a route that never decomposes $M$, on \SSThAlphaAgree{} of \SSThAlphaOf{} random words of $\SL_2(\ZZ)$. The
 classical laws quoted above hold against the series with relative error below $\SSThClassicalErr$.
 
-\subsection{What it gives}
+\subsection{Consequences of the Holonomy-Multiplier Theorem}
 
 \begin{itemize}[leftmargin=*]
 \item \emph{A second proof of index $12$, without search.} The stabiliser of $F$ is $\ker\chi$, and $e(\chi/12)$ takes $12$ values:
@@ -1605,7 +1613,7 @@ because $\theta_1(\tau,\mu)/\eta(\tau)=2\pi\mu\,\eta(\tau)^2+O(\mu^3)$. $f$ is t
 the odd characteristic of $\theta_1$. That is why $q$ had to be the \emph{odd} refinement in \cref{sec:gauge}.
 \end{itemize}
 
-\subsection{The controls, and the zeros}
+\subsection{Theta Function Constraints and Vanishing Loci}
 
 The candidates $e(k\beta)\,\theta_j(\tau,\pm\mu)\,\eta(\tau)^r$ with $k=\pm\tfrac1{12}$, $j=1,\dots,4$ and $r\in\{-1,1,-3,2,-2\}$ number
 \SSThCandidates. Exactly \SSThSurvivors{} are fixed by $T_1$ and $T_2$: $k=\tfrac1{12}$, $j=1$, $r=-1$, with either sign of $\mu$ ($\theta_1$ is odd). The even thetas carry the wrong
@@ -1623,7 +1631,7 @@ has no such theory attached to it, $\mu$ is a period coordinate and not a fugaci
 formulas until a theory is exhibited.
 \end{remark}
 
-\subsection{What this does and does not say}
+\subsection{Scope and Limitations of the Multiplier Theorem}
 
 \Cref{thm:theta} is a statement about a function on the period domain of the \emph{laws} $(\tau,\mu,\beta)$. Whether those functions exist on
 the threefold is the analytic question that the paper declines, so $F$ is a function on the model, not on $X$. The theorem is exact once the five classical laws are
@@ -1719,7 +1727,7 @@ orders $(3, 4, \infty)$. But the valence-four sites are the double curves of
 $W$, which lie over the cusp $p_0$ --- not over $p_2$, the point of order
 four, whose fibre is a multiple fibre with no double curves at all.
 
-\subsection{Two more matches that are not connections}
+\subsection{Unrelated Parallels: Mixmaster Dynamics and Cosmological Fibres}
 \label{sec:cosmo-nolink}
 
 Two further coincidences of numbers, both with a cosmological singularity, are exact and
@@ -1785,7 +1793,7 @@ eight child poses and re-checks that they tile each of the $24$ rotated doubled
 chairs. The six-sphere contains no Chair44; the section sets two kinds of tiling
 side by side on tori.
 
-\subsection{Why nested tori}
+\subsection{Motivation for the Nested Toroidal Family}
 \label{sec:chair-nested}
 
 An integer inflation is a lattice map. A level-$M$ supertile is a Chair44 scaled by
@@ -1802,7 +1810,7 @@ the nested sublattices would have index $4^M$; for Chair44 they have index $8^M$
 fibre is two-dimensional, no complex fourfold with a Chair44 cusp fibre is constructed
 here, and none is claimed.
 
-\subsection{Coincidence, and its rate}
+\subsection{Automaton States and Coincidence Rates}
 \label{sec:chair-rate}
 
 The substitution acts on the alphabet $\mathcal A$ of $\SSChLabels{}=24\times7$
@@ -1855,7 +1863,7 @@ vanishes for $M=1,\dots,\SSChTermsChecked{}$, checked in exact integer arithmeti
 The closed form for $c$ holds from $M=1$ and fails at $M=0$. The fraction of undetermined
 addresses, $c(M)/8^M\sim28\cdot4^{-M}$, tends to zero.
 
-\subsection{How nearly the tiling descends}
+\subsection{Quantitative Bounds on Approximate Descent}
 \label{sec:chair-descent}
 
 \begin{proposition}[descent to the nested tori]
@@ -1949,7 +1957,7 @@ checks it against \texttt{translate\_scan}). A level-$7$ Hat scan was
 started and did not finish; its disc would hold about $1.86$ million kites, close to the level-$6$ one.
 \end{observation}
 
-\subsection{What remains undetermined}
+\subsection{Dimensional Analysis and Diagonal Tube Defects}
 \label{sec:chair-undet}
 
 The transfer matrix of \cref{prop:chair-rate} on the $\SSChNonSingleton{}$ non-singleton
@@ -2011,7 +2019,7 @@ undetermined where a stack can sit, and a stack can be rotated about its diagona
 six is still not related to the six mystic fibre classes of \cref{sec:mystic}, where it counts
 the oriented edges of the dual complex; we record that as a coincidence.
 
-\subsection{Two defects of one hierarchy}
+\subsection{Bulk-Boundary Scaling Versus Line Deficiencies}
 \label{sec:chair-defects}
 
 The mismatch $c(M)$ was measured on a torus. The same substitution has a second, geometric
@@ -2163,7 +2171,7 @@ tiling with no coupling to flow. Nothing in \cite{OAIO3} is used here and nothin
 and not fitted. Nothing is claimed about gaps, localisation or the nature of the spectrum of the limiting operator, only that its
 integrated density of states exists and is approached at a known rate. The six-sphere contains no Chair44, so none of this bears on it.
 
-\subsection{The frame mismatch: a dihedral line defect}
+\subsection{Non-Abelian Cocycles and Group-Valued Mismatches}
 \label{sec:chair-mismatch}
 
 The descent defect of \cref{prop:chair-descent} counts cells whose labels differ from those of the translate. A label is a pair
@@ -2207,7 +2215,7 @@ the tiling offers one frame at a determined address, a torsor for the dihedral g
 addresses, and the mismatch moves among all of them from one block to the next. On $\RR^3$ it is trivial cohomologically, being a coboundary; on
 the torus it is not defined. The honest summary is a line defect with dihedral values, not an obstruction class.
 
-\subsection{Two matches that are not connections}
+\subsection{Superficial Parallels: Cubic Triangulations and Orbifold Quotients}
 \label{sec:chair-nolink}
 
 \paragraph{A three-dimensional cusp analogue.} The $A_2$ triangulation behind the cusp
@@ -2223,7 +2231,7 @@ the cube group in those $\SSChKuhnMeet{}$ elements; and the two groups are not c
 in $\GL(3,\ZZ)$, because reduced modulo two the cube group fixes a nonzero vector of
 $\mathbb F_2^3$ and the other fixes none. The same mismatch is visible in the plane, where
 the cusp torus is hexagonal and the square lattice is not. So $24=24$ is numerology, and
-Chair44 does not sit equivariantly on this complex.
+Chair44 does not sit \emph{equivariantly on this complex}.
 
 \paragraph{The orbifold group.} The rotation group of the cube is a quotient of the base
 orbifold group $\mathbb Z/3*\mathbb Z/4$ of the construction, with the cusp loop sent to
@@ -2232,7 +2240,7 @@ is smooth, of genus $\SSChCoverGenus{}$ with $\SSChCoverCusps{}$ cusps
 (Riemann--Hurwitz). This is exact group theory; nothing computed here shows that the
 monodromy representation of the six-sphere factors through the quotient.
 
-\subsection{What this says}
+\subsection{Summary of Chair44 Toroidal Limits and Limitations}
 
 The Hat's substrate descends to $\TT$ and the Hat does not. Chair44's inflation is a
 lattice map, so it has a whole tower of tori to nearly descend to, with a defect that is
@@ -2499,7 +2507,7 @@ Fitting on the fan alone, the system has rank $\SSSfUTorusRankB$ for $\SSSfUToru
 We suspect, and have not shown, that this is where the infinite products of \cref{prop:surf-F} enter, through the part of $\RR^3$ outside the fan. The $u$-equations on the torus are not checked. That is a statement about this ansatz, truncated at depth $\SSSfUTorusDepthB$; a $u$
 built from the spirals of the surface, which we do not have, might exist.
 
-\subsection{Lucas as traces of powers}
+\subsection{Algebraic Representation of n-Gon Leading Singularities}
 \label{sec:lucas-trace}
 
 The leading singularity of the $n$-gon in the limit $X_{i,j}\to X$, $X_{i,p}\to Y$ is $(2-D)Y^n-\sum_kC_kY^kX^{n-k}$ with $C_k=[x^{n-2k}]L_n(x)$ the Lucas
@@ -2510,11 +2518,15 @@ coefficients, a recurrence the source papers do not explain.
 Let $a_\pm$ be the roots of $a^2-Xa+XY$. Then $\sum_kC_kY^kX^{n-k}=a_+^n+a_-^n=\operatorname{tr}\begin{pmatrix}X&-XY\\1&0\end{pmatrix}^n$, so the
 leading singularity is $(2-D)Y^n-(a_+^n+a_-^n)$. In terms of $x=\sqrt{X/Y}$, the matrix $M/\sqrt{XY}$ has determinant $1$ and trace $x$,
 and $\operatorname{tr}(M/\sqrt{XY})^n=L_n(x)$. For the middle blocks of the monodromy,
+\begin{footnotesize}
 \begin{equation}
-  A=\begin{pmatrix}-1&1\\-1&0\end{pmatrix},\quad B=\begin{pmatrix}0&-1\\1&0\end{pmatrix},\quad AB=\begin{pmatrix}1&1\\0&1\end{pmatrix},\qquad
+  A=\begin{pmatrix}-1&1\\-1&0\end{pmatrix},\quad B=\begin{pmatrix}0&-1\\1&0\end{pmatrix},\quad AB=\begin{pmatrix}1&1\\0&1\end{pmatrix},
+	\qquad
   \operatorname{tr}A^n=L_n(-1),\ \operatorname{tr}B^n=L_n(0),\ \operatorname{tr}(AB)^n=L_n(2),
   \label{eq:lucas-blocks}
 \end{equation}
+\end{footnotesize}
+
 of periods $3$, $4$ and constant $2$, on the loci $X=Y$, $X=0$ and $X=4Y$ of the kinematics, the last being where the two roots coincide.
 \end{proposition}
 
@@ -2533,7 +2545,7 @@ values with $|x|\le2$, the traces of the elliptic and parabolic elements of $\SL
 $\operatorname{tr}M^n=L_{4n}+1+(-1)^n$ for $n\le8$ and its Perron root $\varphi^4$ is the hyperbolic case $x=\SSSfHatX=L_4$. The six-sphere monodromy is elliptic and parabolic, the
 Hat's inflation is hyperbolic, and both are the one Cayley--Hamilton identity. This is the quadratic-unit match of \cref{sec:cosmo-nolink} again, and it is not a connection.
 
-\subsection{What this does and does not say}
+\subsection{Interpretation and Scope of the Cluster Algebra Analysis}
 
 The cusp fibre's dual complex is exactly the Markov triangulation, its monodromy blocks generate the mapping class group of the surface, and the Lucas recurrence
 of the $n$-gon is the trace of powers of a $2\times2$ matrix, with the $(3,4,\infty)$ data at $x=-1,0,2$. The surface is a two-loop genus-one vacuum diagram with no external state (\cref{prop:surf-loops}), and its $F$-polynomials and slopes are computed (\cref{prop:surf-F}). The $u$-variables are obtained from the $F$-polynomials in finite type, including the punctured disk with its tagged arcs (\cref{prop:surf-u}), and not on the torus. Not shown: the $u$-equations on the torus, that the
@@ -2573,7 +2585,7 @@ amplitude at a dyadic wave vector, move from one level to the next (\cref{prop:c
 contains no Chair44, and two matches with it, the $24$ simplices round a vertex of the
 Kuhn triangulation of $\ZZ^3$ and the $(3,4,\infty)$ group against the cube's rotation
 group, are coincidences (\cref{sec:chair-nolink}). Two matches with cosmological singularities are of the same kind: the
-Spectre's inflation and perimeter growth are closed orbits of the Mixmaster map, as every quadratic unit is, and the
+Spectre's inflation and perimeter growth are \emph{closed orbits of the Mixmaster map}, as every quadratic unit is, and the
 pancake's fibre clock misses the six of $\mathbb Z/6$ (\cref{sec:cosmo-nolink}).
 
 Read as an ideal triangulation of the once-punctured torus, $\Delta(W)$ has the Markov quiver, and the monodromy blocks generate
@@ -2583,7 +2595,7 @@ arcs flipping their tag (\cref{prop:surf-u}); on the torus the same ansatz has n
 the $(3,4,\infty)$ data are $x=-1,0,2$, while the Hat's inflation is the same identity at $x=\SSSfHatX$ (\cref{prop:surf-lucas}). The fan of the cusp is a hexagon at
 every ray and the cluster complex a line, so the two fans differ (\cref{prop:surf-fans}).
 
-Read as a gauge theory without principal bundles, the fibre carries a symplectic lattice with
+Read as a gauge theory without principal bundles (Gomes2025) \cite{Gomes}, the fibre carries a symplectic lattice with
 a marked vector, and the group of its automorphisms is the integral Jacobi group; the
 holonomy $\langle T_1,T_2\rangle$ is the kernel of a character onto $\ZZ/12$ (\cref{thm:gauge-index}), so it misses
 exactly the central translations $\delta\mapsto\delta+k\gamma$ with $12\nmid k$, is Zariski dense in the real
