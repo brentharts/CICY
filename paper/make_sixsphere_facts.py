@@ -831,7 +831,7 @@ def main():
         except Exception as e:                                   # noqa: BLE001
             print("figure skipped:", e)
     print(json.dumps({k: v for k, v in facts.items()
-                      if "\\" not in str(v)}, indent=1))
+                      if "\\" not in str(v)}, indent=1, default=str))
 
 
 if __name__ == "__main__":
