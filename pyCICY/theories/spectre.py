@@ -78,7 +78,7 @@ crossing change is an ambient three-space move that does not exist, so
 ``crossing_change()`` raises the same -- the additive-to-subadditive
 transition of the source paper rendered as exception semantics. Open, and
 listed by :meth:`SpectreSubstrate.missing_for_physical`: the collared
-frequency p = Pr(Phi^2), the binding scale delta, the horizon-tiling
+atlas behind p = Pr(Phi^2) = 1/2, the binding scale delta, the horizon-tiling
 intertwiner, and the asymptotic complexity class of the transversal braid
 words.
 """
@@ -99,7 +99,7 @@ __all__ = ["Quad", "SPECIES", "RULES", "substitution_matrix", "charpoly",
            "frequency_module", "galois_echo", "tile_area_form",
            "mystic_asymmetry", "geometric_census", "order_parameter",
            "perturbation_susceptibilities", "EDGE_SEQUENCE",
-           "mystic_saturation", "x_charges", "x_density", "torus_knot",
+           "mystic_saturation", "x_charges", "x_density", "x_flavour_balance", "torus_knot",
            "binding_spectrum", "dilation_dictionary", "SpectreSubstrate"]
 
 
@@ -1054,7 +1054,8 @@ def x_density(p):
 
     rho_X(p) = [14 g + 12 g + 2 g^2 + 4 p g (1-g)] / [14 (1 + g)], with
     g = 4 - sqrt15 and p = Pr(Phi^2) the one collared frequency the atlas
-    does not determine (measured ~ 0.58 in the source repository). The
+    does not determine by itself (measured 0.683, 0.579, 0.538, 0.519 at depths 3 to 6 in
+    the source repository; :func:`x_flavour_balance` shows charge conservation gives p = 1/2). The
     numerator terms are, in order: the Mystic, the triplet, Lambda, and the
     Phi flavors.
     """
@@ -1063,6 +1064,43 @@ def x_density(p):
     num = 14 * g + 12 * g + 2 * (g * g) + 4 * p * (g - g * g)
     den = 14 * (_q15(1) + g)
     return num / den
+
+
+def x_flavour_balance():
+    r"""Charge conservation fixes the collared frequency: p = Pr(Phi^2) = 1/2, given the atlas.
+
+    Every X-bond has a Mystic (Gamma_2) on one side and a normal tile on the other (a shared edge is
+    an X-bond exactly when one of its two tiles is the Mystic; no two Mystics share an edge; the
+    X-bonds form one 14-cycle per Mystic -- measured in the source repository, brentharts/spectre,
+    ``spectre_mystic_xbond.py``). So the total X-charge carried by normal tiles equals that of the
+    Mystics. Per tile, with the Gamma metatile holding the Mystic and one normal tile (hence
+    N = 1 + g tiles per unit of metatile mass), the exact Perron frequencies and the atlas charges
+    of :data:`X_CHARGES` give
+
+        4 (t_G + t_D + t_S) + 2 t_L + 2 p t_Phi = 14 t_G,    t_i = v_i / (1 + g),
+
+    i.e. 12 g + 2 g^2 + 4 p g (1 - g) = 14 g, so p = 1/2 exactly. Then rho_X = x_density(1/2) =
+    2 g / (1 + g) = 1 - sqrt15/5; the Mystic is a fraction g / (1 + g) = (5 - sqrt15)/10 of all
+    tiles, and the valence-4 density (two such vertices on each Mystic's X-cycle) is twice that,
+    (5 - sqrt15)/5. Measured p in the source repository: 0.683, 0.579, 0.538, 0.519 at depths 3 to
+    6, falling toward 1/2.
+
+    What this is not: a proof of the atlas (the per-species charges are published measurements, and
+    :func:`x_charges` checks only their structure) or of the Mystic-bond statement at every depth.
+    Returns a dict with ``p`` (Fraction), ``mystic``, ``valence4`` and ``rho_X`` (Quad).
+    """
+    v = perron_frequencies()
+    g = v["Gamma"]
+    N = _q15(1) + g
+    t = {k: v[k] / N for k in v}
+    other = (X_CHARGES["Gamma1"] * t["Gamma"] + X_CHARGES["Delta"] * t["Delta"]
+             + X_CHARGES["Sigma"] * t["Sigma"] + X_CHARGES["Lambda"] * t["Lambda"])
+    q = (X_CHARGES["Gamma2"] * t["Gamma"] - other) / (X_CHARGES["Phi2"] * t["Phi"])
+    if q.b != 0:
+        raise AssertionError("p is not rational")
+    p = F(q.a)
+    return {"p": p, "mystic": t["Gamma"], "valence4": 2 * t["Gamma"],
+            "rho_X": x_density(p)}
 
 
 def _poly_div_by_t_plus_1(coeffs_low_first):
@@ -1268,9 +1306,11 @@ class SpectreSubstrate(Theory):
 
     def missing_for_physical(self):
         return [
-            "the collared frequency p = Pr(Phi^2), measured ~0.58 in the "
-            "companion repository but not derived; it is the one unknown "
-            "in the closed-form X-density",
+            "the X-charge atlas behind p = Pr(Phi^2) = 1/2: charge conservation "
+            "(x_flavour_balance) fixes p given the measured per-species charges, "
+            "so the closed-form X-density is 1 - sqrt15/5 on that condition; the "
+            "atlas itself (depths 3 to 6, 131 contact classes) is counted, not "
+            "derived",
             "the binding scale delta: the ordering and integer gaps of the "
             "mass spectrum are exact, the overall scale is not",
             "the horizon-tiling intertwiner: a *-homomorphism relating the "
