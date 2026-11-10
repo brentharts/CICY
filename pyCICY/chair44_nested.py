@@ -272,6 +272,60 @@ def closed_forms_proved(terms=44):
                 proved=bool(c_ok and e_ok and terms >= need))
 
 
+def notch_axis_counts(Mmax=8):
+    """Addresses of the 2^M cube whose notch AXIS is not determined by the M binary digits.
+
+    The notch of a chair is its missing corner, native direction (1, 1, 1); a label (frame f, cell k)
+    therefore points its notch along f(1, 1, 1), and the axis is that vector up to sign.  Per depth M:
+    addresses at which the possible labels have more than one axis ('axis'), more than one notch
+    vector ('vector'), and the non-coincident count c(M) for comparison.  Found with the same subset
+    automaton as :func:`coincidence_table`; the labels of a set are never fewer than its axes."""
+    labels = _sub()[0]
+    order, trans = subset_automaton()
+    diag = np.array([1, 1, 1])
+
+    def norm(v):
+        v = tuple(int(x) for x in v)
+        return max(v, tuple(-x for x in v))
+
+    vec = {}
+    for f in rotations():
+        vec[f] = tuple(int(x) for x in frame_matrix(f) @ diag)
+    nv = [len({vec[labels[i][0]] for i in A}) for A in order]
+    na = [len({norm(vec[labels[i][0]]) for i in A}) for A in order]
+    cnt, rows = {0: 1}, []
+    for M in range(Mmax + 1):
+        rows.append(dict(M=M,
+                         axis=sum(c for s, c in cnt.items() if na[s] > 1),
+                         vector=sum(c for s, c in cnt.items() if nv[s] > 1),
+                         non_coincident=sum(c for s, c in cnt.items() if len(order[s]) > 1)))
+        nxt = {}
+        for s, c in cnt.items():
+            for b in range(8):
+                nxt[trans[s][b]] = nxt.get(trans[s][b], 0) + c
+        cnt = nxt
+    return rows
+
+
+def notch_axis_certificate(terms=64):
+    """The notch axis is undetermined at exactly 16 addresses for every M >= 2, by a finite certificate.
+
+    As for c(M): a set with one axis never gains a second, so the count is a linear functional of
+    T^M e_0 with T the transfer matrix on the n non-singleton sets, and a_M - 16 satisfies a
+    recurrence of order <= n + 2; vanishing on n + 2 consecutive terms (M = 2..) proves it for all M.
+    The 16 are the 8 corner and the 8 central addresses at which all 24 labels survive (the
+    frame-mismatch counts of :func:`frame_mismatch` give the same 16); at the other undetermined
+    addresses the 6 labels are a dihedral coset of the notch diagonal (see
+    :func:`six_is_a_dihedral_coset`), so they share an axis and differ only in its sign."""
+    order, _ = subset_automaton()
+    n = sum(1 for A in order if len(A) > 1)
+    rows = notch_axis_counts(terms)
+    ok = all(r["axis"] == 16 for r in rows[2:])
+    return dict(non_singleton_states=n, terms_checked=terms, terms_needed=n + 2,
+                axis_by_M=[r["axis"] for r in rows[:8]],
+                proved=bool(ok and terms >= n + 2 + 2))
+
+
 def transfer_charpoly():
     """Characteristic polynomial of the transfer matrix on the non-singleton label sets, factored.
 
@@ -1207,6 +1261,10 @@ def ledger():
         ("Chair44 aperiodic; einstein property", "quoted: Tsiokos's claimed proof"),
         ("transfer matrix on the 41 non-singleton sets: x^5 (x-2)^4 (x-1)^32; spectral radius 2",
          "exact"),
+        ("the notch axis (notch vector up to sign) is undetermined at exactly 16 addresses for every M >= 2 "
+         "(the 8 corner and 8 central cells); elsewhere only its sign is",
+         "exact; finite recurrence certificate as for c(M); agrees with the independent two-adic automaton in brentharts/spectre "
+         "(chair44_notch_axis.py). The sign is the point inversion of the notch; no link to a PC statement is made"),
         ("undetermined addresses carry 6 or 24 rotations; 6-sets are dihedral cosets",
          "exact (finite automaton), M = 12 for the counts"),
         ("undetermined addresses = four diagonal tubes, 7*2^M - 6 cells each, M <= 7",
