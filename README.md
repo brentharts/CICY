@@ -3322,6 +3322,17 @@ python3 -m pyCICY.chair44_nested              # the report
 make chair44-figures                          # c44_nested_defect, c44_nested_curve (PDF, PNG)
 ```
 
+#### Two results that came back from the Spectre repository
+
+`brentharts/spectre` re-derived two things independently of this package, and both now sit here as exact checks. **The notch axis.** The Chair44's notch (its missing corner) points along `f(1, 1, 1)` for a label's frame `f`. `chair44_nested.notch_axis_counts` finds that the notch *axis*, the notch vector up to sign, is undetermined by the `M` binary digits of an address at exactly 16 addresses for every `M ≥ 2` (the 8 corner and 8 central cells), against `c(M) = 28·2^M − 48` undetermined labels; elsewhere the labels agree on the axis and differ only in its sign, because the six-label sets are dihedral cosets of the notch diagonal. `notch_axis_certificate` proves it for all `M` by the same finite recurrence argument as `c(M)` (41 non-singleton states, 64 terms checked). The sign is the point inversion of the notch; nothing here links it to a parity statement. The spectre repository's own automaton, written without this code, gives the same counts.
+
+**The collared frequency.** `spectre.x_flavour_balance` closes the open item that `SpectreSubstrate.missing_for_physical()` used to list first. A shared edge of the Spectre tiling is an X-bond exactly when one of its two tiles is the Mystic (measured in `brentharts/spectre`, `spectre_mystic_xbond.py`: no two Mystics share an edge, and the X-bonds form one 14-cycle per Mystic through two valence-4 vertices), so total X-charge on normal tiles equals that on Mystics: `12g + 2g² + 4p·g(1−g) = 14g`, with `g = 4 − √15` and the exact Perron frequencies. Hence `p = Pr(Φ²) = 1/2` exactly, `ρ_X = 1 − √15/5`, the Mystic is a fraction `(5 − √15)/10` of all tiles and the valence-4 density is twice that. This holds *given the atlas*: the per-species X-charges are published counted values, which the module checks for structure only, so the open item becomes "the atlas", not "p". The measured `p` (0.683, 0.579, 0.538, 0.519 at depths 3 to 6) falls toward 1/2.
+
+```bash
+python3 tests/test_chair44_nested.py          # includes [6f] the notch axis
+python3 tests/test_spectre.py                 # includes the p = 1/2 balance (about 4 min in all)
+```
+
 ### The fibre structure and its holonomy, after Gomes
 
 `pyCICY.sixsphere_gauge` runs the recipe of H. Gomes's *Gauge Theory Without
