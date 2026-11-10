@@ -200,6 +200,13 @@ def main():
     check_true("binding levels {0,1,2,7}", xc["levels_are_0_1_2_7"])
     rho = S.x_density(F(58, 100))
     check_true("x-density lands in (0, 1)", 0 < float(rho) < 1)
+    fb = S.x_flavour_balance()
+    check("charge conservation gives p = Pr(Phi^2) = 1/2", fb["p"], F(1, 2))
+    check("rho_X(1/2) = 1 - sqrt15/5", fb["rho_X"], S._q15(1, F(-1, 5)))
+    check("Mystic frequency = (5 - sqrt15)/10", fb["mystic"], S._q15(F(1, 2), F(-1, 10)))
+    check("valence-4 density = 2 x Mystic frequency = (5 - sqrt15)/5", fb["valence4"], S._q15(1, F(-1, 5)))
+    check_true("rho_X(1/2) = 2g/(1+g)", fb["rho_X"] == 2 * S._q15(4, -1) / (S._q15(1) + S._q15(4, -1)))
+    check_true("control: p = 0.58 does not balance (x_density differs from the conserved value)", S.x_density(F(58, 100)) != fb["rho_X"])
     for k in (3, 5, 7, 9):
         t = S.torus_knot(k)        # asserts both routes internally
         check("sigma(T(2,%d)) = -(k-1)" % k, t["signature"], -(k - 1))

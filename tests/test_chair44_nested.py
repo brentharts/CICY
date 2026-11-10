@@ -19,6 +19,8 @@ tori, and the Hat does not).
   [6d] approximants  tight-binding tori: the lift differs from the next torus on
                      140*2^M - 232 sites; rank, counting functions, six choices,
                      Bragg intensities
+  [6f] notch axis    the notch axis (notch vector up to sign) is undetermined at exactly
+                     16 addresses for every M >= 2, by a finite recurrence certificate
   [6e] mismatch      the O-valued frame mismatch under translation by 2^M e is
                      the identity off the tubes, dihedral (all six values) on
                      the six-label tube cells, all of O at the 16 corner and
@@ -281,6 +283,23 @@ def test_approximants():
     check_true("control: the periodic and the (1,1,1)-twisted spectra differ", not C.np.allclose(e0, e1))
 
 
+def test_notch_axis():
+    print("\n[6f] the notch axis is undetermined at exactly 16 addresses")
+    rows = C.notch_axis_counts(8)
+    check("addresses with an undetermined notch axis, M = 2..8", [r["axis"] for r in rows[2:]], [16] * 7)
+    check("... at M = 0 and 1 (the whole set, then one address in each octant)", [r["axis"] for r in rows[:2]], [1, 8])
+    check_true("the axis is determined wherever the notch vector is determined up to sign: axis <= vector <= c(M)",
+               all(r["axis"] <= r["vector"] <= r["non_coincident"] for r in rows))
+    check("M = 2..4: undetermined labels 64, 176, 400 against 16 undetermined axes", [r["non_coincident"] for r in rows[2:5]], [64, 176, 400])
+    cert = C.notch_axis_certificate(64)
+    check("certificate: 41 non-singleton sets, 43 terms needed", (cert["non_singleton_states"], cert["terms_needed"]), (41, 43))
+    check_true("certificate: a_M = 16 for M = 2..64, proved for all M", cert["proved"])
+    check_true("control: a count of 15 or 17 would not satisfy the certificate",
+               not all(r["axis"] == 15 for r in rows[2:]) and not all(r["axis"] == 17 for r in rows[2:]))
+    check_true("the 16 are the 8 corner and 8 central addresses of the mismatch counts",
+               all(r["junction_values"] == 24 for r in C.frame_mismatch(6, (3,))))
+
+
 def test_mismatch():
     print("\n[6e] the frame mismatch under translation by 2^M e (level-6 patch)")
     fm = C.frame_mismatch()
@@ -393,7 +412,7 @@ def test_ledger():
 
 if __name__ == "__main__":
     for t in (test_substitution, test_coincidence, test_closed_forms, test_descent, test_translates,
-              test_scan_counts, test_undetermined, test_tubes, test_interface, test_approximants, test_mismatch,
+              test_scan_counts, test_undetermined, test_tubes, test_interface, test_approximants, test_notch_axis, test_mismatch,
               test_not_a_link, test_controls, test_ledger):
         t()
     print()
